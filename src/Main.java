@@ -23,6 +23,7 @@ public class Main {
 		String dir = "C:\\webharvest\\KAYDET\\";
 		String ham = "C:\\webharvest\\HAM\\";
 		String menuItemS ="-1";
+		System.out.println("GitHub Entegrasyonu OK!");
 		Scanner scanIn = new Scanner(System.in);		
 		do {
 			System.out.println("Çık                               -> Press 0");
