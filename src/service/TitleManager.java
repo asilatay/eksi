@@ -13,5 +13,7 @@ public interface TitleManager {
 	boolean addTitle(Title title);
 	
 	Title getLastSavedTitle();
+	
+	void removeTitleWithId(int titleId);
 
 }

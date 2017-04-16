@@ -13,4 +13,6 @@ public interface EngineManager {
 	void getLinksFromMainPage(String url);
 	
 	void removeZeroCountTitles();
+	
+	void findDuplicateTitlesAndMerge();
 }

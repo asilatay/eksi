@@ -29,5 +29,10 @@ public class TitleManagerImpl implements TitleManager{
 	public Title getLastSavedTitle() {
 		return titleRepository.getLastSavedTitle();
 	}
+	
+	@Override
+	public void removeTitleWithId(int titleId) {
+		titleRepository.removeTitleWithId(titleId);
+	}
 
 }

@@ -11,7 +11,12 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -19,8 +24,6 @@ import org.jsoup.select.Elements;
 import model.Entry;
 import model.Title;
 import model.User;
-
-import org.jsoup.Jsoup;
 
 public class EngineManagerImpl implements EngineManager {
 	
@@ -130,7 +133,7 @@ public class EngineManagerImpl implements EngineManager {
 			        		titleManager.addTitle(title);
 			        		
 			        		Title idTitle = titleManager.getLastSavedTitle();
-			        		for(int a = 1; a < 200; a++) {
+			        		for(int a = 1; a < 300; a++) {
 			        			try {
 				        			if (a != 1) {			        				
 				        				doc = Jsoup.connect(url + line +"?p="+a).get();
@@ -258,5 +261,51 @@ public class EngineManagerImpl implements EngineManager {
 	@Override
 	public void removeZeroCountTitles() {
 		
+	}
+	
+	@Override
+	public void findDuplicateTitlesAndMerge() {
+		List<Title> allTitles = titleManager.getAllTitles();
+		if (allTitles != null && allTitles.size() > 0) {
+			Map<String, List<Integer>> titleDescriptionIdList = new HashMap<String , List<Integer>>();
+			// Sistemdeki tüm title larýn arasýnda gez ve ismi ayný olan title larý id lere grupla.
+			for (Title title : allTitles) {
+				if (titleDescriptionIdList.containsKey(title.getName())) {
+					List<Integer> idList = titleDescriptionIdList.get(title.getName());
+					idList.add(title.getId());
+					titleDescriptionIdList.put(title.getName(), idList);
+				} else {
+					List<Integer> idList = new ArrayList<Integer>();
+					idList.add(title.getId());
+					titleDescriptionIdList.put(title.getName(), idList);
+				}
+			}
+			//gruplama tamam, þimdi her baþlýk için entrylist leri al ve fazla olana gönder.
+			for (Map.Entry<String, List<Integer>> entry : titleDescriptionIdList.entrySet()) {
+				if (!entry.getValue().isEmpty() && entry.getValue().size() > 1) {
+					List<Integer> idList   = entry.getValue();
+					Map<Integer, List<Entry>> idEntryList = new HashMap<Integer, List<Entry>>();
+					for (Integer i : idList) {
+						List<Entry> entryList = entryManager.getEntriesWithTitleId(i);
+						idEntryList.put(i, entryList);
+					}
+					int count = 1;
+					int centralTitleId = 0;
+					for (Map.Entry<Integer, List<Entry>> d : idEntryList.entrySet()) {
+						if (count == 1) {
+							centralTitleId = d.getKey();
+						} else {
+							List<Entry> entryList = d.getValue();
+							for (Entry e : entryList) {
+								entryManager.updateEntryTitle(e.getId(), centralTitleId);
+							}
+							titleManager.removeTitleWithId(d.getKey());
+						}
+						count++;
+					}
+					
+				}
+			}
+		}
 	}
 }

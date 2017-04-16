@@ -137,4 +137,21 @@ public class TitleRepositoryImpl implements TitleRepository{
 			return null;
 		}
 	}
+	
+	@Override
+	public void removeTitleWithId(int titleId) {
+		try {			
+			String tableName = "title";
+			Class.forName(myDriver);
+			Connection conn = DriverManager.getConnection(db, username, pass);
+			String query = "DELETE FROM "+tableName +" WHERE id =" + titleId;
+			Statement st = conn.createStatement();
+			st.executeUpdate(query);
+			st.close();        
+			conn.close();
+		} catch (Exception e) {
+			System.err.println("Database Connection Error ! TITLE TABLE");
+	        System.err.println(e.getMessage());
+		}
+	}
 }

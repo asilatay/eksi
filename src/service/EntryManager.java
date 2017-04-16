@@ -10,4 +10,8 @@ public interface EntryManager {
 	boolean addEntry(Entry entry);
 	
 	int getEntryWithEntryLink(String entryLink);
+	
+	List<Entry> getEntriesWithTitleId(int titleId);
+	
+	void updateEntryTitle(int entryId, int newTitleId);
 }

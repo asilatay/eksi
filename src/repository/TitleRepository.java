@@ -13,4 +13,6 @@ public interface TitleRepository {
 	boolean addTitle(Title title);
 	
 	Title getLastSavedTitle();
+	
+	void removeTitleWithId(int titleId);
 }

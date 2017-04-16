@@ -12,4 +12,8 @@ public interface EntryRepository {
 	
 	int getEntryWithEntryLink(String entryUrl);
 	
+	List<Entry> getEntriesWithTitleId(int titleId);
+	
+	void updateEntryTitle(int entryId, int newTitleId);
+	
 }

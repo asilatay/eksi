@@ -34,6 +34,7 @@ public class Main {
 			System.out.println("Tüm Kullanýcýlarý Listele         -> Press 5");
 			System.out.println("Bugünün popüler linklerini kaydet -> Press 6");
 			System.out.println("Local linkleri ayrýþtýr           -> Press 7");
+			System.out.println("Baþlýklarý birleþtir              -> Press 8");
 			menuItemS = scanIn.nextLine();
 			if (menuItemS.equals("1")) {
 				engineManager.createCrudeLinks(ham);
@@ -102,6 +103,8 @@ public class Main {
 				engineManager.getLinksFromMainPage(url);
 			} else if (menuItemS.equals("7")) {
 				engineManager.getDocumentWithjSoup(url, dir);
+			} else if (menuItemS.equals("8")) {
+				engineManager.findDuplicateTitlesAndMerge();
 			}
 			
 		} while(!menuItemS.equals("0"));

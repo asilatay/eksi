@@ -24,4 +24,14 @@ public class EntryManagerImpl implements EntryManager{
 	public int getEntryWithEntryLink(String entryLink)  {
 		return entryRepository.getEntryWithEntryLink(entryLink);
 	}
+	
+	@Override
+	public List<Entry> getEntriesWithTitleId(int titleId) {
+		return entryRepository.getEntriesWithTitleId(titleId);
+	}
+	
+	@Override
+	public void updateEntryTitle(int entryId, int newTitleId) {
+		entryRepository.updateEntryTitle(entryId, newTitleId);
+	}
 }
