@@ -34,4 +34,9 @@ public class EntryManagerImpl implements EntryManager{
 	public void updateEntryTitle(int entryId, int newTitleId) {
 		entryRepository.updateEntryTitle(entryId, newTitleId);
 	}
+	
+	@Override
+	public List<Entry> getAllEntriesOrderByDate() {
+		return entryRepository.getAllEntriesOrderByDate();
+	}
 }

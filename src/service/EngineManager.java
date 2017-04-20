@@ -15,4 +15,8 @@ public interface EngineManager {
 	void removeZeroCountTitles();
 	
 	void findDuplicateTitlesAndMerge();
+	
+	void createCoOccurenceMatrix();
+	
+	List<String> splittedEntryDescription(String entryDescription);
 }

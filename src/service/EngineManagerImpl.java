@@ -308,4 +308,37 @@ public class EngineManagerImpl implements EngineManager {
 			}
 		}
 	}
+	
+	@Override
+	public void createCoOccurenceMatrix() {
+		List<Entry> activeEntryList = entryManager.getAllEntriesOrderByDate();
+		if (activeEntryList != null && activeEntryList.size() > 0) {
+			Map<String, Integer> mostOccuredWords = new HashMap<String, Integer>();
+			for (Entry e : activeEntryList) {
+				List<String> retList = splittedEntryDescription(e.getDescription());
+				for (int i=0; i<retList.size(); i++) {					
+					if (mostOccuredWords != null && mostOccuredWords.size() > 0) {
+						if (mostOccuredWords.containsKey(retList.get(i))) {
+							mostOccuredWords.put(retList.get(i), mostOccuredWords.get(retList.get(i)) + 1);
+						} else {
+							mostOccuredWords.put(retList.get(i), 1);
+						}
+					} else {
+						mostOccuredWords.put(retList.get(i), 1);
+					}
+				}
+			}
+			//Devam ediyoruz.
+		}
+	}
+	
+	@Override
+	public List<String> splittedEntryDescription(String entryDescription) {
+		List<String> returnList = new ArrayList<String>();
+		String [] arr = entryDescription.split(" ");
+		for (int i =0; i<arr.length; i++) {
+			returnList.add(arr[i].toLowerCase());
+		}
+		return returnList;
+	}
 }

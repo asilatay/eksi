@@ -14,4 +14,6 @@ public interface EntryManager {
 	List<Entry> getEntriesWithTitleId(int titleId);
 	
 	void updateEntryTitle(int entryId, int newTitleId);
+	
+	List<Entry> getAllEntriesOrderByDate();
 }

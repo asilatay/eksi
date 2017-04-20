@@ -35,6 +35,7 @@ public class Main {
 			System.out.println("Bugünün popüler linklerini kaydet -> Press 6");
 			System.out.println("Local linkleri ayrýþtýr           -> Press 7");
 			System.out.println("Baþlýklarý birleþtir              -> Press 8");
+			System.out.println("Co-Occurence Matrix               -> Press 9");
 			menuItemS = scanIn.nextLine();
 			if (menuItemS.equals("1")) {
 				engineManager.createCrudeLinks(ham);
@@ -105,6 +106,8 @@ public class Main {
 				engineManager.getDocumentWithjSoup(url, dir);
 			} else if (menuItemS.equals("8")) {
 				engineManager.findDuplicateTitlesAndMerge();
+			} else if (menuItemS.equals("9")) {
+				engineManager.createCoOccurenceMatrix();
 			}
 			
 		} while(!menuItemS.equals("0"));

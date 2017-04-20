@@ -160,5 +160,38 @@ public class EntryRepositoryImpl implements EntryRepository{
 			System.err.println(e.getMessage());
 		}
 	}
+	
+	@Override
+	public List<Entry> getAllEntriesOrderByDate() {
+		try {			
+			String tableName = "entry";
+			Class.forName(myDriver);
+			Connection conn = DriverManager.getConnection(db, username, pass);
+			String query = "SELECT * FROM " +tableName+ " ORDER BY date ASC";
+			Statement st = conn.createStatement();        
+			ResultSet rs = st.executeQuery(query); 
+			List<Entry> entryList = new ArrayList<Entry>();
+			while (rs.next()) {
+				Entry currentEntry = new Entry();
+				int s_id = rs.getInt("ID");
+				currentEntry.setId(s_id);
+				String s_description = rs.getString("description");
+				currentEntry.setDescription(s_description);
+				String s_date = rs.getString("date");
+				currentEntry.setDate(s_date);
+				String s_Link = rs.getString("entry_link");
+				currentEntry.setEntryLink(s_Link);
+				entryList.add(currentEntry);
+			}
+			st.close();
+			conn.close();
+			return entryList;
+			
+		} catch (Exception e) {
+			System.err.println("Database Connection Error ! ENTRY TABLE");
+			System.err.println(e.getMessage());
+			return null;
+		}
+	}
 		
 }

@@ -16,4 +16,6 @@ public interface EntryRepository {
 	
 	void updateEntryTitle(int entryId, int newTitleId);
 	
+	List<Entry> getAllEntriesOrderByDate();
+	
 }
