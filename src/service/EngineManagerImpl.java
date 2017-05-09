@@ -10,11 +10,16 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
+import java.util.Set;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -22,6 +27,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import model.Entry;
+import model.KeyIndex;
 import model.Title;
 import model.User;
 
@@ -30,6 +36,8 @@ public class EngineManagerImpl implements EngineManager {
 	TitleManager titleManager = new TitleManagerImpl();
 	UserManager userManager = new UserManagerImpl();
 	EntryManager entryManager = new EntryManagerImpl();
+	
+	private final static int turningNumber = 15;
 	
 	public EngineManagerImpl() {
 	}
@@ -313,23 +321,107 @@ public class EngineManagerImpl implements EngineManager {
 	public void createCoOccurenceMatrix() {
 		List<Entry> activeEntryList = entryManager.getAllEntriesOrderByDate();
 		if (activeEntryList != null && activeEntryList.size() > 0) {
-			Map<String, Integer> mostOccuredWords = new HashMap<String, Integer>();
-			for (Entry e : activeEntryList) {
-				List<String> retList = splittedEntryDescription(e.getDescription());
-				for (int i=0; i<retList.size(); i++) {					
-					if (mostOccuredWords != null && mostOccuredWords.size() > 0) {
-						if (mostOccuredWords.containsKey(retList.get(i))) {
-							mostOccuredWords.put(retList.get(i), mostOccuredWords.get(retList.get(i)) + 1);
-						} else {
-							mostOccuredWords.put(retList.get(i), 1);
+			Map<String, Integer> MOW = getMostOccuredWordMap(activeEntryList);
+			//bütyükten küçüðe sýralanmýþ map
+			Map<String, Integer> ordered = sortByValue(MOW, false);
+			Set<String> strSet = ordered.keySet();
+			Map<String, Integer> ranking = new HashMap<String, Integer>();
+			int orderCount = 0;
+			for (String abc : strSet) {
+				ranking.put(abc, orderCount);
+				orderCount++;
+			}
+			//Benim çözümüm(KeyIndex)
+			Map<KeyIndex, Integer> matrixData = new  HashMap<KeyIndex, Integer>();
+			for (int i = 0; i < activeEntryList.size(); i++) {
+				int countBack = i - 1;
+				int countGo = i + 1;
+				int numberOfCellForPivotWord = ranking.get(activeEntryList.get(i));
+				for (int j = 0; j < turningNumber; j++) {
+					if (countBack > -1) {
+						int numberOfCellForAlternativeWord = ranking.get(activeEntryList.get(countBack));
+						KeyIndex ind = new KeyIndex(numberOfCellForPivotWord, numberOfCellForAlternativeWord);
+						KeyIndex symIndex = new KeyIndex(numberOfCellForAlternativeWord, numberOfCellForPivotWord);
+						if(matrixData.get(ind) == null && matrixData.get(symIndex) == null){
+							matrixData.put(ind, 1);
 						}
-					} else {
-						mostOccuredWords.put(retList.get(i), 1);
+						countBack--;
+					}
+					if (countGo < activeEntryList.size()) {
+						int numberOfCellForAlternativeWord = ranking.get(activeEntryList.get(countGo));
+						KeyIndex ind = new KeyIndex(numberOfCellForPivotWord, numberOfCellForAlternativeWord);
+						KeyIndex symIndex = new KeyIndex(numberOfCellForAlternativeWord, numberOfCellForPivotWord);
+						if(matrixData.get(ind) == null && matrixData.get(symIndex) == null){
+							matrixData.put(ind, 1);
+						}
+						countGo++;
 					}
 				}
 			}
-			//Devam ediyoruz.
+			createTxtForBigCLAMFromMap(matrixData);
 		}
+	}
+	
+	private static void createTxtForBigCLAMFromMap(Map<KeyIndex, Integer> mapList){
+		try{
+			 BufferedWriter out = new BufferedWriter(new FileWriter("forBigClam.txt"));
+			 for(Map.Entry<KeyIndex,Integer>  entrySet  : mapList.entrySet()){
+				 KeyIndex ind = entrySet.getKey();
+				 out.write(ind.getRow()+"	"+ ind.getColumn()+"\r\n");
+			 }
+			 out.close();
+		}
+		catch (IOException e) {
+        	
+        }
+	}
+	
+	@SuppressWarnings("hiding")
+	private static <String, Integer> Map<String, Integer> sortByValue(Map<String, Integer> map, boolean isASC) {
+		List<java.util.Map.Entry<String, Integer>> list = new LinkedList<>(map.entrySet());
+		if (!isASC) {
+			Collections.sort(list, new Comparator<Object>() {
+				@SuppressWarnings("unchecked")
+				public int compare(Object o1, Object o2) {
+					return ((Comparable<Integer>) ((Map.Entry<String, Integer>) (o2)).getValue())
+							.compareTo(((Map.Entry<String, Integer>) (o1)).getValue());
+				}
+			});
+		} else {
+			Collections.sort(list, new Comparator<Object>() {
+				@SuppressWarnings("unchecked")
+				public int compare(Object o1, Object o2) {
+					return ((Comparable<Integer>) ((Map.Entry<String, Integer>) (o1)).getValue())
+							.compareTo(((Map.Entry<String, Integer>) (o2)).getValue());
+				}
+			});
+		}
+	    Map<String,Integer> result = new LinkedHashMap<>();
+	    for (Iterator<java.util.Map.Entry<String,Integer>> it = list.iterator(); it.hasNext();) {
+	        Map.Entry<String,Integer> entry = (Map.Entry<String,Integer>) it.next();
+	        result.put(entry.getKey(), entry.getValue());
+	    }
+
+	    return result;
+	}
+
+	private Map<String, Integer> getMostOccuredWordMap(List<Entry> activeEntryList) {
+		Map<String, Integer> mostOccuredWords = new HashMap<String, Integer>();
+		for (Entry e : activeEntryList) {
+			List<String> retList = splittedEntryDescription(e.getDescription());
+			for (int i=0; i<retList.size(); i++) {					
+				if (mostOccuredWords != null && mostOccuredWords.size() > 0) {
+					if (mostOccuredWords.containsKey(retList.get(i))) {
+						mostOccuredWords.put(retList.get(i), mostOccuredWords.get(retList.get(i)) + 1);
+					} else {
+						mostOccuredWords.put(retList.get(i), 1);
+					}
+				} else {
+					mostOccuredWords.put(retList.get(i), 1);
+				}
+			}
+		}
+		return mostOccuredWords;
 	}
 	
 	@Override
