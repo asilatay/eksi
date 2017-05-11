@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -21,6 +22,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -319,6 +324,7 @@ public class EngineManagerImpl implements EngineManager {
 	
 	@Override
 	public void createCoOccurenceMatrix() {
+		System.out.println("Co-Occurence matrix operation is just started!");
 		List<Entry> activeEntryList = entryManager.getAllEntriesOrderByDate();
 		if (activeEntryList != null && activeEntryList.size() > 0) {
 			Map<String, Integer> MOW = getMostOccuredWordMap(activeEntryList);
@@ -331,15 +337,29 @@ public class EngineManagerImpl implements EngineManager {
 				ranking.put(abc, orderCount);
 				orderCount++;
 			}
+			Map<String, Integer> rankingOrdered = new HashMap<String, Integer>();
+			rankingOrdered = sortByValue(ranking, true);
+			try {
+				createExcelRankingWords(rankingOrdered);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			System.out.println("Ranking oluþturuldu!");
+			List<String> retList = new ArrayList<String> ();
+			for (Entry e : activeEntryList) {				
+				retList = splittedEntryDescription(e.getDescription());
+			}
 			//Benim çözümüm(KeyIndex)
 			Map<KeyIndex, Integer> matrixData = new  HashMap<KeyIndex, Integer>();
-			for (int i = 0; i < activeEntryList.size(); i++) {
+			System.out.println("KeyIndex çözümü baþladý!");
+			for (int i = 0; i < retList.size(); i++) {
 				int countBack = i - 1;
 				int countGo = i + 1;
-				int numberOfCellForPivotWord = ranking.get(activeEntryList.get(i));
+				int numberOfCellForPivotWord = ranking.get(retList.get(i));
 				for (int j = 0; j < turningNumber; j++) {
 					if (countBack > -1) {
-						int numberOfCellForAlternativeWord = ranking.get(activeEntryList.get(countBack));
+						int numberOfCellForAlternativeWord = ranking.get(retList.get(countBack));
 						KeyIndex ind = new KeyIndex(numberOfCellForPivotWord, numberOfCellForAlternativeWord);
 						KeyIndex symIndex = new KeyIndex(numberOfCellForAlternativeWord, numberOfCellForPivotWord);
 						if(matrixData.get(ind) == null && matrixData.get(symIndex) == null){
@@ -347,8 +367,8 @@ public class EngineManagerImpl implements EngineManager {
 						}
 						countBack--;
 					}
-					if (countGo < activeEntryList.size()) {
-						int numberOfCellForAlternativeWord = ranking.get(activeEntryList.get(countGo));
+					if (countGo < retList.size()) {
+						int numberOfCellForAlternativeWord = ranking.get(retList.get(countGo));
 						KeyIndex ind = new KeyIndex(numberOfCellForPivotWord, numberOfCellForAlternativeWord);
 						KeyIndex symIndex = new KeyIndex(numberOfCellForAlternativeWord, numberOfCellForPivotWord);
 						if(matrixData.get(ind) == null && matrixData.get(symIndex) == null){
@@ -358,6 +378,7 @@ public class EngineManagerImpl implements EngineManager {
 					}
 				}
 			}
+			System.out.println("KexIndex hesaplandý. TXT oluþturuluyor!");
 			createTxtForBigCLAMFromMap(matrixData);
 		}
 	}
@@ -370,9 +391,10 @@ public class EngineManagerImpl implements EngineManager {
 				 out.write(ind.getRow()+"	"+ ind.getColumn()+"\r\n");
 			 }
 			 out.close();
+			 System.out.println("TXT oluþturuldu.!");
 		}
 		catch (IOException e) {
-        	
+			System.err.println("TXT oluþturulurken hata oluþtu!");
         }
 	}
 	
@@ -421,6 +443,7 @@ public class EngineManagerImpl implements EngineManager {
 				}
 			}
 		}
+		System.out.println("Kelimelerin kaçar defa geçtiði hesaplandý!");
 		return mostOccuredWords;
 	}
 	
@@ -433,4 +456,41 @@ public class EngineManagerImpl implements EngineManager {
 		}
 		return returnList;
 	}
+	
+	private static void createExcelRankingWords(Map<String,Integer> ranked) throws IOException {
+		System.out.println("Excel oluþturma iþlemi baþladý");
+		try {
+			FileOutputStream fileOut = new FileOutputStream("resultTable.xlsx");
+
+			XSSFWorkbook workbook = new XSSFWorkbook();
+			XSSFSheet worksheet = workbook.createSheet("POI Worksheet");
+	
+			// index from 0,0... cell A1 is cell(0,0)
+			XSSFRow row1 = worksheet.createRow((int) 0);
+			// Create Header of Excel
+			XSSFCell cell = row1.createCell((int) 0);
+			cell.setCellValue("Rank");
+			cell = row1.createCell((int) 1);
+			cell.setCellValue("Name");
+			int rowNum = 1;
+			// Create Body of Table
+			for (Map.Entry<java.lang.String, java.lang.Integer> a : ranked.entrySet()) {
+				row1 = worksheet.createRow((int) rowNum);
+				cell = row1.createCell((int) 0);
+				cell.setCellValue(a.getValue());
+				cell = row1.createCell((int) 1);
+				cell.setCellValue(a.getKey());
+				rowNum++;
+			}
+	
+			workbook.write(fileOut);
+			fileOut.flush();
+			fileOut.close();
+			workbook.close();
+			System.out.println("Excel oluþturma iþlemi baþarýyla tamamlandý");
+	} catch (FileNotFoundException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
+}
 }
