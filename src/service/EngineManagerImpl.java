@@ -339,12 +339,9 @@ public class EngineManagerImpl implements EngineManager {
 			}
 			Map<String, Integer> rankingOrdered = new HashMap<String, Integer>();
 			rankingOrdered = sortByValue(ranking, true);
-			try {
-				createExcelRankingWords(rankingOrdered);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			createTxtFileForVocabs(rankingOrdered);
+			//TODO GarbageCollector Error
+//				createExcelRankingWords(rankingOrdered);
 			System.out.println("Ranking oluþturuldu!");
 			List<String> retList = new ArrayList<String> ();
 			for (Entry e : activeEntryList) {				
@@ -457,14 +454,14 @@ public class EngineManagerImpl implements EngineManager {
 		return returnList;
 	}
 	
-	private static void createExcelRankingWords(Map<String,Integer> ranked) throws IOException {
+	private static void createExcelRankingWords(Map<String, Integer> ranked) throws IOException {
 		System.out.println("Excel oluþturma iþlemi baþladý");
 		try {
 			FileOutputStream fileOut = new FileOutputStream("resultTable.xlsx");
 
 			XSSFWorkbook workbook = new XSSFWorkbook();
 			XSSFSheet worksheet = workbook.createSheet("POI Worksheet");
-	
+
 			// index from 0,0... cell A1 is cell(0,0)
 			XSSFRow row1 = worksheet.createRow((int) 0);
 			// Create Header of Excel
@@ -482,15 +479,31 @@ public class EngineManagerImpl implements EngineManager {
 				cell.setCellValue(a.getKey());
 				rowNum++;
 			}
-	
+
 			workbook.write(fileOut);
 			fileOut.flush();
 			fileOut.close();
 			workbook.close();
 			System.out.println("Excel oluþturma iþlemi baþarýyla tamamlandý");
-	} catch (FileNotFoundException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
-}
+	
+	
+	private void createTxtFileForVocabs(Map<String, Integer> ranked) {
+		try{
+			 BufferedWriter out = new BufferedWriter(new FileWriter("vocab.txt"));
+			 for(Map.Entry<String,Integer>  entrySet  : ranked.entrySet()){
+				 out.write(entrySet.getKey() +"	"+ entrySet.getValue()+"\r\n");
+			 }
+			 out.close();
+			 System.out.println("TXT oluþturuldu.!");
+		}
+		catch (IOException e) {
+			System.err.println("TXT oluþturulurken hata oluþtu!");
+       }
+		
+	}
 }
