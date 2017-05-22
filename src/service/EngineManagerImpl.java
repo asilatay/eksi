@@ -322,12 +322,19 @@ public class EngineManagerImpl implements EngineManager {
 		}
 	}
 	
+	/**
+	 * @param parameterForEntryCount = 0 ise tüm entryler üzerinden iþlem yapýlýr
+	 * CoOccurence matrix için gerekli hesaplamalarý yaparak çýktý üreten metoddur.
+	 */
 	@Override
-	public void createCoOccurenceMatrix() {
+	public void createCoOccurenceMatrix(int parameterForEntryCount) {
 		System.out.println("Co-Occurence matrix operation is just started!");
 		List<Entry> activeEntryList = entryManager.getAllEntriesOrderByDate();
 		if (activeEntryList != null && activeEntryList.size() > 0) {
-			Map<String, Integer> MOW = getMostOccuredWordMap(activeEntryList);
+			if (parameterForEntryCount == 0) {
+				parameterForEntryCount = activeEntryList.size();
+			}
+			Map<String, Integer> MOW = getMostOccuredWordMap(activeEntryList, parameterForEntryCount);
 			//bütyükten küçüðe sýralanmýþ map
 			Map<String, Integer> ordered = sortByValue(MOW, false);
 			Set<String> strSet = ordered.keySet();
@@ -344,8 +351,8 @@ public class EngineManagerImpl implements EngineManager {
 //				createExcelRankingWords(rankingOrdered);
 			System.out.println("Ranking oluþturuldu!");
 			List<String> retList = new ArrayList<String> ();
-			for (Entry e : activeEntryList) {				
-				retList = splittedEntryDescription(e.getDescription());
+			for (int i=0; i < parameterForEntryCount; i++) {				
+				retList = splittedEntryDescription(retList, activeEntryList.get(i).getDescription());
 			}
 			//Benim çözümüm(KeyIndex)
 			Map<KeyIndex, Integer> matrixData = new  HashMap<KeyIndex, Integer>();
@@ -379,7 +386,11 @@ public class EngineManagerImpl implements EngineManager {
 			createTxtForBigCLAMFromMap(matrixData);
 		}
 	}
-	
+	/**
+	 * 
+	 * @param mapList
+	 * BigClam algoritmasýnýn input unu oluþturan metoddur.
+	 */
 	private static void createTxtForBigCLAMFromMap(Map<KeyIndex, Integer> mapList){
 		try{
 			 BufferedWriter out = new BufferedWriter(new FileWriter("forBigClam.txt"));
@@ -394,7 +405,13 @@ public class EngineManagerImpl implements EngineManager {
 			System.err.println("TXT oluþturulurken hata oluþtu!");
         }
 	}
-	
+	/**
+	 * 
+	 * @param map
+	 * @param isASC
+	 * @return
+	 * Kelimeleri max geçenden min geçene göre sýralayan metoddur.
+	 */
 	@SuppressWarnings("hiding")
 	private static <String, Integer> Map<String, Integer> sortByValue(Map<String, Integer> map, boolean isASC) {
 		List<java.util.Map.Entry<String, Integer>> list = new LinkedList<>(map.entrySet());
@@ -424,10 +441,14 @@ public class EngineManagerImpl implements EngineManager {
 	    return result;
 	}
 
-	private Map<String, Integer> getMostOccuredWordMap(List<Entry> activeEntryList) {
+	private Map<String, Integer> getMostOccuredWordMap(List<Entry> activeEntryList, int count) {
 		Map<String, Integer> mostOccuredWords = new HashMap<String, Integer>();
-		for (Entry e : activeEntryList) {
-			List<String> retList = splittedEntryDescription(e.getDescription());
+		if (count == 0) {
+			count = activeEntryList.size();
+		}
+		for (int a = 0; a < count; a++) {
+			List<String> retList = new ArrayList<String>(); 
+			retList = splittedEntryDescription(retList, activeEntryList.get(a).getDescription());
 			for (int i=0; i<retList.size(); i++) {					
 				if (mostOccuredWords != null && mostOccuredWords.size() > 0) {
 					if (mostOccuredWords.containsKey(retList.get(i))) {
@@ -445,13 +466,12 @@ public class EngineManagerImpl implements EngineManager {
 	}
 	
 	@Override
-	public List<String> splittedEntryDescription(String entryDescription) {
-		List<String> returnList = new ArrayList<String>();
+	public List<String> splittedEntryDescription(List<String> retList, String entryDescription) {
 		String [] arr = entryDescription.split(" ");
 		for (int i =0; i<arr.length; i++) {
-			returnList.add(arr[i].toLowerCase());
+			retList.add(arr[i].toLowerCase());
 		}
-		return returnList;
+		return retList;
 	}
 	
 	private static void createExcelRankingWords(Map<String, Integer> ranked) throws IOException {
@@ -505,5 +525,45 @@ public class EngineManagerImpl implements EngineManager {
 			System.err.println("TXT oluþturulurken hata oluþtu!");
        }
 		
+	}
+	
+	@Override
+	public void writeAllEntriesToDocument() {
+		System.out.println("Entry dýþa aktarýmý baþlatýldý!");
+		List<Entry> activeEntryList = entryManager.getAllEntriesOrderByDate();
+		if (activeEntryList != null) {
+			try {
+				BufferedWriter out = new BufferedWriter(new FileWriter("outputTxt.txt"));
+				for (Entry e : activeEntryList) {
+					out.write(e.getDescription());
+				}
+				out.close();
+				System.out.println("TXT oluþturuldu.!");
+			} catch (IOException e) {
+				System.err.println("TXT oluþturulurken hata oluþtu!");
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	@Override
+	public void writeSpecificEntryCountToDocument(int entryCount) {
+		System.out.println("Entry dýþa aktarýmý baþlatýldý!");
+		List<Entry> activeEntryList = entryManager.getAllEntriesOrderByDate();
+		if (activeEntryList != null) {
+			try {
+				BufferedWriter out = new BufferedWriter(new FileWriter("outputTxt.txt"));
+				if (entryCount < activeEntryList.size()) {					
+					for (int i =0; i< entryCount; i++) {
+						out.write(activeEntryList.get(i).getDescription());
+					}
+				}
+				out.close();
+				System.out.println("TXT oluþturuldu.!");
+			} catch (IOException e) {
+				System.err.println("TXT oluþturulurken hata oluþtu!");
+				e.printStackTrace();
+			}
+		}
 	}
 }

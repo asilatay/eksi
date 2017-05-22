@@ -16,7 +16,11 @@ public interface EngineManager {
 	
 	void findDuplicateTitlesAndMerge();
 	
-	void createCoOccurenceMatrix();
+	void createCoOccurenceMatrix(int parameterForEntryCount);
 	
-	List<String> splittedEntryDescription(String entryDescription);
+	List<String> splittedEntryDescription(List<String>retList,String  entryDescription);
+	
+	void writeAllEntriesToDocument();
+	
+	void writeSpecificEntryCountToDocument(int entryCount);
 }

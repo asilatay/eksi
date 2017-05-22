@@ -36,6 +36,8 @@ public class Main {
 			System.out.println("Local linkleri ayrýþtýr           -> Press 7");
 			System.out.println("Baþlýklarý birleþtir              -> Press 8");
 			System.out.println("Co-Occurence Matrix               -> Press 9");
+			System.out.println("Tüm Entry leri Dýþa Aktar         -> Press 10");
+			System.out.println("Parametrik Entry Dýþa Aktarým     -> Press 11");
 			menuItemS = scanIn.nextLine();
 			if (menuItemS.equals("1")) {
 				engineManager.createCrudeLinks(ham);
@@ -107,7 +109,15 @@ public class Main {
 			} else if (menuItemS.equals("8")) {
 				engineManager.findDuplicateTitlesAndMerge();
 			} else if (menuItemS.equals("9")) {
-				engineManager.createCoOccurenceMatrix();
+				System.out.println("Hesaplanmasýný istediðiniz entry sayýsýný giriniz : ");
+				int parameterForEntryCount = scanIn.nextInt();
+				engineManager.createCoOccurenceMatrix(parameterForEntryCount);
+			} else if (menuItemS.equals("10")) {
+				engineManager.writeAllEntriesToDocument();
+			} else if (menuItemS.equals("11")) {
+				System.out.println("Çekilmesini istediðiniz entry sayýsýný giriniz : ");
+				int parameterForEntryCount = scanIn.nextInt();
+				engineManager.writeSpecificEntryCountToDocument(parameterForEntryCount);
 			}
 			
 		} while(!menuItemS.equals("0"));
