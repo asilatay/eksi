@@ -5,10 +5,16 @@ public class KeyIndex {
 	public Object row;
 	
 	public Object column;
+	
+	public String rowWord;
+	
+	public String columnWord;
 
-	public KeyIndex(Object row, Object column){
+	public KeyIndex(Object row, Object column, String rowWord, String columnWord){
 		this.row = row;
 		this.column = column;
+		this.rowWord = rowWord;
+		this.columnWord = columnWord;
 	}
 	
 	public Object getRow() {
@@ -27,12 +33,30 @@ public class KeyIndex {
 		this.column = column;
 	}
 
+	public String getRowWord() {
+		return rowWord;
+	}
+
+	public void setRowWord(String rowWord) {
+		this.rowWord = rowWord;
+	}
+
+	public String getColumnWord() {
+		return columnWord;
+	}
+
+	public void setColumnWord(String columnWord) {
+		this.columnWord = columnWord;
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((column == null) ? 0 : column.hashCode());
+		result = prime * result + ((columnWord == null) ? 0 : columnWord.hashCode());
 		result = prime * result + ((row == null) ? 0 : row.hashCode());
+		result = prime * result + ((rowWord == null) ? 0 : rowWord.hashCode());
 		return result;
 	}
 
@@ -50,11 +74,28 @@ public class KeyIndex {
 				return false;
 		} else if (!column.equals(other.column))
 			return false;
+		if (columnWord == null) {
+			if (other.columnWord != null)
+				return false;
+		} else if (!columnWord.equals(other.columnWord))
+			return false;
 		if (row == null) {
 			if (other.row != null)
 				return false;
 		} else if (!row.equals(other.row))
 			return false;
+		if (rowWord == null) {
+			if (other.rowWord != null)
+				return false;
+		} else if (!rowWord.equals(other.rowWord))
+			return false;
 		return true;
+	}
+
+	@Override
+	public String toString() {
+		return "KeyIndex [row=" + row + ", column=" + column + ", rowWord=" + rowWord + ", columnWord=" + columnWord
+				+ "]";
 	}	
+	
 }

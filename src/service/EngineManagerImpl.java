@@ -361,11 +361,12 @@ public class EngineManagerImpl implements EngineManager {
 				int countBack = i - 1;
 				int countGo = i + 1;
 				int numberOfCellForPivotWord = ranking.get(retList.get(i));
+				String pivotWord = retList.get(i);
 				for (int j = 0; j < turningNumber; j++) {
 					if (countBack > -1) {
 						int numberOfCellForAlternativeWord = ranking.get(retList.get(countBack));
-						KeyIndex ind = new KeyIndex(numberOfCellForPivotWord, numberOfCellForAlternativeWord);
-						KeyIndex symIndex = new KeyIndex(numberOfCellForAlternativeWord, numberOfCellForPivotWord);
+						KeyIndex ind = new KeyIndex(numberOfCellForPivotWord, numberOfCellForAlternativeWord, pivotWord, retList.get(countBack));
+						KeyIndex symIndex = new KeyIndex(numberOfCellForAlternativeWord, numberOfCellForPivotWord, retList.get(countBack), pivotWord);
 						if(matrixData.get(ind) == null && matrixData.get(symIndex) == null){
 							matrixData.put(ind, 1);
 						}
@@ -373,9 +374,9 @@ public class EngineManagerImpl implements EngineManager {
 					}
 					if (countGo < retList.size()) {
 						int numberOfCellForAlternativeWord = ranking.get(retList.get(countGo));
-						KeyIndex ind = new KeyIndex(numberOfCellForPivotWord, numberOfCellForAlternativeWord);
-						KeyIndex symIndex = new KeyIndex(numberOfCellForAlternativeWord, numberOfCellForPivotWord);
-						if(matrixData.get(ind) == null && matrixData.get(symIndex) == null){
+						KeyIndex ind = new KeyIndex(numberOfCellForPivotWord, numberOfCellForAlternativeWord, pivotWord, retList.get(countGo));
+						KeyIndex symIndex = new KeyIndex(numberOfCellForAlternativeWord, numberOfCellForPivotWord, retList.get(countGo), pivotWord);
+						if(!matrixData.containsKey(ind) && !matrixData.containsKey(symIndex)){
 							matrixData.put(ind, 1);
 						}
 						countGo++;
@@ -383,23 +384,35 @@ public class EngineManagerImpl implements EngineManager {
 				}
 			}
 			System.out.println("KexIndex hesaplandý. TXT oluþturuluyor!");
-			createTxtForBigCLAMFromMap(matrixData);
+			createTxtForBigCLAMFromMap(matrixData, false);
+			createTxtForBigCLAMFromMap(matrixData, true);
 		}
 	}
 	/**
 	 * 
 	 * @param mapList
+	 * @param forBigClam - BigClam algoritmasýna input olarak verilecekse true gönderilmelidir
 	 * BigClam algoritmasýnýn input unu oluþturan metoddur.
 	 */
-	private static void createTxtForBigCLAMFromMap(Map<KeyIndex, Integer> mapList){
+	private static void createTxtForBigCLAMFromMap(Map<KeyIndex, Integer> mapList, boolean forBigClam){
 		try{
-			 BufferedWriter out = new BufferedWriter(new FileWriter("forBigClam.txt"));
-			 for(Map.Entry<KeyIndex,Integer>  entrySet  : mapList.entrySet()){
-				 KeyIndex ind = entrySet.getKey();
-				 out.write(ind.getRow()+"	"+ ind.getColumn()+"\r\n");
-			 }
-			 out.close();
-			 System.out.println("TXT oluþturuldu.!");
+			if (forBigClam) {				
+				BufferedWriter out = new BufferedWriter(new FileWriter("forBigClam.txt"));
+				for(Map.Entry<KeyIndex,Integer>  entrySet  : mapList.entrySet()){
+					KeyIndex ind = entrySet.getKey();
+					out.write(ind.getRow()+"	"+ ind.getColumn()+"\r\n");
+				}
+				out.close();
+				System.out.println("TXT oluþturuldu.!");
+			} else {
+				BufferedWriter out = new BufferedWriter(new FileWriter("neigbors.txt"));
+				for(Map.Entry<KeyIndex,Integer>  entrySet  : mapList.entrySet()){
+					KeyIndex ind = entrySet.getKey();
+					out.write(ind.getRow()+"	"+"["+ind.getRowWord()+"]"+"     "+ ind.getColumn()+"["+ ind.getColumnWord()+"]"+"\r\n");
+				}
+				out.close();
+				System.out.println("TXT oluþturuldu.!");
+			}
 		}
 		catch (IOException e) {
 			System.err.println("TXT oluþturulurken hata oluþtu!");
