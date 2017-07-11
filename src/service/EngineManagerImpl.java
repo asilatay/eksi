@@ -562,14 +562,12 @@ public class EngineManagerImpl implements EngineManager {
 	@Override
 	public void writeSpecificEntryCountToDocument(int entryCount) {
 		System.out.println("Entry dýþa aktarýmý baþlatýldý!");
-		List<Entry> activeEntryList = entryManager.getAllEntriesOrderByDate();
+		List<Entry> activeEntryList = entryManager.getAllEntriesOrderByDateWithLimit(entryCount);
 		if (activeEntryList != null) {
 			try {
 				BufferedWriter out = new BufferedWriter(new FileWriter("outputTxt.txt"));
-				if (entryCount < activeEntryList.size()) {					
-					for (int i =0; i< entryCount; i++) {
-						out.write(activeEntryList.get(i).getDescription());
-					}
+				for (int i = 0; i < activeEntryList.size(); i++) {
+					out.write(activeEntryList.get(i).getDescription());
 				}
 				out.close();
 				System.out.println("TXT oluþturuldu.!");

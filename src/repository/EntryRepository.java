@@ -18,4 +18,6 @@ public interface EntryRepository {
 	
 	List<Entry> getAllEntriesOrderByDate();
 	
+	List<Entry> getAllEntriesOrderByDateWithLimit(int limit);
+	
 }

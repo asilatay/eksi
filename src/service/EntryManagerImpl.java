@@ -39,4 +39,9 @@ public class EntryManagerImpl implements EntryManager{
 	public List<Entry> getAllEntriesOrderByDate() {
 		return entryRepository.getAllEntriesOrderByDate();
 	}
+	
+	@Override
+	public List<Entry> getAllEntriesOrderByDateWithLimit(int limit) {
+		return entryRepository.getAllEntriesOrderByDateWithLimit(limit);
+	}
 }
