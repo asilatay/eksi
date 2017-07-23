@@ -546,7 +546,7 @@ public class EngineManagerImpl implements EngineManager {
 		List<Entry> activeEntryList = entryManager.getAllEntriesOrderByDate();
 		if (activeEntryList != null) {
 			try {
-				BufferedWriter out = new BufferedWriter(new FileWriter("outputTxt.txt"));
+				BufferedWriter out = new BufferedWriter(new FileWriter("eksi.txt"));
 				for (Entry e : activeEntryList) {
 					out.write(e.getDescription());
 				}
@@ -565,7 +565,7 @@ public class EngineManagerImpl implements EngineManager {
 		List<Entry> activeEntryList = entryManager.getAllEntriesOrderByDate();
 		if (activeEntryList != null) {
 			try {
-				BufferedWriter out = new BufferedWriter(new FileWriter("outputTxt.txt"));
+				BufferedWriter out = new BufferedWriter(new FileWriter("eksi"+entryCount+".txt"));
 				if (entryCount < activeEntryList.size()) {					
 					for (int i =0; i< entryCount; i++) {
 						out.write(activeEntryList.get(i).getDescription());
