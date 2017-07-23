@@ -1,5 +1,4 @@
 
-import java.sql.Date;
 import java.util.List;
 import java.util.Scanner;
 
@@ -22,7 +21,7 @@ public class Main {
 		UserManager userManager = new UserManagerImpl();
 		String dir = "C:\\webharvest\\KAYDET\\";
 		String ham = "C:\\webharvest\\HAM\\";
-		String menuItemS ="-1";
+		String operationSelect ="-1";
 		System.out.println("GitHub Entegrasyonu OK!");
 		Scanner scanIn = new Scanner(System.in);		
 		do {
@@ -38,11 +37,11 @@ public class Main {
 			System.out.println("Co-Occurence Matrix               -> Press 9");
 			System.out.println("Tüm Entry leri Dýþa Aktar         -> Press 10");
 			System.out.println("Parametrik Entry Dýþa Aktarým     -> Press 11");
-			menuItemS = scanIn.nextLine();
-			if (menuItemS.equals("1")) {
+			operationSelect = scanIn.nextLine();
+			if (operationSelect.equals("1")) {
 				engineManager.createCrudeLinks(ham);
 				
-			} else if (menuItemS.equals("2")) {
+			} else if (operationSelect.equals("2")) {
 				Title title = new Title();
 				System.out.println("Baþlýðý giriniz");
 				title.setName(scanIn.nextLine());
@@ -55,7 +54,7 @@ public class Main {
 				} else {
 					System.err.println("Ýþlem sýrasýnda kritik bir hata oluþtu!");
 				}
-			} else if (menuItemS.equals("3")) {
+			} else if (operationSelect.equals("3")) {
 				List<Title> titleList = titleManager.getAllTitles();
 				if(titleList != null && titleList.size() > 0) {					
 					for (Title t : titleList) {
@@ -72,7 +71,7 @@ public class Main {
 				} else {
 					System.err.println("Hiç baþlýk bulunamadý!");
 				}
-			} else if (menuItemS.equals("4")) {
+			} else if (operationSelect.equals("4")) {
 				User user = new User();
 				System.out.println("Ýsim giriniz");
 				user.setName(scanIn.nextLine());
@@ -86,7 +85,7 @@ public class Main {
 				} else {
 					System.err.println("Ýþlem sýrasýnda kritik bir hata oluþtu!");
 				}
-			} else if (menuItemS.equals("5")) {
+			} else if (operationSelect.equals("5")) {
 				List<User> userList = userManager.getAllUsers();
 				if (userList != null && userList.size() > 0) {
 					for (User u : userList) {
@@ -102,25 +101,27 @@ public class Main {
 				else {
 					System.err.println("Hiç kullanýcý bulunamadý!");
 				}
-			} else if (menuItemS.equals("6")) {
+			} else if (operationSelect.equals("6")) {
 				engineManager.getLinksFromMainPage(url);
-			} else if (menuItemS.equals("7")) {
+			} else if (operationSelect.equals("7")) {
 				engineManager.getDocumentWithjSoup(url, dir);
-			} else if (menuItemS.equals("8")) {
+			} else if (operationSelect.equals("8")) {
 				engineManager.findDuplicateTitlesAndMerge();
-			} else if (menuItemS.equals("9")) {
+			} else if (operationSelect.equals("9")) {
 				System.out.println("Hesaplanmasýný istediðiniz entry sayýsýný giriniz : ");
 				int parameterForEntryCount = scanIn.nextInt();
 				engineManager.createCoOccurenceMatrix(parameterForEntryCount);
-			} else if (menuItemS.equals("10")) {
+			} else if (operationSelect.equals("10")) {
 				engineManager.writeAllEntriesToDocument();
-			} else if (menuItemS.equals("11")) {
+			} else if (operationSelect.equals("11")) {
 				System.out.println("Çekilmesini istediðiniz entry sayýsýný giriniz : ");
 				int parameterForEntryCount = scanIn.nextInt();
 				engineManager.writeSpecificEntryCountToDocument(parameterForEntryCount);
 			}
 			
-		} while(!menuItemS.equals("0"));
+		} while(!operationSelect.equals("0"));
+		
+		scanIn.close();
 
 	}	
 }
