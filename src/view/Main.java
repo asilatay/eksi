@@ -117,7 +117,7 @@ public class Main extends JFrame{
 		button6.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				engineManager.createCoOccurenceMatrix(Integer.parseInt(parameterTextArea.getText()));
+				engineManager.coOccurenceMatrixWithEntryObjectAndReturnWindowSizeOLD(Integer.parseInt(parameterTextArea.getText()));
 			}
 		});
 		button6.setBounds(450, 450, 400, 200);

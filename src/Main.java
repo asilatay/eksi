@@ -110,7 +110,7 @@ public class Main {
 			} else if (operationSelect.equals("9")) {
 				System.out.println("Hesaplanmasýný istediðiniz entry sayýsýný giriniz : ");
 				int parameterForEntryCount = scanIn.nextInt();
-				engineManager.createCoOccurenceMatrix(parameterForEntryCount);
+				engineManager.coOccurenceMatrixWithEntryObjectAndReturnWindowSizeOLD(parameterForEntryCount);
 			} else if (operationSelect.equals("10")) {
 				engineManager.writeAllEntriesToDocument();
 			} else if (operationSelect.equals("11")) {

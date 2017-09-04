@@ -1,6 +1,6 @@
 package model;
 
-public class KeyIndex {
+public class KeyIndexOld {
 
 	public Object row;
 	
@@ -10,7 +10,7 @@ public class KeyIndex {
 	
 	public String columnWord;
 
-	public KeyIndex(Object row, Object column, String rowWord, String columnWord){
+	public KeyIndexOld(Object row, Object column, String rowWord, String columnWord){
 		this.row = row;
 		this.column = column;
 		this.rowWord = rowWord;
@@ -68,7 +68,7 @@ public class KeyIndex {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		KeyIndex other = (KeyIndex) obj;
+		KeyIndexOld other = (KeyIndexOld) obj;
 		if (column == null) {
 			if (other.column != null)
 				return false;

@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -32,9 +33,11 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import model.Entry;
-import model.KeyIndex;
+import model.KeyIndexOld;
+import model.PMIValueIndexes;
 import model.Title;
 import model.User;
+import model.WordIndex;
 
 public class EngineManagerImpl implements EngineManager {
 	
@@ -43,6 +46,8 @@ public class EngineManagerImpl implements EngineManager {
 	EntryManager entryManager = new EntryManagerImpl();
 	
 	private final static int turningNumber = 15;
+	
+	private final static int turningNumberForNewCoOccurence = 5;
 	
 	public EngineManagerImpl() {
 	}
@@ -325,9 +330,10 @@ public class EngineManagerImpl implements EngineManager {
 	/**
 	 * @param parameterForEntryCount = 0 ise tüm entryler üzerinden iþlem yapýlýr
 	 * CoOccurence matrix için gerekli hesaplamalarý yaparak çýktý üreten metoddur.
+	 * Bu metod eski modellerle üretilmiþ bir metoddur ve geçmiþ görülsün diye tutuluyor
 	 */
 	@Override
-	public void createCoOccurenceMatrix(int parameterForEntryCount) {
+	public void coOccurenceMatrixWithEntryObjectAndReturnWindowSizeOLD(int parameterForEntryCount) {
 		System.out.println("Co-Occurence matrix operation is just started!");
 		List<Entry> activeEntryList = entryManager.getAllEntriesOrderByDate();
 		if (activeEntryList != null && activeEntryList.size() > 0) {
@@ -355,7 +361,7 @@ public class EngineManagerImpl implements EngineManager {
 				retList = splittedEntryDescription(retList, activeEntryList.get(i).getDescription());
 			}
 			//Benim çözümüm(KeyIndex)
-			Map<KeyIndex, Integer> matrixData = new  HashMap<KeyIndex, Integer>();
+			Map<KeyIndexOld, Integer> matrixData = new  HashMap<KeyIndexOld, Integer>();
 			System.out.println("KeyIndex çözümü baþladý!");
 			for (int i = 0; i < retList.size(); i++) {
 				int countBack = i - 1;
@@ -365,8 +371,8 @@ public class EngineManagerImpl implements EngineManager {
 				for (int j = 0; j < turningNumber; j++) {
 					if (countBack > -1) {
 						int numberOfCellForAlternativeWord = ranking.get(retList.get(countBack));
-						KeyIndex ind = new KeyIndex(numberOfCellForPivotWord, numberOfCellForAlternativeWord, pivotWord, retList.get(countBack));
-						KeyIndex symIndex = new KeyIndex(numberOfCellForAlternativeWord, numberOfCellForPivotWord, retList.get(countBack), pivotWord);
+						KeyIndexOld ind = new KeyIndexOld(numberOfCellForPivotWord, numberOfCellForAlternativeWord, pivotWord, retList.get(countBack));
+						KeyIndexOld symIndex = new KeyIndexOld(numberOfCellForAlternativeWord, numberOfCellForPivotWord, retList.get(countBack), pivotWord);
 						if(matrixData.get(ind) == null && matrixData.get(symIndex) == null){
 							matrixData.put(ind, 1);
 						}
@@ -374,8 +380,8 @@ public class EngineManagerImpl implements EngineManager {
 					}
 					if (countGo < retList.size()) {
 						int numberOfCellForAlternativeWord = ranking.get(retList.get(countGo));
-						KeyIndex ind = new KeyIndex(numberOfCellForPivotWord, numberOfCellForAlternativeWord, pivotWord, retList.get(countGo));
-						KeyIndex symIndex = new KeyIndex(numberOfCellForAlternativeWord, numberOfCellForPivotWord, retList.get(countGo), pivotWord);
+						KeyIndexOld ind = new KeyIndexOld(numberOfCellForPivotWord, numberOfCellForAlternativeWord, pivotWord, retList.get(countGo));
+						KeyIndexOld symIndex = new KeyIndexOld(numberOfCellForAlternativeWord, numberOfCellForPivotWord, retList.get(countGo), pivotWord);
 						if(!matrixData.containsKey(ind) && !matrixData.containsKey(symIndex)){
 							matrixData.put(ind, 1);
 						}
@@ -394,20 +400,20 @@ public class EngineManagerImpl implements EngineManager {
 	 * @param forBigClam - BigClam algoritmasýna input olarak verilecekse true gönderilmelidir
 	 * BigClam algoritmasýnýn input unu oluþturan metoddur.
 	 */
-	private static void createTxtForBigCLAMFromMap(Map<KeyIndex, Integer> mapList, boolean forBigClam){
+	private static void createTxtForBigCLAMFromMap(Map<KeyIndexOld, Integer> mapList, boolean forBigClam){
 		try{
 			if (forBigClam) {				
 				BufferedWriter out = new BufferedWriter(new FileWriter("forBigClam.txt"));
-				for(Map.Entry<KeyIndex,Integer>  entrySet  : mapList.entrySet()){
-					KeyIndex ind = entrySet.getKey();
+				for(Map.Entry<KeyIndexOld,Integer>  entrySet  : mapList.entrySet()){
+					KeyIndexOld ind = entrySet.getKey();
 					out.write(ind.getRow()+"	"+ ind.getColumn()+"\r\n");
 				}
 				out.close();
 				System.out.println("TXT oluþturuldu.!");
 			} else {
 				BufferedWriter out = new BufferedWriter(new FileWriter("neigbors.txt"));
-				for(Map.Entry<KeyIndex,Integer>  entrySet  : mapList.entrySet()){
-					KeyIndex ind = entrySet.getKey();
+				for(Map.Entry<KeyIndexOld,Integer>  entrySet  : mapList.entrySet()){
+					KeyIndexOld ind = entrySet.getKey();
 					out.write(ind.getRow()+"	"+"["+ind.getRowWord()+"]"+"     "+ ind.getColumn()+"["+ ind.getColumnWord()+"]"+"\r\n");
 				}
 				out.close();
@@ -578,5 +584,115 @@ public class EngineManagerImpl implements EngineManager {
 				e.printStackTrace();
 			}
 		}
+	}
+	
+	@Override
+	public void createCoOccurenceMatrix(String readTextPath) {
+		System.out.println("Co-Occurence matrix operation is just started!");
+		List<String> readFromTxtEntries = readFromTxt(readTextPath);
+		if (readFromTxtEntries == null || readFromTxtEntries.size() <= 0) {
+			System.err.println("Okunmaya çalýþýlan dosya boþ veya okuma iþlemi sýrasýnda hata alýndý.");
+			System.err.println("Program kapatýlýyor.");
+			System.exit(0);
+		}
+		List<WordIndex> wordsOccured = getWordIndexList(readFromTxtEntries);
+		createOutputForWordsOccured(wordsOccured);
+		
+		Map<String, Integer> ranking = new HashMap<String, Integer>();
+		for (WordIndex w : wordsOccured) {
+			ranking.put(w.getWord(), w.getIndex());
+		}
+		
+		List<String> splittedEntries = new ArrayList<String> ();
+		for (String s : readFromTxtEntries) {				
+			splittedEntries = splittedEntryDescription(splittedEntries, s);
+		}
+		Map<PMIValueIndexes, Integer> matrixData = new  HashMap<PMIValueIndexes, Integer>();
+		System.out.println("PMI Value Indexes çözümü baþladý!");
+		for (int i = 0; i < splittedEntries.size(); i++) {
+			int countGo = i + 1;
+			int numberOfCellForPivotWord = ranking.get(splittedEntries.get(i));
+			for (int j = 0; j < turningNumberForNewCoOccurence; j++) {
+				if (countGo < splittedEntries.size()) {
+					int numberOfCellForAlternativeWord = ranking.get(splittedEntries.get(countGo));
+					PMIValueIndexes ind = new PMIValueIndexes(numberOfCellForPivotWord, numberOfCellForAlternativeWord, BigDecimal.ZERO);
+					PMIValueIndexes symIndex = new PMIValueIndexes(numberOfCellForAlternativeWord, numberOfCellForPivotWord, BigDecimal.ZERO);
+					if(!matrixData.containsKey(ind) && !matrixData.containsKey(symIndex)){
+						matrixData.put(ind, 1);
+					} else {
+						matrixData.put(ind, matrixData.get(ind).intValue() + 1);
+					}
+					countGo++;
+				}
+			}
+		}
+		//Co occurence matrix oluþturma tamamlandý, PMI Deðerini hesaplayacaðýz.
+	}
+	
+	private List<String> readFromTxt(String readTextPath) {
+		try {
+			BufferedReader in = new BufferedReader(new FileReader("entries.txt"));
+			String line;
+			List<String> wordList = new ArrayList<String>();
+			while((line = in.readLine()) != null){
+				wordList.add(line);
+			}
+			in.close();
+			return wordList;
+		} catch (Exception e) {
+			System.err.println("TXT dosyasý okunurken kritik bir hata oluþtu.");
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	private List<WordIndex> getWordIndexList (List<String> readFromTxtEntries) {
+		//kelimelerin deðerleri hesaplanýyor.
+		Map<String, Integer> mostOccuredWords = new HashMap<String, Integer>();
+		for (String s : readFromTxtEntries) {
+			List<String> retList = new ArrayList<String>(); 
+			retList = splittedEntryDescription(retList, s);
+			for (int i=0; i<retList.size(); i++) {
+				if (mostOccuredWords != null && mostOccuredWords.size() > 0) {
+					if (mostOccuredWords.containsKey(retList.get(i))) {
+						mostOccuredWords.put(retList.get(i), mostOccuredWords.get(retList.get(i)) + 1);
+					} else {
+						mostOccuredWords.put(retList.get(i), 1);
+					}
+				} else {
+					mostOccuredWords.put(retList.get(i), 1);
+				}
+			}
+		}
+		//Hesaplama bitti sýralama yapýlýyor.
+		if (mostOccuredWords.size() > 0) {			
+			Map<String, Integer> orderedDESC = sortByValue(mostOccuredWords, false);
+			//Hesaplanan deðerler nesneye atýlýyor.
+			List<WordIndex> wordIndexList = new ArrayList<WordIndex>();
+			int count = 0;
+			for(Map.Entry<String,Integer>  entrySet  : orderedDESC.entrySet()){
+				WordIndex word = new WordIndex(count, entrySet.getKey(), new BigDecimal(entrySet.getValue()));
+				wordIndexList.add(word);
+				count++;
+			}
+			return wordIndexList;
+		} else {
+			System.err.println("Hesaplanacak MAP bulunamadý");
+		}
+		return null;
+	}
+	
+	private void createOutputForWordsOccured(List<WordIndex> wordIndexList) {
+		try {
+			 BufferedWriter out = new BufferedWriter(new FileWriter("wordIndexFrequency.txt"));
+			 for(WordIndex  word  : wordIndexList){
+				 out.write(word.getWord() +"	"+ word.getIndex()+"	"+word.getFrequency()+"\r\n");
+			 }
+			 out.close();
+			 System.out.println("TXT oluþturuldu.!");
+		}
+		catch (IOException e) {
+			System.err.println("TXT oluþturulurken hata oluþtu!");
+        }
 	}
 }
