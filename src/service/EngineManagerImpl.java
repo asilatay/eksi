@@ -599,8 +599,10 @@ public class EngineManagerImpl implements EngineManager {
 		createOutputForWordsOccured(wordsOccured);
 		
 		Map<String, Integer> ranking = new HashMap<String, Integer>();
+		Map<String, BigDecimal> wordFrequencyMap = new HashMap<String, BigDecimal>();
 		for (WordIndex w : wordsOccured) {
 			ranking.put(w.getWord(), w.getIndex());
+			wordFrequencyMap.put(w.getWord(), w.getFrequency());
 		}
 		
 		List<String> splittedEntries = new ArrayList<String> ();
@@ -627,6 +629,12 @@ public class EngineManagerImpl implements EngineManager {
 			}
 		}
 		//Co occurence matrix oluþturma tamamlandý, PMI Deðerini hesaplayacaðýz.
+		matrixData = calculateAndSetPMIValues(matrixData, wordFrequencyMap);
+		
+	}
+	
+	private Map<PMIValueIndexes, Integer> calculateAndSetPMIValues(Map <PMIValueIndexes, Integer> matrixData, Map<String, BigDecimal> wordFrequencyMap) {
+		return null;
 	}
 	
 	private List<String> readFromTxt(String readTextPath) {

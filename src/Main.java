@@ -21,6 +21,7 @@ public class Main {
 		UserManager userManager = new UserManagerImpl();
 		String dir = "C:\\webharvest\\KAYDET\\";
 		String ham = "C:\\webharvest\\HAM\\";
+		final String fileReadingPath = "C:\\Users\\ASIL\\git\\eksiGit\\entries.txt";
 		String operationSelect ="-1";
 		System.out.println("GitHub Entegrasyonu OK!");
 		Scanner scanIn = new Scanner(System.in);		
@@ -34,9 +35,10 @@ public class Main {
 			System.out.println("Bugünün popüler linklerini kaydet -> Press 6");
 			System.out.println("Local linkleri ayrýþtýr           -> Press 7");
 			System.out.println("Baþlýklarý birleþtir              -> Press 8");
-			System.out.println("Co-Occurence Matrix               -> Press 9");
+			System.out.println("Co-Occurence Matrix(ESKÝ)         -> Press 9");
 			System.out.println("Tüm Entry leri Dýþa Aktar         -> Press 10");
 			System.out.println("Parametrik Entry Dýþa Aktarým     -> Press 11");
+			System.out.println("Co-Occurence Matrix (YENÝ - FÝLE) -> Press 12");
 			operationSelect = scanIn.nextLine();
 			if (operationSelect.equals("1")) {
 				engineManager.createCrudeLinks(ham);
@@ -117,6 +119,8 @@ public class Main {
 				System.out.println("Çekilmesini istediðiniz entry sayýsýný giriniz : ");
 				int parameterForEntryCount = scanIn.nextInt();
 				engineManager.writeSpecificEntryCountToDocument(parameterForEntryCount);
+			} else if (operationSelect.equals("12")) {
+				engineManager.createCoOccurenceMatrix(fileReadingPath);
 			}
 			
 		} while(!operationSelect.equals("0"));
