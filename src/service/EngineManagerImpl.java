@@ -9,6 +9,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -599,17 +600,17 @@ public class EngineManagerImpl implements EngineManager {
 		createOutputForWordsOccured(wordsOccured);
 		
 		Map<String, Integer> ranking = new HashMap<String, Integer>();
-		Map<String, BigDecimal> wordFrequencyMap = new HashMap<String, BigDecimal>();
+		Map<Integer, BigDecimal> wordFrequencyMap = new HashMap<Integer, BigDecimal>();
 		for (WordIndex w : wordsOccured) {
 			ranking.put(w.getWord(), w.getIndex());
-			wordFrequencyMap.put(w.getWord(), w.getFrequency());
+			wordFrequencyMap.put(w.getIndex(), w.getFrequency());
 		}
 		
 		List<String> splittedEntries = new ArrayList<String> ();
 		for (String s : readFromTxtEntries) {				
 			splittedEntries = splittedEntryDescription(splittedEntries, s);
 		}
-		Map<PMIValueIndexes, Integer> matrixData = new  HashMap<PMIValueIndexes, Integer>();
+		Map<PMIValueIndexes, BigDecimal> matrixData = new  HashMap<PMIValueIndexes, BigDecimal>();
 		System.out.println("PMI Value Indexes çözümü baþladý!");
 		for (int i = 0; i < splittedEntries.size(); i++) {
 			int countGo = i + 1;
@@ -619,10 +620,14 @@ public class EngineManagerImpl implements EngineManager {
 					int numberOfCellForAlternativeWord = ranking.get(splittedEntries.get(countGo));
 					PMIValueIndexes ind = new PMIValueIndexes(numberOfCellForPivotWord, numberOfCellForAlternativeWord, BigDecimal.ZERO);
 					PMIValueIndexes symIndex = new PMIValueIndexes(numberOfCellForAlternativeWord, numberOfCellForPivotWord, BigDecimal.ZERO);
-					if(!matrixData.containsKey(ind) && !matrixData.containsKey(symIndex)){
-						matrixData.put(ind, 1);
+					if(!matrixData.containsKey(ind)){
+						if (!matrixData.containsKey(symIndex)) {							
+							matrixData.put(ind, BigDecimal.ONE);
+						} else {
+							matrixData.put(symIndex, matrixData.get(symIndex).add(BigDecimal.ONE));
+						}
 					} else {
-						matrixData.put(ind, matrixData.get(ind).intValue() + 1);
+						matrixData.put(ind, matrixData.get(ind).add(BigDecimal.ONE));
 					}
 					countGo++;
 				}
@@ -633,8 +638,20 @@ public class EngineManagerImpl implements EngineManager {
 		
 	}
 	
-	private Map<PMIValueIndexes, Integer> calculateAndSetPMIValues(Map <PMIValueIndexes, Integer> matrixData, Map<String, BigDecimal> wordFrequencyMap) {
-		return null;
+	private Map<PMIValueIndexes, BigDecimal> calculateAndSetPMIValues(Map <PMIValueIndexes, BigDecimal> matrixData, Map<Integer, BigDecimal> wordFrequencyMap) {
+		for (Map.Entry<PMIValueIndexes, BigDecimal> data : matrixData.entrySet()) {
+			BigDecimal probW1AndW2 = data.getValue();
+			
+			PMIValueIndexes valueObject = data.getKey();
+			BigDecimal frequencyIndex1 = wordFrequencyMap.get(valueObject.getIndex1());
+			BigDecimal frequencyIndex2 = wordFrequencyMap.get(valueObject.getIndex2());
+			
+			BigDecimal pmiValue = probW1AndW2.divide(frequencyIndex1.multiply(frequencyIndex2), RoundingMode.HALF_UP)
+					.setScale(2, RoundingMode.HALF_UP);
+			valueObject.setPmiValue(pmiValue);
+			
+		}
+		return matrixData;
 	}
 	
 	private List<String> readFromTxt(String readTextPath) {
