@@ -9,14 +9,17 @@ public class PMIValueIndexes {
 	
 	private BigDecimal pmiValue;
 	
+	private BigDecimal alternatePmiValue;
+	
 	public PMIValueIndexes() {
 		
 	}
 	
-	public PMIValueIndexes(int index1, int index2, BigDecimal pmiValue) {
+	public PMIValueIndexes(int index1, int index2, BigDecimal pmiValue, BigDecimal alternatePmiValue) {
 		this.index1 = index1;
 		this.index2 = index2;
 		this.pmiValue = pmiValue;
+		this.alternatePmiValue = alternatePmiValue;
 	}
 
 	public int getIndex1() {
@@ -43,10 +46,19 @@ public class PMIValueIndexes {
 		this.pmiValue = pmiValue;
 	}
 
+	public BigDecimal getAlternatePmiValue() {
+		return alternatePmiValue;
+	}
+
+	public void setAlternatePmiValue(BigDecimal alternatePmiValue) {
+		this.alternatePmiValue = alternatePmiValue;
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
+		result = prime * result + ((alternatePmiValue == null) ? 0 : alternatePmiValue.hashCode());
 		result = prime * result + index1;
 		result = prime * result + index2;
 		result = prime * result + ((pmiValue == null) ? 0 : pmiValue.hashCode());
@@ -62,6 +74,11 @@ public class PMIValueIndexes {
 		if (getClass() != obj.getClass())
 			return false;
 		PMIValueIndexes other = (PMIValueIndexes) obj;
+		if (alternatePmiValue == null) {
+			if (other.alternatePmiValue != null)
+				return false;
+		} else if (!alternatePmiValue.equals(other.alternatePmiValue))
+			return false;
 		if (index1 != other.index1)
 			return false;
 		if (index2 != other.index2)
@@ -76,7 +93,8 @@ public class PMIValueIndexes {
 
 	@Override
 	public String toString() {
-		return "PMIValueIndexes [index1=" + index1 + ", index2=" + index2 + ", pmiValue=" + pmiValue + "]";
+		return "PMIValueIndexes [index1=" + index1 + ", index2=" + index2 + ", pmiValue=" + pmiValue
+				+ ", alternatePmiValue=" + alternatePmiValue + "]";
 	}
 
 	

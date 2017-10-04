@@ -618,8 +618,8 @@ public class EngineManagerImpl implements EngineManager {
 			for (int j = 0; j < turningNumberForNewCoOccurence; j++) {
 				if (countGo < splittedEntries.size()) {
 					int numberOfCellForAlternativeWord = ranking.get(splittedEntries.get(countGo));
-					PMIValueIndexes ind = new PMIValueIndexes(numberOfCellForPivotWord, numberOfCellForAlternativeWord, BigDecimal.ZERO);
-					PMIValueIndexes symIndex = new PMIValueIndexes(numberOfCellForAlternativeWord, numberOfCellForPivotWord, BigDecimal.ZERO);
+					PMIValueIndexes ind = new PMIValueIndexes(numberOfCellForPivotWord, numberOfCellForAlternativeWord, BigDecimal.ZERO, BigDecimal.ZERO);
+					PMIValueIndexes symIndex = new PMIValueIndexes(numberOfCellForAlternativeWord, numberOfCellForPivotWord, BigDecimal.ZERO, BigDecimal.ZERO);
 					if(!matrixData.containsKey(ind)){
 						if (!matrixData.containsKey(symIndex)) {							
 							matrixData.put(ind, BigDecimal.ONE);
@@ -635,7 +635,12 @@ public class EngineManagerImpl implements EngineManager {
 		}
 		//Co occurence matrix oluþturma tamamlandý, PMI Deðerini hesaplayacaðýz.
 		matrixData = calculateAndSetPMIValues(matrixData, wordFrequencyMap);
-		
+		matrixData = calculateAndSetAlternatePMIValues (matrixData, wordFrequencyMap);
+		//Matrix de 2 farklý row un benzerliði hesaplanmak istendiðinde uzunluklarý eþit olmalý
+		// Bu nedenle mesela index1 = 20 ve index2 = 3 için matrix data da bir kayýt yoksa,
+		// bu kayýt yaratýlýp deðeri 0 yazýlmalýdýr. PMI Value deðerini de 0 ata.
+		// Bu noktada bu iþ yapýlmalý
+		Map<PMIValueIndexes, BigDecimal> filledMatrix = fillMissingMatrixCell(matrixData);
 	}
 	
 	private Map<PMIValueIndexes, BigDecimal> calculateAndSetPMIValues(Map <PMIValueIndexes, BigDecimal> matrixData, Map<Integer, BigDecimal> wordFrequencyMap) {
@@ -647,11 +652,31 @@ public class EngineManagerImpl implements EngineManager {
 			BigDecimal frequencyIndex2 = wordFrequencyMap.get(valueObject.getIndex2());
 			
 			BigDecimal pmiValue = probW1AndW2.divide(frequencyIndex1.multiply(frequencyIndex2), RoundingMode.HALF_UP)
-					.setScale(2, RoundingMode.HALF_UP);
+					.setScale(8, RoundingMode.HALF_UP);
+			// pmiValue deðerinin logaritmasýný alýp tekrar üstüne set et. (Logaritma 0 çýkacak senaryoya dikkat et)
+			// Çok küçük deðerlerin de hesaplanýyor olmasý gerekli 0 a yuvarlama
 			valueObject.setPmiValue(pmiValue);
 			
 		}
 		return matrixData;
+	}
+	
+	private Map<PMIValueIndexes, BigDecimal> calculateAndSetAlternatePMIValues (Map <PMIValueIndexes, BigDecimal> matrixData, Map<Integer, BigDecimal> wordFrequencyMap) {
+		for (Map.Entry<PMIValueIndexes, BigDecimal> data : matrixData.entrySet()) {
+			
+		}
+		return matrixData;
+	}
+	
+	private Map<PMIValueIndexes, BigDecimal> fillMissingMatrixCell (Map <PMIValueIndexes, BigDecimal> matrixData) {
+		Map<PMIValueIndexes, BigDecimal> filledMatrix = new HashMap<PMIValueIndexes, BigDecimal>();
+		int sizeOfMatrix = matrixData.size();
+		for (int i = 0; i < sizeOfMatrix; i++) {
+			for (int j = 0; j < sizeOfMatrix; j++) {
+				
+			}
+		}
+		return filledMatrix;
 	}
 	
 	private List<String> readFromTxt(String readTextPath) {
