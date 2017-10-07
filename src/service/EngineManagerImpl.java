@@ -9,6 +9,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.math.RoundingMode;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -620,27 +621,68 @@ public class EngineManagerImpl implements EngineManager {
 					int numberOfCellForAlternativeWord = ranking.get(splittedEntries.get(countGo));
 					PMIValueIndexes ind = new PMIValueIndexes(numberOfCellForPivotWord, numberOfCellForAlternativeWord, BigDecimal.ZERO, BigDecimal.ZERO);
 					PMIValueIndexes symIndex = new PMIValueIndexes(numberOfCellForAlternativeWord, numberOfCellForPivotWord, BigDecimal.ZERO, BigDecimal.ZERO);
-					if(!matrixData.containsKey(ind)){
-						if (!matrixData.containsKey(symIndex)) {							
-							matrixData.put(ind, BigDecimal.ONE);
-						} else {
+					if (matrixData.containsKey(ind)) {
+						matrixData.put(ind, matrixData.get(ind).add(BigDecimal.ONE));
+						if (matrixData.get(symIndex) != null) {							
 							matrixData.put(symIndex, matrixData.get(symIndex).add(BigDecimal.ONE));
+						} else {
+							matrixData.put(symIndex, BigDecimal.ONE);
+						}
+					} else if (matrixData.containsKey(symIndex)) {
+						matrixData.put(symIndex, matrixData.get(symIndex).add(BigDecimal.ONE));
+						if (matrixData.get(ind) != null) {							
+							matrixData.put(ind, matrixData.get(ind).add(BigDecimal.ONE));
+						} else {
+							matrixData.put(ind, BigDecimal.ONE);
 						}
 					} else {
-						matrixData.put(ind, matrixData.get(ind).add(BigDecimal.ONE));
+						matrixData.put(symIndex, BigDecimal.ONE);
+						matrixData.put(ind, BigDecimal.ONE);
 					}
+//					if(!matrixData.containsKey(ind)){
+//						if (!matrixData.containsKey(symIndex)) {							
+//							matrixData.put(ind, BigDecimal.ONE);
+//						} else {
+//							matrixData.put(symIndex, matrixData.get(symIndex).add(BigDecimal.ONE));
+//						}
+//					} else {
+//						matrixData.put(ind, matrixData.get(ind).add(BigDecimal.ONE));
+//						matrixData.put(ind, matrixData.get(symIndex).add(BigDecimal.ONE));
+//					}
 					countGo++;
 				}
 			}
 		}
 		//Co occurence matrix oluþturma tamamlandý, PMI Deðerini hesaplayacaðýz.
 		matrixData = calculateAndSetPMIValues(matrixData, wordFrequencyMap);
-		matrixData = calculateAndSetAlternatePMIValues (matrixData, wordFrequencyMap);
+		
+		Map<Integer, List<String>> mapOfIndexes = getMapOfIndexes(matrixData);
+		
+		// Alternate PMI deðerini hesaplayacaðýz.
+		matrixData = calculateAndSetAlternatePMIValues (matrixData, mapOfIndexes);
 		//Matrix de 2 farklý row un benzerliði hesaplanmak istendiðinde uzunluklarý eþit olmalý
 		// Bu nedenle mesela index1 = 20 ve index2 = 3 için matrix data da bir kayýt yoksa,
 		// bu kayýt yaratýlýp deðeri 0 yazýlmalýdýr. PMI Value deðerini de 0 ata.
 		// Bu noktada bu iþ yapýlmalý
 		Map<PMIValueIndexes, BigDecimal> filledMatrix = fillMissingMatrixCell(matrixData);
+	}
+	
+	private Map<Integer, List<String>> getMapOfIndexes (Map<PMIValueIndexes, BigDecimal> matrixData) {
+		Map<Integer, List<String>> returnData = new HashMap<Integer, List<String>>();
+		for (Map.Entry<PMIValueIndexes, BigDecimal> data : matrixData.entrySet()) {
+			PMIValueIndexes valueObject = data.getKey();
+			List<String> valueList = null;
+			if (returnData.containsKey(valueObject.getIndex1())) {
+				valueList = returnData.get(valueObject.getIndex1());
+				valueList.add(valueObject.getIndex2() + "-" + data.getValue());
+				returnData.put(valueObject.getIndex1(), valueList);
+			} else {
+				valueList = new ArrayList<String>();
+				valueList.add(valueObject.getIndex2() + "-" + data.getValue());
+				returnData.put(valueObject.getIndex1(), valueList);
+			}
+		}
+		return returnData;
 	}
 	
 	private Map<PMIValueIndexes, BigDecimal> calculateAndSetPMIValues(Map <PMIValueIndexes, BigDecimal> matrixData, Map<Integer, BigDecimal> wordFrequencyMap) {
@@ -651,19 +693,71 @@ public class EngineManagerImpl implements EngineManager {
 			BigDecimal frequencyIndex1 = wordFrequencyMap.get(valueObject.getIndex1());
 			BigDecimal frequencyIndex2 = wordFrequencyMap.get(valueObject.getIndex2());
 			
-			BigDecimal pmiValue = probW1AndW2.divide(frequencyIndex1.multiply(frequencyIndex2), RoundingMode.HALF_UP)
-					.setScale(8, RoundingMode.HALF_UP);
+			BigDecimal pmiValue = probW1AndW2.divide(frequencyIndex1.multiply(frequencyIndex2),10 ,RoundingMode.HALF_UP)
+					.setScale(10, RoundingMode.HALF_UP);
 			// pmiValue deðerinin logaritmasýný alýp tekrar üstüne set et. (Logaritma 0 çýkacak senaryoya dikkat et)
-			// Çok küçük deðerlerin de hesaplanýyor olmasý gerekli 0 a yuvarlama
 			valueObject.setPmiValue(pmiValue);
+			try {				
+				valueObject.setLogaritmicPmiValue(log10(valueObject.getPmiValue(), 10));
+			} catch (ArithmeticException e) {
+				// logaritma 0 geldiðinde exception fýrlatýlýp yakalandý ve bir deðer set edildi. Deðeri deðiþtirebiliriz.
+				valueObject.setLogaritmicPmiValue(new BigDecimal("999999"));
+			}
 			
 		}
 		return matrixData;
 	}
 	
-	private Map<PMIValueIndexes, BigDecimal> calculateAndSetAlternatePMIValues (Map <PMIValueIndexes, BigDecimal> matrixData, Map<Integer, BigDecimal> wordFrequencyMap) {
+	/*
+	 *  PMI (w, c) = log (((w,c)* D )/ w*c) formülünü açýklayacak olursak ;
+		index w = 2
+		index c = 3
+		(w,c) deðeri (2,3) cell inde yazan deðer
+		D deðeri birbirleriyle iliþki olan ikililerin toplam sayýsý (Þu andaki matrixData nýn size ý)
+		w deðeri 2.satýrdaki (2,3) dýþýndaki tüm deðerlerin toplamý
+		c deðeri 3.satýrdaki (3,2) dýþýndaki tüm deðerlerin toplamýdýr. 
+
+	 */	
+	private Map<PMIValueIndexes, BigDecimal> calculateAndSetAlternatePMIValues (Map <PMIValueIndexes, BigDecimal> matrixData
+			, Map<Integer, List<String>> mapOfIndexes) {
+		int D = matrixData.size();
 		for (Map.Entry<PMIValueIndexes, BigDecimal> data : matrixData.entrySet()) {
-			
+			PMIValueIndexes object = data.getKey();
+			BigDecimal probW1AndW2 = data.getValue(); // (w,c)
+			int index1W = object.getIndex1();
+			int index2C = object.getIndex2();
+			List <String> valueList1 = mapOfIndexes.get(index1W);
+			BigDecimal w = BigDecimal.ZERO;
+			if (!valueList1.isEmpty()) {
+				for (String s : valueList1) {
+					String [] arr = s.split("-");
+					if (arr.length == 2 && Integer.parseInt(arr[0]) != index2C) {
+						w = w.add( new BigDecimal(arr[1]));
+					}
+				}
+			}
+			BigDecimal c = BigDecimal.ZERO;
+			List <String> valueList2 = mapOfIndexes.get(index2C);
+			if (!valueList2.isEmpty()) {
+				for (String s : valueList2) {
+					String [] arr = s.split("-");
+					if (arr.length == 2 && Integer.parseInt(arr[0]) != index1W) {
+						c = c.add(new BigDecimal(arr[1]));
+					}
+				}
+			}
+			//TOP (w,c) * D
+			BigDecimal top = probW1AndW2.multiply(new BigDecimal(D));
+			//BOTTOM w*c
+			BigDecimal bottom = w.multiply(c);
+			//TOTAL
+			BigDecimal total = top.divide(bottom, 10, RoundingMode.HALF_UP);
+			object.setAlternatePmiValue(total);
+			try {
+				object.setLogarithmicAlternatePmiValue(log10(object.getAlternatePmiValue(), 10));
+			} catch (ArithmeticException ex) {
+				object.setLogarithmicAlternatePmiValue(new BigDecimal("999999"));
+			}
 		}
 		return matrixData;
 	}
@@ -745,4 +839,48 @@ public class EngineManagerImpl implements EngineManager {
 			System.err.println("TXT oluþturulurken hata oluþtu!");
         }
 	}
+	
+	private BigDecimal log10(BigDecimal b, int dp)
+	{
+	    final int NUM_OF_DIGITS = dp+2; // need to add one to get the right number of dp
+	                                    //  and then add one again to get the next number
+	                                    //  so I can round it correctly.
+
+	    MathContext mc = new MathContext(NUM_OF_DIGITS, RoundingMode.HALF_EVEN);
+
+	    //special conditions:
+	    // log(-x) -> exception
+	    // log(1) == 0 exactly;
+	    // log of a number lessthan one = -log(1/x)
+	    if(b.signum() <= 0)
+	        throw new ArithmeticException("log of a negative number! (or zero)");
+	    else if(b.compareTo(BigDecimal.ONE) == 0)
+	        return BigDecimal.ZERO;
+	    else if(b.compareTo(BigDecimal.ONE) < 0)
+	        return (log10((BigDecimal.ONE).divide(b,mc),dp)).negate();
+
+	    StringBuffer sb = new StringBuffer();
+	    //number of digits on the left of the decimal point
+	    int leftDigits = b.precision() - b.scale();
+
+	    //so, the first digits of the log10 are:
+	    sb.append(leftDigits - 1).append(".");
+
+	    //this is the algorithm outlined in the webpage
+	    int n = 0;
+	    while(n < NUM_OF_DIGITS)
+	    {
+	        b = (b.movePointLeft(leftDigits - 1)).pow(10, mc);
+	        leftDigits = b.precision() - b.scale();
+	        sb.append(leftDigits - 1);
+	        n++;
+	    }
+
+	    BigDecimal ans = new BigDecimal(sb.toString());
+
+	    //Round the number to the correct number of decimal places.
+	    ans = ans.round(new MathContext(ans.precision() - ans.scale() + dp, RoundingMode.HALF_EVEN));
+	    return ans;
+	}
+
 }

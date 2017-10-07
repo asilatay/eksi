@@ -9,7 +9,11 @@ public class PMIValueIndexes {
 	
 	private BigDecimal pmiValue;
 	
+	private BigDecimal logaritmicPmiValue;
+	
 	private BigDecimal alternatePmiValue;
+	
+	private BigDecimal logarithmicAlternatePmiValue;
 	
 	public PMIValueIndexes() {
 		
@@ -54,6 +58,22 @@ public class PMIValueIndexes {
 		this.alternatePmiValue = alternatePmiValue;
 	}
 
+	public BigDecimal getLogaritmicPmiValue() {
+		return logaritmicPmiValue;
+	}
+
+	public void setLogaritmicPmiValue(BigDecimal logaritmicPmiValue) {
+		this.logaritmicPmiValue = logaritmicPmiValue;
+	}
+
+	public BigDecimal getLogarithmicAlternatePmiValue() {
+		return logarithmicAlternatePmiValue;
+	}
+
+	public void setLogarithmicAlternatePmiValue(BigDecimal logarithmicAlternatePmiValue) {
+		this.logarithmicAlternatePmiValue = logarithmicAlternatePmiValue;
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -61,6 +81,9 @@ public class PMIValueIndexes {
 		result = prime * result + ((alternatePmiValue == null) ? 0 : alternatePmiValue.hashCode());
 		result = prime * result + index1;
 		result = prime * result + index2;
+		result = prime * result
+				+ ((logarithmicAlternatePmiValue == null) ? 0 : logarithmicAlternatePmiValue.hashCode());
+		result = prime * result + ((logaritmicPmiValue == null) ? 0 : logaritmicPmiValue.hashCode());
 		result = prime * result + ((pmiValue == null) ? 0 : pmiValue.hashCode());
 		return result;
 	}
@@ -83,6 +106,16 @@ public class PMIValueIndexes {
 			return false;
 		if (index2 != other.index2)
 			return false;
+		if (logarithmicAlternatePmiValue == null) {
+			if (other.logarithmicAlternatePmiValue != null)
+				return false;
+		} else if (!logarithmicAlternatePmiValue.equals(other.logarithmicAlternatePmiValue))
+			return false;
+		if (logaritmicPmiValue == null) {
+			if (other.logaritmicPmiValue != null)
+				return false;
+		} else if (!logaritmicPmiValue.equals(other.logaritmicPmiValue))
+			return false;
 		if (pmiValue == null) {
 			if (other.pmiValue != null)
 				return false;
@@ -94,7 +127,8 @@ public class PMIValueIndexes {
 	@Override
 	public String toString() {
 		return "PMIValueIndexes [index1=" + index1 + ", index2=" + index2 + ", pmiValue=" + pmiValue
-				+ ", alternatePmiValue=" + alternatePmiValue + "]";
+				+ ", logaritmicPmiValue=" + logaritmicPmiValue + ", alternatePmiValue=" + alternatePmiValue
+				+ ", logarithmicAlternatePmiValue=" + logarithmicAlternatePmiValue + "]";
 	}
 
 	
