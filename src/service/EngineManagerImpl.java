@@ -664,7 +664,8 @@ public class EngineManagerImpl implements EngineManager {
 		// Bu nedenle mesela index1 = 20 ve index2 = 3 için matrix data da bir kayýt yoksa,
 		// bu kayýt yaratýlýp deðeri 0 yazýlmalýdýr. PMI Value deðerini de 0 ata.
 		// Bu noktada bu iþ yapýlmalý
-		Map<PMIValueIndexes, BigDecimal> filledMatrix = fillMissingMatrixCell(matrixData);
+		Map<PMIValueIndexes, BigDecimal> clonedMatrixData = matrixData;
+		Map<PMIValueIndexes, BigDecimal> filledMatrix = fillMissingMatrixCell(matrixData, mapOfIndexes, splittedEntries.size());
 	}
 	
 	private Map<Integer, List<String>> getMapOfIndexes (Map<PMIValueIndexes, BigDecimal> matrixData) {
@@ -762,15 +763,53 @@ public class EngineManagerImpl implements EngineManager {
 		return matrixData;
 	}
 	
-	private Map<PMIValueIndexes, BigDecimal> fillMissingMatrixCell (Map <PMIValueIndexes, BigDecimal> matrixData) {
-		Map<PMIValueIndexes, BigDecimal> filledMatrix = new HashMap<PMIValueIndexes, BigDecimal>();
-		int sizeOfMatrix = matrixData.size();
-		for (int i = 0; i < sizeOfMatrix; i++) {
-			for (int j = 0; j < sizeOfMatrix; j++) {
-				
+	private Map<PMIValueIndexes, BigDecimal> fillMissingMatrixCell (Map <PMIValueIndexes, BigDecimal> matrixData 
+			,Map<Integer, List<String>> mapOfIndexes, int totalSize) {
+		Map<Integer, Integer> indexSizeMap = new HashMap<Integer, Integer>();
+		for (Map.Entry<PMIValueIndexes, BigDecimal> data : matrixData.entrySet()) {
+			PMIValueIndexes value = data.getKey();
+			int index1 = value.getIndex1();
+			if (indexSizeMap.containsKey(index1)) {
+				continue;
+			} else {
+				List<String> valueableIndexes  = mapOfIndexes.get(index1);
+				if (!valueableIndexes.isEmpty()) {				
+					List<Integer> indexes = new ArrayList<Integer>();
+					for (String s : valueableIndexes) {
+						String [] arr = s.split("-");
+						if (arr.length == 2) {
+							indexes.add(Integer.parseInt(arr[0]));
+						}
+					}
+					for (int i = 0; i < totalSize; i++) {
+						boolean found = false;
+						for (Integer ind : indexes) {
+							if (ind == i) {
+								found = true;
+								break;
+							}
+						}
+						if (!found) {
+							PMIValueIndexes newIndex = new PMIValueIndexes();
+							newIndex.setIndex1(index1);
+							newIndex.setIndex2(i);
+							newIndex.setPmiValue(BigDecimal.ZERO);
+							newIndex.setLogaritmicPmiValue(new BigDecimal("999999"));
+							newIndex.setAlternatePmiValue(BigDecimal.ZERO);
+							newIndex.setLogarithmicAlternatePmiValue(new BigDecimal("999999"));
+							matrixData.put(newIndex, BigDecimal.ZERO);
+						}
+						if (indexSizeMap.containsKey(index1)) {
+							indexSizeMap.put(index1, indexSizeMap.get(index1) + 1);
+						} else {
+							indexSizeMap.put(index1, 1);
+						}
+					}
+				}
 			}
+
 		}
-		return filledMatrix;
+		return matrixData;
 	}
 	
 	private List<String> readFromTxt(String readTextPath) {
