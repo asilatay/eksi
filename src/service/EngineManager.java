@@ -4,25 +4,10 @@ import java.util.List;
 
 public interface EngineManager {
 
-	void createCrudeLinks(String dir);
-	
-	void createTxtForLink(List<String> linkList, String titleOfFile);
-	
-	void getDocumentWithjSoup(String url, String dir);
-	
-	void getLinksFromMainPage(String url);
-	
-	void removeZeroCountTitles();
-	
-	void findDuplicateTitlesAndMerge();
 	
 	void coOccurenceMatrixWithEntryObjectAndReturnWindowSizeOLD(int parameterForEntryCount);
 	
 	List<String> splittedEntryDescription(List<String>retList,String  entryDescription);
-	
-	void writeAllEntriesToDocument();
-	
-	void writeSpecificEntryCountToDocument(int entryCount);
 	
 	void createCoOccurenceMatrix(String readTextPath);
 	

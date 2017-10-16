@@ -4,8 +4,12 @@ import java.util.Scanner;
 
 import model.Title;
 import model.User;
+import service.CrawlerManager;
+import service.CrawlerManagerImpl;
 import service.EngineManager;
 import service.EngineManagerImpl;
+import service.ExportManager;
+import service.ExportManagerImpl;
 import service.TitleManager;
 import service.TitleManagerImpl;
 import service.UserManager;
@@ -17,8 +21,15 @@ public class Main {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		EngineManager engineManager = new EngineManagerImpl();
+		
 		TitleManager titleManager = new TitleManagerImpl();
+		
 		UserManager userManager = new UserManagerImpl();
+		
+		CrawlerManager crawlerManager = new CrawlerManagerImpl();
+		
+		ExportManager exportManager = new ExportManagerImpl();
+		
 		String dir = "C:\\webharvest\\KAYDET\\";
 		String ham = "C:\\webharvest\\HAM\\";
 		final String fileReadingPath = "C:\\Users\\ASIL\\git\\eksiGit\\entries.txt";
@@ -41,7 +52,7 @@ public class Main {
 			System.out.println("Co-Occurence Matrix (YENÝ - FÝLE) -> Press 12");
 			operationSelect = scanIn.nextLine();
 			if (operationSelect.equals("1")) {
-				engineManager.createCrudeLinks(ham);
+				crawlerManager.createCrudeLinks(ham);
 				
 			} else if (operationSelect.equals("2")) {
 				Title title = new Title();
@@ -104,21 +115,21 @@ public class Main {
 					System.err.println("Hiç kullanýcý bulunamadý!");
 				}
 			} else if (operationSelect.equals("6")) {
-				engineManager.getLinksFromMainPage(url);
+				crawlerManager.getLinksFromMainPage(url);
 			} else if (operationSelect.equals("7")) {
-				engineManager.getDocumentWithjSoup(url, dir);
+				crawlerManager.getDocumentWithjSoup(url, dir);
 			} else if (operationSelect.equals("8")) {
-				engineManager.findDuplicateTitlesAndMerge();
+				crawlerManager.findDuplicateTitlesAndMerge();
 			} else if (operationSelect.equals("9")) {
 				System.out.println("Hesaplanmasýný istediðiniz entry sayýsýný giriniz : ");
 				int parameterForEntryCount = scanIn.nextInt();
 				engineManager.coOccurenceMatrixWithEntryObjectAndReturnWindowSizeOLD(parameterForEntryCount);
 			} else if (operationSelect.equals("10")) {
-				engineManager.writeAllEntriesToDocument();
+				exportManager.writeAllEntriesToDocument();
 			} else if (operationSelect.equals("11")) {
 				System.out.println("Çekilmesini istediðiniz entry sayýsýný giriniz : ");
 				int parameterForEntryCount = scanIn.nextInt();
-				engineManager.writeSpecificEntryCountToDocument(parameterForEntryCount);
+				exportManager.writeSpecificEntryCountToDocument(parameterForEntryCount);
 			} else if (operationSelect.equals("12")) {
 				engineManager.createCoOccurenceMatrix(fileReadingPath);
 			}

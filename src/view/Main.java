@@ -1,21 +1,19 @@
 package view;
 
-import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 
+import service.CrawlerManager;
+import service.CrawlerManagerImpl;
 import service.EngineManager;
 import service.EngineManagerImpl;
-import service.TitleManager;
-import service.TitleManagerImpl;
-import service.UserManager;
-import service.UserManagerImpl;
+import service.ExportManager;
+import service.ExportManagerImpl;
 
 public class Main extends JFrame{
 	private static final long serialVersionUID = 5375171468886679796L;
@@ -32,8 +30,10 @@ public class Main extends JFrame{
 	
 	public static void createMainMenu() {
 		EngineManager engineManager = new EngineManagerImpl();
-		TitleManager titleManager = new TitleManagerImpl();
-		UserManager userManager = new UserManagerImpl();
+		
+		CrawlerManager crawlerManager = new CrawlerManagerImpl();
+		
+		ExportManager exportManager = new ExportManagerImpl();
 		
 		JFrame frame = new JFrame(mainJFrameTitle);
 		JPanel panel = new JPanel();
@@ -56,7 +56,7 @@ public class Main extends JFrame{
 		button1.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				engineManager.createCrudeLinks(crudeLinkURL);
+				crawlerManager.createCrudeLinks(crudeLinkURL);
 			}
 		});
 		button1.setBounds(10, 10, 150, 200);
@@ -67,7 +67,7 @@ public class Main extends JFrame{
 		button2.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				engineManager.getLinksFromMainPage(eksiurl);
+				crawlerManager.getLinksFromMainPage(eksiurl);
 			}
 		});
 		button2.setBounds(180, 10, 200, 200);
@@ -78,7 +78,7 @@ public class Main extends JFrame{
 		button3.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				engineManager.getDocumentWithjSoup(eksiurl, directory);
+				crawlerManager.getDocumentWithjSoup(eksiurl, directory);
 			}
 		});
 		button3.setBounds(400, 10, 200, 200);
@@ -89,7 +89,7 @@ public class Main extends JFrame{
 		button4.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				engineManager.findDuplicateTitlesAndMerge();
+				crawlerManager.findDuplicateTitlesAndMerge();
 			}
 		});
 		button4.setBounds(620, 10, 200, 200);
@@ -100,7 +100,7 @@ public class Main extends JFrame{
 		button5.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				engineManager.writeAllEntriesToDocument();
+				exportManager.writeAllEntriesToDocument();
 			}
 		});
 		button5.setBounds(10, 230, 200, 200);
@@ -128,7 +128,7 @@ public class Main extends JFrame{
 		button7.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				engineManager.writeSpecificEntryCountToDocument(Integer.parseInt(parameterTextArea.getText()));
+				exportManager.writeSpecificEntryCountToDocument(Integer.parseInt(parameterTextArea.getText()));
 			}
 		});
 		button7.setBounds(10, 450, 400, 200);
