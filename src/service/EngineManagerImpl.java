@@ -16,6 +16,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.Vector;
+import java.util.stream.Collectors;
 
 import commons.DateUtil;
 import model.Entry;
@@ -279,6 +283,20 @@ public class EngineManagerImpl implements EngineManager {
 		// Bu noktada bu iþ yapýlmalý
 		Map<PMIValueIndexes, BigDecimal> clonedMatrixData = matrixData;
 		Map<PMIValueIndexes, BigDecimal> filledMatrix = fillMissingMatrixCell(matrixData, mapOfIndexes, splittedEntries.size());
+		
+		exportManager.createTxtFilePMIIndexValues(convertToListPMIValueIndexes(filledMatrix), true);
+		exportManager.createTxtFilePMIIndexValues(convertToListPMIValueIndexes(clonedMatrixData), false);
+		
+		createVectors(filledMatrix);
+		
+	}
+	
+	private List<PMIValueIndexes> convertToListPMIValueIndexes (Map<PMIValueIndexes, BigDecimal> filledMatrix) {
+		List<PMIValueIndexes> indexList = new ArrayList<PMIValueIndexes>();
+		for (Map.Entry<PMIValueIndexes, BigDecimal> data : filledMatrix.entrySet()) {
+			indexList.add(data.getKey());
+		}
+		return indexList;
 	}
 	
 	private Map<Integer, List<String>> getMapOfIndexes (Map<PMIValueIndexes, BigDecimal> matrixData) {
@@ -379,12 +397,11 @@ public class EngineManagerImpl implements EngineManager {
 	private Map<PMIValueIndexes, BigDecimal> fillMissingMatrixCell (Map <PMIValueIndexes, BigDecimal> matrixData 
 			,Map<Integer, List<String>> mapOfIndexes, int totalSize) {
 		Map<Integer, Integer> indexSizeMap = new HashMap<Integer, Integer>();
+		Map<PMIValueIndexes, BigDecimal> filledNewMatrixData  = new HashMap<>();
 		for (Map.Entry<PMIValueIndexes, BigDecimal> data : matrixData.entrySet()) {
 			PMIValueIndexes value = data.getKey();
 			int index1 = value.getIndex1();
-			if (indexSizeMap.containsKey(index1)) {
-				continue;
-			} else {
+			if (! indexSizeMap.containsKey(index1)) {
 				List<String> valueableIndexes  = mapOfIndexes.get(index1);
 				if (!valueableIndexes.isEmpty()) {				
 					List<Integer> indexes = new ArrayList<Integer>();
@@ -410,7 +427,14 @@ public class EngineManagerImpl implements EngineManager {
 							newIndex.setLogaritmicPmiValue(new BigDecimal("999999"));
 							newIndex.setAlternatePmiValue(BigDecimal.ZERO);
 							newIndex.setLogarithmicAlternatePmiValue(new BigDecimal("999999"));
-							matrixData.put(newIndex, BigDecimal.ZERO);
+							filledNewMatrixData.put(newIndex, BigDecimal.ZERO);
+							// matrixData.put(newIndex, BigDecimal.ZERO);
+						} else {
+							for (PMIValueIndexes x : matrixData.keySet()) {
+								if (x.getIndex1() == index1 && x.getIndex2() == i) {
+									filledNewMatrixData.put(x, matrixData.get(x));
+								}
+							}
 						}
 						if (indexSizeMap.containsKey(index1)) {
 							indexSizeMap.put(index1, indexSizeMap.get(index1) + 1);
@@ -420,9 +444,8 @@ public class EngineManagerImpl implements EngineManager {
 					}
 				}
 			}
-
 		}
-		return matrixData;
+		return filledNewMatrixData;
 	}
 	
 	private List<WordIndex> getWordIndexList (List<String> readFromTxtEntries) {
@@ -502,6 +525,16 @@ public class EngineManagerImpl implements EngineManager {
 	    //Round the number to the correct number of decimal places.
 	    ans = ans.round(new MathContext(ans.precision() - ans.scale() + dp, RoundingMode.HALF_EVEN));
 	    return ans;
+	}
+	
+	@Override
+	public void createVectors (Map<PMIValueIndexes, BigDecimal> filledMatrix) {
+		Vector<java.util.Map.Entry<?, ?>> v = new Vector<java.util.Map.Entry<?, ?>>();
+		for (Map.Entry<PMIValueIndexes, BigDecimal> data : filledMatrix.entrySet()) {
+			if (data.getKey().getIndex1() == 0) {				
+				v.add(data);
+			}
+		}
 	}
 
 }

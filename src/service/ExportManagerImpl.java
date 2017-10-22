@@ -14,6 +14,7 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import model.Entry;
+import model.PMIValueIndexes;
 import model.WordIndex;
 
 public class ExportManagerImpl implements ExportManager {
@@ -146,6 +147,28 @@ public class ExportManagerImpl implements ExportManager {
 		catch (IOException e) {
 			System.err.println("TXT oluþturulurken hata oluþtu!");
         }
+	}
+	
+	@Override
+	public void createTxtFilePMIIndexValues(List<PMIValueIndexes> indexList, boolean isFilled) {
+		try {
+			BufferedWriter out;
+			if (isFilled) {				
+				out = new BufferedWriter(new FileWriter("filledWithEmptyPmiValueIndexes.txt"));
+			} else {
+				out = new BufferedWriter(new FileWriter("pmiValueIndexes.txt"));
+			}
+			out.write("INDEX-1" + "	" + "INDEX-2" + "	" + "PMI-VALUE" + "	" + "LOG-PMI-VALUE" + "	" + "ALT-PMI-VALUE" + "	" + "LOG-ALT-PMI-VALUE" +"\r\n");
+			for (PMIValueIndexes index : indexList) {
+				out.write(index.getIndex1() + "	" + index.getIndex2() + "	" + index.getPmiValue() + "	" 
+							+ index.getLogaritmicPmiValue() + "	" + index.getAlternatePmiValue() + "	" + index.getLogarithmicAlternatePmiValue()+"\r\n");
+			}
+			out.close();
+			System.out.println("PMI Index Value nesnesi için çýktý oluþturuldu");
+			
+		} catch (Exception e) {
+			System.err.println("TXT oluþturulurken hata oluþtu!");
+		}
 	}
 
 }

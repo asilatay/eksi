@@ -3,6 +3,7 @@ package service;
 import java.util.List;
 import java.util.Map;
 
+import model.PMIValueIndexes;
 import model.WordIndex;
 
 public interface ExportManager {
@@ -13,7 +14,9 @@ public interface ExportManager {
 	
 	void writeAllEntriesToDocument();
 	
-	public void createTxtFileForVocabs(Map<String, Integer> ranked);
+	void createTxtFileForVocabs(Map<String, Integer> ranked);
 
 	void createOutputForWordsOccured(List<WordIndex> wordIndexList);
+	
+	void createTxtFilePMIIndexValues(List<PMIValueIndexes> indexList, boolean isFilled); 
 }
