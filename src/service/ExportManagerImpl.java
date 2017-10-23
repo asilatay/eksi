@@ -15,11 +15,14 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import model.Entry;
 import model.PMIValueIndexes;
+import model.UserEntryFrequency;
 import model.WordIndex;
 
 public class ExportManagerImpl implements ExportManager {
 
 	EntryManager entryManager = new EntryManagerImpl();
+	
+	UserManager userManager = new UserManagerImpl();
 
 	@Override
 	public void writeSpecificEntryCountToDocument(int entryCount) {
@@ -167,7 +170,23 @@ public class ExportManagerImpl implements ExportManager {
 			System.out.println("PMI Index Value nesnesi için çýktý oluþturuldu");
 			
 		} catch (Exception e) {
-			System.err.println("TXT oluþturulurken hata oluþtu!");
+			System.err.println("TXT oluþturulurken hata oluþtu! " + e.getMessage() );
+		}
+	}
+	
+	@Override
+	public void createTxtFileForUserEntryFrequency (List<UserEntryFrequency> frequencyList) {
+		try {
+			BufferedWriter out = new BufferedWriter(new FileWriter("userEntryFrequencyList.txt"));
+			for (UserEntryFrequency frequency : frequencyList) {
+				out.write(userManager.getUserById(frequency.getUser1Id()).getNickname() +"	" + userManager.getUserById(frequency.getUser2Id()).getNickname() 
+						+ "	" + frequency.getTitleIdList().size());
+			}
+			out.close();
+			System.out.println("Kullanýcý - Title Frequency TXT dokümaný oluþturuldu.");
+			
+		} catch (Exception e) {
+			System.err.println("TXT oluþturulurken hata oluþtu! " + e.getMessage() );
 		}
 	}
 

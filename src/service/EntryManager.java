@@ -16,4 +16,8 @@ public interface EntryManager {
 	void updateEntryTitle(int entryId, int newTitleId);
 	
 	List<Entry> getAllEntriesOrderByDate();
+	
+	void getSimilarUsersThatWriteTheSameTitle();
+
+	List<Entry> getAllEntriesWithOnlyForeignKeys();
 }

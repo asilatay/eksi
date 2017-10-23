@@ -8,6 +8,8 @@ import service.CrawlerManager;
 import service.CrawlerManagerImpl;
 import service.EngineManager;
 import service.EngineManagerImpl;
+import service.EntryManager;
+import service.EntryManagerImpl;
 import service.ExportManager;
 import service.ExportManagerImpl;
 import service.TitleManager;
@@ -30,6 +32,8 @@ public class Main {
 		
 		ExportManager exportManager = new ExportManagerImpl();
 		
+		EntryManager entryManager = new EntryManagerImpl();
+		
 		String dir = "C:\\webharvest\\KAYDET\\";
 		String ham = "C:\\webharvest\\HAM\\";
 		final String fileReadingPath = "C:\\Users\\ASIL\\git\\eksiGit\\entries.txt";
@@ -50,6 +54,7 @@ public class Main {
 			System.out.println("Tüm Entry leri Dýþa Aktar         -> Press 10");
 			System.out.println("Parametrik Entry Dýþa Aktarým     -> Press 11");
 			System.out.println("Co-Occurence Matrix (YENÝ - FÝLE) -> Press 12");
+			System.out.println("Benzer Kullanýcý - Title Hesaplama-> Press 13");
 			operationSelect = scanIn.nextLine();
 			if (operationSelect.equals("1")) {
 				crawlerManager.createCrudeLinks(ham);
@@ -132,6 +137,8 @@ public class Main {
 				exportManager.writeSpecificEntryCountToDocument(parameterForEntryCount);
 			} else if (operationSelect.equals("12")) {
 				engineManager.createCoOccurenceMatrix(fileReadingPath);
+			} else if (operationSelect.equals("13")) {
+				entryManager.getSimilarUsersThatWriteTheSameTitle();
 			}
 			
 		} while(!operationSelect.equals("0"));

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import model.PMIValueIndexes;
+import model.UserEntryFrequency;
 import model.WordIndex;
 
 public interface ExportManager {
@@ -19,4 +20,6 @@ public interface ExportManager {
 	void createOutputForWordsOccured(List<WordIndex> wordIndexList);
 	
 	void createTxtFilePMIIndexValues(List<PMIValueIndexes> indexList, boolean isFilled); 
+	
+	void createTxtFileForUserEntryFrequency (List<UserEntryFrequency> frequencyList);
 }
