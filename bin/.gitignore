@@ -1,5 +1,3 @@
-/service/
-/view/
-/model/
-/commons/
 /repository/
+/model/
+/service/
