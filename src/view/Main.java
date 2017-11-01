@@ -12,8 +12,8 @@ import service.CrawlerManager;
 import service.CrawlerManagerImpl;
 import service.EngineManager;
 import service.EngineManagerImpl;
-import service.ExportManager;
-import service.ExportManagerImpl;
+import service.EntryManager;
+import service.EntryManagerImpl;
 
 public class Main extends JFrame{
 	private static final long serialVersionUID = 5375171468886679796L;
@@ -33,7 +33,7 @@ public class Main extends JFrame{
 		
 		CrawlerManager crawlerManager = new CrawlerManagerImpl();
 		
-		ExportManager exportManager = new ExportManagerImpl();
+		EntryManager entryManager = new EntryManagerImpl();
 		
 		JFrame frame = new JFrame(mainJFrameTitle);
 		JPanel panel = new JPanel();
@@ -100,7 +100,7 @@ public class Main extends JFrame{
 		button5.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				exportManager.writeAllEntriesToDocument();
+				entryManager.writeAllEntriesToDocument();
 			}
 		});
 		button5.setBounds(10, 230, 200, 200);
@@ -128,7 +128,7 @@ public class Main extends JFrame{
 		button7.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				exportManager.writeSpecificEntryCountToDocument(Integer.parseInt(parameterTextArea.getText()));
+				entryManager.writeSpecificEntryCountToDocument(Integer.parseInt(parameterTextArea.getText()));
 			}
 		});
 		button7.setBounds(10, 450, 400, 200);

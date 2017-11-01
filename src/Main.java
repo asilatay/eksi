@@ -10,8 +10,6 @@ import service.EngineManager;
 import service.EngineManagerImpl;
 import service.EntryManager;
 import service.EntryManagerImpl;
-import service.ExportManager;
-import service.ExportManagerImpl;
 import service.TitleManager;
 import service.TitleManagerImpl;
 import service.UserManager;
@@ -29,8 +27,6 @@ public class Main {
 		UserManager userManager = new UserManagerImpl();
 		
 		CrawlerManager crawlerManager = new CrawlerManagerImpl();
-		
-		ExportManager exportManager = new ExportManagerImpl();
 		
 		EntryManager entryManager = new EntryManagerImpl();
 		
@@ -130,11 +126,11 @@ public class Main {
 				int parameterForEntryCount = scanIn.nextInt();
 				engineManager.coOccurenceMatrixWithEntryObjectAndReturnWindowSizeOLD(parameterForEntryCount);
 			} else if (operationSelect.equals("10")) {
-				exportManager.writeAllEntriesToDocument();
+				entryManager.writeAllEntriesToDocument();
 			} else if (operationSelect.equals("11")) {
 				System.out.println("Çekilmesini istediðiniz entry sayýsýný giriniz : ");
 				int parameterForEntryCount = scanIn.nextInt();
-				exportManager.writeSpecificEntryCountToDocument(parameterForEntryCount);
+				entryManager.writeSpecificEntryCountToDocument(parameterForEntryCount);
 			} else if (operationSelect.equals("12")) {
 				engineManager.createCoOccurenceMatrix(fileReadingPath);
 			} else if (operationSelect.equals("13")) {

@@ -32,6 +32,8 @@ public class CrawlerManagerImpl implements CrawlerManager {
 	
 	EntryManager entryManager = new EntryManagerImpl();
 	
+	EngineManager engineManager = new EngineManagerImpl();
+	
 	@Override
 	public void createCrudeLinks(String dir) {
 		File folder = new File(dir);
@@ -62,7 +64,7 @@ public class CrawlerManagerImpl implements CrawlerManager {
 							linkList.add(line);
 						}
 					}
-					exportManager.createTxtForLink(linkList, listOfFiles[i].getName());
+					engineManager.createTxtForLink(linkList, listOfFiles[i].getName());
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -165,7 +167,7 @@ public class CrawlerManagerImpl implements CrawlerManager {
 				}
 			}
 			if (todayPopularUrlList != null && todayPopularUrlList.size() > 0) {
-				exportManager.createTxtForLink(todayPopularUrlList, "urlList---" + title);
+				engineManager.createTxtForLink(todayPopularUrlList, "urlList---" + title);
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

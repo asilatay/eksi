@@ -3,6 +3,7 @@ package repository;
 import java.util.List;
 
 import model.Entry;
+import model.UserUserTitle;
 
 public interface EntryRepository {
 	
@@ -21,5 +22,7 @@ public interface EntryRepository {
 	List<Entry> getAllEntriesOrderByDateWithLimit(int limit);
 
 	List<Entry> getAllEntriesWithOnlyForeignKeys();
+	
+	List<UserUserTitle> getSimilarUsersForTitles();
 	
 }

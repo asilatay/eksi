@@ -1,8 +1,11 @@
 package service;
 
 import java.util.List;
+import java.util.Map;
 
 import model.Entry;
+import model.UserEntryFrequency;
+import model.UserUserTitle;
 
 public interface EntryManager {
 	List<Entry> getAllEntries();
@@ -20,4 +23,12 @@ public interface EntryManager {
 	void getSimilarUsersThatWriteTheSameTitle();
 
 	List<Entry> getAllEntriesWithOnlyForeignKeys();
+
+	void writeSpecificEntryCountToDocument(int entryCount);
+
+	void writeAllEntriesToDocument();
+
+	void createTxtFileForVocabs(Map<String, Integer> ranked);
+
+	void createTxtFileForUserUserTitle(List<UserUserTitle> resultList);
 }

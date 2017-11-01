@@ -16,10 +16,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.Vector;
-import java.util.stream.Collectors;
 
 import commons.DateUtil;
 import model.Entry;
@@ -74,7 +71,7 @@ public class EngineManagerImpl implements EngineManager {
 			}
 			Map<String, Integer> rankingOrdered = new HashMap<String, Integer>();
 			rankingOrdered = sortByValue(ranking, true);
-			exportManager.createTxtFileForVocabs(rankingOrdered);
+			entryManager.createTxtFileForVocabs(rankingOrdered);
 			//TODO GarbageCollector Error
 //				createExcelRankingWords(rankingOrdered);
 			System.out.println("Ranking oluþturuldu!");
@@ -225,7 +222,7 @@ public class EngineManagerImpl implements EngineManager {
 			System.exit(0);
 		}
 		List<WordIndex> wordsOccured = getWordIndexList(readFromTxtEntries);
-		exportManager.createOutputForWordsOccured(wordsOccured);
+		createOutputForWordsOccured(wordsOccured);
 		
 		Map<String, Integer> ranking = new HashMap<String, Integer>();
 		Map<Integer, BigDecimal> wordFrequencyMap = new HashMap<Integer, BigDecimal>();
@@ -284,8 +281,8 @@ public class EngineManagerImpl implements EngineManager {
 		Map<PMIValueIndexes, BigDecimal> clonedMatrixData = matrixData;
 		Map<PMIValueIndexes, BigDecimal> filledMatrix = fillMissingMatrixCell(matrixData, mapOfIndexes, splittedEntries.size());
 		
-		exportManager.createTxtFilePMIIndexValues(convertToListPMIValueIndexes(filledMatrix), true);
-		exportManager.createTxtFilePMIIndexValues(convertToListPMIValueIndexes(clonedMatrixData), false);
+		createTxtFilePMIIndexValues(convertToListPMIValueIndexes(filledMatrix), true);
+		createTxtFilePMIIndexValues(convertToListPMIValueIndexes(clonedMatrixData), false);
 		
 		createVectors(filledMatrix);
 		
@@ -534,6 +531,62 @@ public class EngineManagerImpl implements EngineManager {
 			if (data.getKey().getIndex1() == 0) {				
 				v.add(data);
 			}
+		}
+	}
+	
+	@Override
+	public void createTxtForLink(List<String> linkList, String titleOfFile) {
+		try {
+			BufferedWriter out;
+			if (titleOfFile.contains(".txt")) {
+				out = new BufferedWriter(new FileWriter(titleOfFile));
+			} else {
+				out = new BufferedWriter(new FileWriter(titleOfFile + ".txt"));
+			}
+			for (String link : linkList) {
+				out.write(link + "\r\n");
+			}
+			out.close();
+		} catch (IOException e) {
+			System.err.println("Linklerin txt dosyasýna yazýmý sýrasýnda beklenmeyen bir hata oluþtu!");
+			e.printStackTrace();
+		}
+	}
+	
+	@Override
+	public void createOutputForWordsOccured(List<WordIndex> wordIndexList) {
+		try {
+			 BufferedWriter out = new BufferedWriter(new FileWriter("wordIndexFrequency.txt"));
+			 for(WordIndex  word  : wordIndexList){
+				 out.write(word.getWord() +"	"+ word.getIndex()+"	"+word.getFrequency()+"\r\n");
+			 }
+			 out.close();
+			 System.out.println("TXT oluþturuldu.!");
+		}
+		catch (IOException e) {
+			System.err.println("TXT oluþturulurken hata oluþtu!");
+        }
+	}
+
+	@Override
+	public void createTxtFilePMIIndexValues(List<PMIValueIndexes> indexList, boolean isFilled) {
+		try {
+			BufferedWriter out;
+			if (isFilled) {				
+				out = new BufferedWriter(new FileWriter("filledWithEmptyPmiValueIndexes.txt"));
+			} else {
+				out = new BufferedWriter(new FileWriter("pmiValueIndexes.txt"));
+			}
+			out.write("INDEX-1" + "	" + "INDEX-2" + "	" + "PMI-VALUE" + "	" + "LOG-PMI-VALUE" + "	" + "ALT-PMI-VALUE" + "	" + "LOG-ALT-PMI-VALUE" +"\r\n");
+			for (PMIValueIndexes index : indexList) {
+				out.write(index.getIndex1() + "	" + index.getIndex2() + "	" + index.getPmiValue() + "	" 
+							+ index.getLogaritmicPmiValue() + "	" + index.getAlternatePmiValue() + "	" + index.getLogarithmicAlternatePmiValue()+"\r\n");
+			}
+			out.close();
+			System.out.println("PMI Index Value nesnesi için çýktý oluþturuldu");
+			
+		} catch (Exception e) {
+			System.err.println("TXT oluþturulurken hata oluþtu! " + e.getMessage() );
 		}
 	}
 

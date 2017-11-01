@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import model.Entry;
+import model.UserUserTitle;
 
 public class EntryRepositoryImpl implements EntryRepository{
 	String connectionIP ="jdbc:mysql://localhost/eksi";
@@ -257,6 +258,39 @@ public class EntryRepositoryImpl implements EntryRepository{
 			conn.close();
 			return entryList;
 			
+		} catch (Exception e) {
+			System.err.println("Database Connection Error ! ENTRY TABLE");
+	        System.err.println(e.getMessage());        
+	        return null;
+		}
+	}
+	
+	@Override
+	public List<UserUserTitle> getSimilarUsersForTitles() {
+		try {			
+			Class.forName(myDriver);
+			Connection conn = DriverManager.getConnection(db, username, pass);
+			String query = "select count(distinct t.id) as ortaksayi, e1.fk_user_id as userId1, e2.fk_user_id as userId2 from title t"
+					+ " join entry e1 on e1.fk_title_id=t.id"
+					+ " join entry e2 on e2.fk_title_id=t.id"
+					+ " where e1.fk_user_id != e2.fk_user_id and e1.id !=  e2.id"
+					+ " group by e1.fk_user_id, e2.fk_user_id"
+					+ " order by ortaksayi desc limit 100;";
+			Statement st = conn.createStatement();        
+			ResultSet rs = st.executeQuery(query);
+			List<UserUserTitle> writeableList = new ArrayList<UserUserTitle>();
+			while (rs.next()) {
+				int totalCount = rs.getInt("ortaksayi");
+				int user1Id = rs.getInt("userId1");
+				int user2Id = rs.getInt("userId2");
+				UserUserTitle newUserUserTitle = new UserUserTitle();
+				newUserUserTitle.setUser1Id(user1Id);
+				newUserUserTitle.setUser2Id(user2Id);
+				newUserUserTitle.setCountOfSimilarTitle(totalCount);
+				writeableList.add(newUserUserTitle);
+				
+			}
+			return writeableList;			
 		} catch (Exception e) {
 			System.err.println("Database Connection Error ! ENTRY TABLE");
 	        System.err.println(e.getMessage());        
