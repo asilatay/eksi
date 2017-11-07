@@ -1,6 +1,9 @@
-package model;
+package viewmodel;
 
 import java.util.ArrayList;
+
+import model.Title;
+import model.User;
 
 public class UserEntryFrequency {
 	

@@ -51,6 +51,7 @@ public class Main {
 			System.out.println("Parametrik Entry Dýþa Aktarým     -> Press 11");
 			System.out.println("Co-Occurence Matrix (YENÝ - FÝLE) -> Press 12");
 			System.out.println("Benzer Kullanýcý - Title Hesaplama-> Press 13");
+			System.out.println("Kullanýcý - Title Hesaplama       -> Press 14");
 			operationSelect = scanIn.nextLine();
 			if (operationSelect.equals("1")) {
 				crawlerManager.createCrudeLinks(ham);
@@ -135,6 +136,8 @@ public class Main {
 				engineManager.createCoOccurenceMatrix(fileReadingPath);
 			} else if (operationSelect.equals("13")) {
 				entryManager.getSimilarUsersThatWriteTheSameTitle();
+			} else if (operationSelect.equals("14")) {
+				entryManager.getTitleCountOfUsers();
 			}
 			
 		} while(!operationSelect.equals("0"));

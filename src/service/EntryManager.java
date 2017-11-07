@@ -4,8 +4,9 @@ import java.util.List;
 import java.util.Map;
 
 import model.Entry;
-import model.UserEntryFrequency;
-import model.UserUserTitle;
+import viewmodel.UserEntryFrequency;
+import viewmodel.UserTitle;
+import viewmodel.UserUserTitle;
 
 public interface EntryManager {
 	List<Entry> getAllEntries();
@@ -31,4 +32,6 @@ public interface EntryManager {
 	void createTxtFileForVocabs(Map<String, Integer> ranked);
 
 	void createTxtFileForUserUserTitle(List<UserUserTitle> resultList);
+	
+	void getTitleCountOfUsers();
 }

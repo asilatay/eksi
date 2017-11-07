@@ -4,8 +4,8 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
-import model.PMIValueIndexes;
-import model.WordIndex;
+import viewmodel.PMIValueIndexes;
+import viewmodel.WordIndex;
 
 public interface EngineManager {
 

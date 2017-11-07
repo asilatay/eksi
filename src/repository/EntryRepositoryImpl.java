@@ -8,7 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import model.Entry;
-import model.UserUserTitle;
+import viewmodel.UserTitle;
+import viewmodel.UserUserTitle;
 
 public class EntryRepositoryImpl implements EntryRepository{
 	String connectionIP ="jdbc:mysql://localhost/eksi";
@@ -275,7 +276,7 @@ public class EntryRepositoryImpl implements EntryRepository{
 					+ " join entry e2 on e2.fk_title_id=t.id"
 					+ " where e1.fk_user_id != e2.fk_user_id and e1.id !=  e2.id"
 					+ " group by e1.fk_user_id, e2.fk_user_id"
-					+ " order by ortaksayi desc limit 100;";
+					+ " order by ortaksayi desc limit 200;";
 			Statement st = conn.createStatement();        
 			ResultSet rs = st.executeQuery(query);
 			List<UserUserTitle> writeableList = new ArrayList<UserUserTitle>();
@@ -291,6 +292,35 @@ public class EntryRepositoryImpl implements EntryRepository{
 				
 			}
 			return writeableList;			
+		} catch (Exception e) {
+			System.err.println("Database Connection Error ! ENTRY TABLE");
+	        System.err.println(e.getMessage());        
+	        return null;
+		}
+	}
+	
+	@Override
+	public List<UserTitle> getTitleCountOfUsers() {
+		try {			
+			Class.forName(myDriver);
+			Connection conn = DriverManager.getConnection(db, username, pass);
+			String query = "select distinct u1.nickname as nickname, count(distinct t1.id) as titlesayi from entry e1"
+					+ " join title t1 on t1.id = e1.fk_title_id"
+					+ " join user u1 ON u1.id = e1.fk_user_id"
+					+ " group by u1.id"
+					+ " order by titlesayi desc limit 100";
+			Statement st = conn.createStatement();        
+			ResultSet rs = st.executeQuery(query);
+			List<UserTitle> writeableList = new ArrayList<UserTitle>();
+			while (rs.next()) {
+				String username = rs.getString("nickname");
+				int totalTitleCount = rs.getInt("titlesayi");
+				UserTitle newUserTitle = new UserTitle();
+				newUserTitle.setUsername(username);
+				newUserTitle.setCountOfTitleThatWrote(totalTitleCount);
+				writeableList.add(newUserTitle);
+			}
+			return writeableList;
 		} catch (Exception e) {
 			System.err.println("Database Connection Error ! ENTRY TABLE");
 	        System.err.println(e.getMessage());        

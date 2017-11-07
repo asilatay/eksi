@@ -13,10 +13,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import model.Entry;
-import model.UserEntryFrequency;
-import model.UserUserTitle;
 import repository.EntryRepository;
 import repository.EntryRepositoryImpl;
+import viewmodel.UserEntryFrequency;
+import viewmodel.UserTitle;
+import viewmodel.UserUserTitle;
 
 public class EntryManagerImpl implements EntryManager{
 	
@@ -61,60 +62,16 @@ public class EntryManagerImpl implements EntryManager{
 
 	@Override
 	public void getSimilarUsersThatWriteTheSameTitle() {
-//		List<Entry> allEntries = getAllEntriesWithOnlyForeignKeys();
-//		Map<Integer, List<Integer>> titleUserIdListMap = new HashMap<Integer, List<Integer>>();
-//		for (Entry entry : allEntries) {
-//			if (!titleUserIdListMap.containsKey(entry.getTitleId())) {
-//				List<Integer> newList = new ArrayList<Integer>();
-//				newList.add(entry.getUserId());
-//				titleUserIdListMap.put(entry.getTitleId(), newList);
-//			} else {
-//				List<Integer> list = new ArrayList<Integer>();
-//				list = titleUserIdListMap.get(entry.getTitleId());
-//				list.add(entry.getUserId());
-//				titleUserIdListMap.put(entry.getTitleId(), list);
-//			}
-//		}
-//		allEntries.clear();
-//		List<UserEntryFrequency> list = new ArrayList<UserEntryFrequency>();
-//		for (Map.Entry<Integer, List<Integer>> data : titleUserIdListMap.entrySet()) {
-//			for (Integer firstUserId : data.getValue()) {
-//				UserEntryFrequency freq = new UserEntryFrequency();
-//				freq.setUserId(firstUserId);
-//				ArrayList<Integer> titleList = new ArrayList<Integer>();
-//				titleList.add(data.getKey());
-//				for(Map.Entry<Integer, List<Integer>> data2 : titleUserIdListMap.entrySet()) {
-//					if (data.getKey() != data2.getKey()) {
-//						for (Integer secondUserId : data2.getValue()) {
-//							if (firstUserId == secondUserId) {
-//								titleList.add(data2.getKey());
-//							}
-//						}
-//					}
-//				}
-//				freq.setTitleIdList(titleList);
-//				list.add(freq);
-//			}
-//		}
-//		titleUserIdListMap.clear();
-//		List<UserUserTitle> resultList = new ArrayList<UserUserTitle>();
-//		for (UserEntryFrequency freq1 : list) {
-//			for(UserEntryFrequency freq2 : list) {
-//				if (freq1.getUserId() != freq2.getUserId()) {
-//					UserUserTitle newRecord = new UserUserTitle();
-//					newRecord.setUser1Id(freq1.getUserId());
-//					newRecord.setUser2Id(freq2.getUserId());
-//					newRecord.setSimilarTitleIdList(intersection(freq1.getTitleIdList(), freq2.getTitleIdList()));
-//					resultList.add(newRecord);
-//				}
-//			}
-//		}
-		
-		//Comparator yazarak en çok benzeyen X kadar modeli çek.
-//		Collections.sort(resultList, new ComparatorClassForTitleSize());
 		List<UserUserTitle> list = entryRepository.getSimilarUsersForTitles();
-		// Bu modelleri yazdýr.
+		// Bu viewmodelleri yazdýr.
 		createTxtFileForUserUserTitle(list);
+	}
+	
+	@Override
+	public void getTitleCountOfUsers() {
+		List<UserTitle> list = entryRepository.getTitleCountOfUsers();
+		//Bu viewmodelleri yazdýr
+		createTxtFileForUserTitle(list);
 	}
 	
 	
@@ -208,7 +165,21 @@ public class EntryManagerImpl implements EntryManager{
 			System.out.println("Kullanýcý - Title Frequency TXT dokümaný oluþturuldu.");
 			
 		} catch (Exception e) {
-			System.err.println("TXT oluþturulurken hata oluþtu! " + e.getMessage() );
+			System.err.println("TXT oluþturulurken hata oluþtu! " + e.getMessage());
+		}
+	}
+	
+	private void createTxtFileForUserTitle(List<UserTitle> resultList) {
+		try {
+			BufferedWriter out = new BufferedWriter(new FileWriter("userTitle.txt"));
+			for (UserTitle ut : resultList) {
+				out.write(ut.getUsername() + "	" + ut.getCountOfTitleThatWrote() + "\r\n");
+			}
+			out.close();
+			System.out.println("Kullanýcý kaç tane title a entry girmiþ dokümaný oluþturuldu.");
+			
+		} catch (Exception e) {
+			System.err.println("TXT oluþturulurken hata oluþtu! " + e.getMessage());
 		}
 	}
 }

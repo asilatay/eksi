@@ -1,6 +1,8 @@
-package model;
+package viewmodel;
 
 import java.util.ArrayList;
+
+import model.User;
 
 public class UserUserTitle {
 	

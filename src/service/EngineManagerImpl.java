@@ -21,8 +21,8 @@ import java.util.Vector;
 import commons.DateUtil;
 import model.Entry;
 import model.KeyIndexOld;
-import model.PMIValueIndexes;
-import model.WordIndex;
+import viewmodel.PMIValueIndexes;
+import viewmodel.WordIndex;
 
 public class EngineManagerImpl implements EngineManager {
 	

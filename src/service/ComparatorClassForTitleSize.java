@@ -2,7 +2,7 @@ package service;
 
 import java.util.Comparator;
 
-import model.UserUserTitle;
+import viewmodel.UserUserTitle;
 
 public class ComparatorClassForTitleSize implements Comparator<UserUserTitle>{
  

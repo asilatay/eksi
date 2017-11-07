@@ -3,7 +3,8 @@ package repository;
 import java.util.List;
 
 import model.Entry;
-import model.UserUserTitle;
+import viewmodel.UserTitle;
+import viewmodel.UserUserTitle;
 
 public interface EntryRepository {
 	
@@ -24,5 +25,7 @@ public interface EntryRepository {
 	List<Entry> getAllEntriesWithOnlyForeignKeys();
 	
 	List<UserUserTitle> getSimilarUsersForTitles();
+	
+	List<UserTitle> getTitleCountOfUsers();
 	
 }
