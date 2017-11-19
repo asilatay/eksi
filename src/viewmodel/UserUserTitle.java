@@ -1,6 +1,6 @@
 package viewmodel;
 
-import java.util.ArrayList;
+import java.math.BigDecimal;
 
 import model.User;
 
@@ -15,6 +15,16 @@ public class UserUserTitle {
 	private int user2Id;
 	
 	private int countOfSimilarTitle;
+	
+	private BigDecimal jaccardSimilarity;
+
+	public BigDecimal getJaccardSimilarity() {
+		return jaccardSimilarity;
+	}
+
+	public void setJaccardSimilarity(BigDecimal jaccardSimilarity) {
+		this.jaccardSimilarity = jaccardSimilarity;
+	}
 
 	public User getUser1() {
 		return user1;

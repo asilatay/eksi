@@ -23,5 +23,7 @@ public interface EngineManager {
 	void createOutputForWordsOccured(List<WordIndex> wordIndexList);
 
 	void createTxtFilePMIIndexValues(List<PMIValueIndexes> indexList, boolean isFilled);
+	
+	void calculateJaccardSimilarityAndSave();
 
 }

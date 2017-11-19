@@ -4,18 +4,14 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import model.Entry;
 import repository.EntryRepository;
 import repository.EntryRepositoryImpl;
-import viewmodel.UserEntryFrequency;
 import viewmodel.UserTitle;
 import viewmodel.UserUserTitle;
 
@@ -158,8 +154,8 @@ public class EntryManagerImpl implements EntryManager{
 		try {
 			BufferedWriter out = new BufferedWriter(new FileWriter("userUserTitles.txt"));
 			for (UserUserTitle frequency : resultList) {
-				out.write(userManager.getUserById(frequency.getUser1Id()).getNickname() +"	" + userManager.getUserById(frequency.getUser2Id()).getNickname() 
-						+ "	" + frequency.getCountOfSimilarTitle() + "\r\n");
+				out.write(userManager.getUserById(frequency.getUser1Id()).getNickname() +"-" + userManager.getUserById(frequency.getUser2Id()).getNickname() 
+						+ "-" + frequency.getCountOfSimilarTitle() + "\r\n");
 			}
 			out.close();
 			System.out.println("Kullanýcý - Title Frequency TXT dokümaný oluþturuldu.");
@@ -173,7 +169,7 @@ public class EntryManagerImpl implements EntryManager{
 		try {
 			BufferedWriter out = new BufferedWriter(new FileWriter("userTitle.txt"));
 			for (UserTitle ut : resultList) {
-				out.write(ut.getUsername() + "	" + ut.getCountOfTitleThatWrote() + "\r\n");
+				out.write(ut.getUsername() + "-" + ut.getCountOfTitleThatWrote() + "\r\n");
 			}
 			out.close();
 			System.out.println("Kullanýcý kaç tane title a entry girmiþ dokümaný oluþturuldu.");

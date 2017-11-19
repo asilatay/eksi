@@ -1,6 +1,10 @@
 package service;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -18,10 +22,18 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
 import commons.DateUtil;
 import model.Entry;
 import model.KeyIndexOld;
+import model.User;
 import viewmodel.PMIValueIndexes;
+import viewmodel.UserTitle;
+import viewmodel.UserUserTitle;
 import viewmodel.WordIndex;
 
 public class EngineManagerImpl implements EngineManager {
@@ -41,6 +53,10 @@ public class EngineManagerImpl implements EngineManager {
 	private final static int turningNumber = 15;
 	
 	private final static int turningNumberForNewCoOccurence = 5;
+	
+	private final static String directoryOfSimilarUsersThatWroteSameTitle = "userUserTitles.txt";
+	
+	private final static String directoryOfTitleCountOfUsers = "userTitle.txt";
 	
 	public EngineManagerImpl() {
 	}
@@ -534,6 +550,20 @@ public class EngineManagerImpl implements EngineManager {
 		}
 	}
 	
+	
+	//Method
+	public static double cosineSimilarity(double[] vectorA, double[] vectorB) {
+	    double dotProduct = 0.0;
+	    double normA = 0.0;
+	    double normB = 0.0;
+	    for (int i = 0; i < vectorA.length; i++) {
+	        dotProduct += vectorA[i] * vectorB[i];
+	        normA += Math.pow(vectorA[i], 2);
+	        normB += Math.pow(vectorB[i], 2);
+	    }   
+	    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+	}
+	
 	@Override
 	public void createTxtForLink(List<String> linkList, String titleOfFile) {
 		try {
@@ -587,6 +617,152 @@ public class EngineManagerImpl implements EngineManager {
 			
 		} catch (Exception e) {
 			System.err.println("TXT oluþturulurken hata oluþtu! " + e.getMessage() );
+		}
+	}
+	
+	@Override
+	public void calculateJaccardSimilarityAndSave() {
+		List<UserUserTitle> userUserTitleList = getUserUserTitleListFromFile();
+		List<UserTitle> userTitleList = getUserTitleListFromFile();
+		if (userUserTitleList == null || userUserTitleList.isEmpty()) {
+			System.err.println("UserUserTitle dosyasýna veri ekleyin" );
+			return;
+		}
+		if (userTitleList == null || userTitleList.isEmpty()) {
+			System.err.println("UserTitle dosyasýna veri ekleyin" );
+			return;
+		}
+		for (UserUserTitle uut : userUserTitleList) {
+			User user1 = uut.getUser1();
+			User user2 = uut.getUser2();
+			int user1TotalCount = 0;
+			int user2TotalCount = 0;
+			for (UserTitle ut : userTitleList) {
+				if (ut.getUsername().equals(user1.getNickname())) {
+					user1TotalCount = ut.getCountOfTitleThatWrote();
+				}
+				if (ut.getUsername().equals(user2.getNickname())) {
+					user2TotalCount = ut.getCountOfTitleThatWrote();
+				}
+				if (user1TotalCount != 0 && user2TotalCount != 0) {
+					//calculation Of JaccardSimilarity
+					BigDecimal similarCount = new BigDecimal(uut.getCountOfSimilarTitle());
+					BigDecimal firstUserCount = new BigDecimal(user1TotalCount);
+					BigDecimal secondUserCount = new BigDecimal(user2TotalCount);
+					BigDecimal result = similarCount.divide((firstUserCount.add(secondUserCount)).subtract(similarCount), 10, RoundingMode.HALF_UP) ;
+					uut.setJaccardSimilarity(result);
+					break;
+				}
+			}
+		}
+		//Çýktý üret
+		//1 - TXT
+		createJaccardSimilarityTxt(userUserTitleList);
+		//2 - Excel
+		createJaccardSimilarityExcel(userUserTitleList);
+		
+	}
+	
+	private List<UserUserTitle> getUserUserTitleListFromFile() {
+		try {
+			BufferedReader in = new BufferedReader(new FileReader(directoryOfSimilarUsersThatWroteSameTitle));
+			String line;
+			List<UserUserTitle> userUserTitleList = new ArrayList<UserUserTitle>();
+			while((line = in.readLine()) != null) {
+				UserUserTitle uut = new UserUserTitle();
+				String[] splitWithLine = line.split("-");
+				uut.setUser1(userManager.getUserByUsername(splitWithLine[0]));
+				uut.setUser2(userManager.getUserByUsername(splitWithLine[1]));
+				uut.setCountOfSimilarTitle(Integer.parseInt(splitWithLine[2]));
+				userUserTitleList.add(uut);
+ 			}
+			in.close();
+			return userUserTitleList;
+			
+		} catch (Exception e) {
+			System.err.println("UserUserTitle dosyasý okunurken bir hata oluþtu " + e.getMessage() );
+			return null;
+		}
+	}
+	
+	private List<UserTitle> getUserTitleListFromFile() {
+		try {			
+			BufferedReader in = new BufferedReader(new FileReader(directoryOfTitleCountOfUsers));
+			String line;
+			List<UserTitle> userTitleList = new ArrayList<UserTitle>();
+			while((line = in.readLine()) != null) {
+				UserTitle ut = new UserTitle();
+				String[] splitWithLine = line.split("-");
+				ut.setUsername(splitWithLine[0]);
+				ut.setCountOfTitleThatWrote(Integer.parseInt(splitWithLine[1]));
+				userTitleList.add(ut);
+			}
+			in.close();
+			return userTitleList;
+		} catch (Exception e) {
+			System.err.println("UserTitle dosyasý okunurken bir hata oluþtu " + e.getMessage() );
+			return null;
+		}
+	}
+	
+	private void createJaccardSimilarityTxt(List<UserUserTitle> userUserTitleList) {
+		try {
+			BufferedWriter out = new BufferedWriter(new FileWriter("jaccardSimilarity.txt"));
+			for (UserUserTitle uut : userUserTitleList) {
+				if (uut.getJaccardSimilarity() != null && uut.getJaccardSimilarity().compareTo(BigDecimal.ZERO) != 0) {
+					out.write(uut.getUser1().getNickname() + "-" + uut.getUser2().getNickname() + "-" + uut.getJaccardSimilarity() +"\r\n");
+				}
+			}
+			out.close();
+			System.out.println("Jaccard benzerliði TXT dosyasý oluþturuldu!");
+			
+		} catch (Exception e) {
+			System.err.println("Jaccard benzerliði TXT dosyasý oluþturulurken bir hata oluþtu " + e.getMessage() );
+		}
+	}
+	
+	private void createJaccardSimilarityExcel(List<UserUserTitle> userUserTitleList) {
+		System.out.println("Jaccard benzerliði excel oluþturma iþlemi baþladý");
+		try {
+			FileOutputStream fileOut = new FileOutputStream("jaccardSimilarity.xlsx");
+
+			XSSFWorkbook workbook = new XSSFWorkbook();
+			XSSFSheet worksheet = workbook.createSheet("POI Worksheet");
+
+			// index from 0,0... cell A1 is cell(0,0)
+			XSSFRow row1 = worksheet.createRow((int) 0);
+			// Create Header of Excel
+			XSSFCell cell = row1.createCell((int) 0);
+			cell.setCellValue("1Username");
+			cell = row1.createCell((int) 1);
+			cell.setCellValue("2Username");
+			cell = row1.createCell((int) 2);
+			cell.setCellValue("JaccardSimilarity");
+			int rowNum = 1;
+			// Create Body of Table
+			for (UserUserTitle a : userUserTitleList) {
+				if (a.getJaccardSimilarity() != null && a.getJaccardSimilarity().compareTo(BigDecimal.ZERO) != 0) {					
+					row1 = worksheet.createRow((int) rowNum);
+					cell = row1.createCell((int) 0);
+					cell.setCellValue(a.getUser1().getNickname());
+					cell = row1.createCell((int) 1);
+					cell.setCellValue(a.getUser2().getNickname());
+					cell = row1.createCell((int) 2);
+					cell.setCellValue(a.getJaccardSimilarity().doubleValue());
+					rowNum++;
+				}
+			}
+
+			workbook.write(fileOut);
+			fileOut.flush();
+			fileOut.close();
+			workbook.close();
+			System.out.println("Jaccard benzerliði excel oluþturma iþlemi baþarýyla tamamlandý");
+		} catch (FileNotFoundException e) {
+			System.err.println("Jaccard benzerliði Excel dosyasý oluþturulurken bir hata oluþtu " + e.getMessage() );
+			
+		} catch (IOException e) {
+			System.err.println("Jaccard benzerliði Excel dosyasý oluþturulurken bir hata oluþtu " + e.getMessage() );
 		}
 	}
 

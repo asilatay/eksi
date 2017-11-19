@@ -52,6 +52,7 @@ public class Main {
 			System.out.println("Co-Occurence Matrix (YENÝ - FÝLE) -> Press 12");
 			System.out.println("Benzer Kullanýcý - Title Hesaplama-> Press 13");
 			System.out.println("Kullanýcý - Title Hesaplama       -> Press 14");
+			System.out.println("Jaccard Benzerliðini Hesaplama    -> Press 15");
 			operationSelect = scanIn.nextLine();
 			if (operationSelect.equals("1")) {
 				crawlerManager.createCrudeLinks(ham);
@@ -138,6 +139,8 @@ public class Main {
 				entryManager.getSimilarUsersThatWriteTheSameTitle();
 			} else if (operationSelect.equals("14")) {
 				entryManager.getTitleCountOfUsers();
+			} else if (operationSelect.equals("15")) {
+				engineManager.calculateJaccardSimilarityAndSave();
 			}
 			
 		} while(!operationSelect.equals("0"));

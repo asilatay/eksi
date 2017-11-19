@@ -13,11 +13,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 public class ExportManagerImpl implements ExportManager {
 
 	
-	
-
-	
-	
-	
 	private static void createExcelRankingWords(Map<String, Integer> ranked) throws IOException {
 		System.out.println("Excel oluþturma iþlemi baþladý");
 		try {
