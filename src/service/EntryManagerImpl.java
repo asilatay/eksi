@@ -59,8 +59,13 @@ public class EntryManagerImpl implements EntryManager{
 	@Override
 	public void getSimilarUsersThatWriteTheSameTitle() {
 		List<UserUserTitle> list = entryRepository.getSimilarUsersForTitles();
+		List<Integer> idList = new ArrayList<Integer>();
+		for (UserUserTitle a : list) {
+			idList.add(a.getUser1Id());
+			idList.add(a.getUser2Id());
+		}
 		// Bu viewmodelleri yazdýr.
-		createTxtFileForUserUserTitle(list);
+		createTxtFileForUserUserTitle(list, idList);
 	}
 	
 	@Override
@@ -150,11 +155,12 @@ public class EntryManagerImpl implements EntryManager{
 	
 	
 	@Override
-	public void createTxtFileForUserUserTitle(List<UserUserTitle> resultList) {
+	public void createTxtFileForUserUserTitle(List<UserUserTitle> resultList, List<Integer> idList) {
 		try {
+			Map<Integer, String> idUserNameMap = userManager.getIdUserNameMap(idList);
 			BufferedWriter out = new BufferedWriter(new FileWriter("userUserTitles.txt"));
 			for (UserUserTitle frequency : resultList) {
-				out.write(userManager.getUserById(frequency.getUser1Id()).getNickname() +"-" + userManager.getUserById(frequency.getUser2Id()).getNickname() 
+				out.write(idUserNameMap.get(frequency.getUser1Id()) +"-" + idUserNameMap.get(frequency.getUser2Id()) 
 						+ "-" + frequency.getCountOfSimilarTitle() + "\r\n");
 			}
 			out.close();

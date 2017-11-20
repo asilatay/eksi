@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
+import java.util.stream.Collectors;
 
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
@@ -31,6 +32,7 @@ import commons.DateUtil;
 import model.Entry;
 import model.KeyIndexOld;
 import model.User;
+import viewmodel.CosineSimilarityIndex;
 import viewmodel.PMIValueIndexes;
 import viewmodel.UserTitle;
 import viewmodel.UserUserTitle;
@@ -284,7 +286,7 @@ public class EngineManagerImpl implements EngineManager {
 			}
 		}
 		//Co occurence matrix oluþturma tamamlandý, PMI Deðerini hesaplayacaðýz.
-		matrixData = calculateAndSetPMIValues(matrixData, wordFrequencyMap);
+		matrixData = calculateAndSetPMIValues(matrixData, wordFrequencyMap, ranking.size());
 		
 		Map<Integer, List<String>> mapOfIndexes = getMapOfIndexes(matrixData);
 		
@@ -295,7 +297,7 @@ public class EngineManagerImpl implements EngineManager {
 		// bu kayýt yaratýlýp deðeri 0 yazýlmalýdýr. PMI Value deðerini de 0 ata.
 		// Bu noktada bu iþ yapýlmalý
 		Map<PMIValueIndexes, BigDecimal> clonedMatrixData = matrixData;
-		Map<PMIValueIndexes, BigDecimal> filledMatrix = fillMissingMatrixCell(matrixData, mapOfIndexes, splittedEntries.size());
+		Map<PMIValueIndexes, BigDecimal> filledMatrix = fillMissingMatrixCell(matrixData, mapOfIndexes, ranking.size());
 		
 		createTxtFilePMIIndexValues(convertToListPMIValueIndexes(filledMatrix), true);
 		createTxtFilePMIIndexValues(convertToListPMIValueIndexes(clonedMatrixData), false);
@@ -330,13 +332,14 @@ public class EngineManagerImpl implements EngineManager {
 		return returnData;
 	}
 	
-	private Map<PMIValueIndexes, BigDecimal> calculateAndSetPMIValues(Map <PMIValueIndexes, BigDecimal> matrixData, Map<Integer, BigDecimal> wordFrequencyMap) {
+	private Map<PMIValueIndexes, BigDecimal> calculateAndSetPMIValues(Map <PMIValueIndexes, BigDecimal> matrixData, Map<Integer, BigDecimal> wordFrequencyMap, int totalWordSize) {
+		BigDecimal totalWSize = new BigDecimal(totalWordSize);
 		for (Map.Entry<PMIValueIndexes, BigDecimal> data : matrixData.entrySet()) {
-			BigDecimal probW1AndW2 = data.getValue();
+			BigDecimal probW1AndW2 = data.getValue().divide(totalWSize, 10, RoundingMode.HALF_UP);
 			
 			PMIValueIndexes valueObject = data.getKey();
-			BigDecimal frequencyIndex1 = wordFrequencyMap.get(valueObject.getIndex1());
-			BigDecimal frequencyIndex2 = wordFrequencyMap.get(valueObject.getIndex2());
+			BigDecimal frequencyIndex1 = wordFrequencyMap.get(valueObject.getIndex1()).divide(totalWSize, 10, RoundingMode.HALF_UP);
+			BigDecimal frequencyIndex2 = wordFrequencyMap.get(valueObject.getIndex2()).divide(totalWSize, 10, RoundingMode.HALF_UP);
 			
 			BigDecimal pmiValue = probW1AndW2.divide(frequencyIndex1.multiply(frequencyIndex2),10 ,RoundingMode.HALF_UP)
 					.setScale(10, RoundingMode.HALF_UP);
@@ -446,6 +449,7 @@ public class EngineManagerImpl implements EngineManager {
 							for (PMIValueIndexes x : matrixData.keySet()) {
 								if (x.getIndex1() == index1 && x.getIndex2() == i) {
 									filledNewMatrixData.put(x, matrixData.get(x));
+									break;
 								}
 							}
 						}
@@ -542,10 +546,57 @@ public class EngineManagerImpl implements EngineManager {
 	
 	@Override
 	public void createVectors (Map<PMIValueIndexes, BigDecimal> filledMatrix) {
-		Vector<java.util.Map.Entry<?, ?>> v = new Vector<java.util.Map.Entry<?, ?>>();
-		for (Map.Entry<PMIValueIndexes, BigDecimal> data : filledMatrix.entrySet()) {
-			if (data.getKey().getIndex1() == 0) {				
-				v.add(data);
+		final Comparator<PMIValueIndexes> comp = (p1, p2) -> Integer.compare( p1.getIndex1(), p2.getIndex1());
+		PMIValueIndexes biggestIndex = filledMatrix.keySet().stream()
+                .max(comp)
+                .get();
+		for (int i = 0; i < biggestIndex.getIndex1(); i++) {
+			CosineSimilarityIndex cos = new CosineSimilarityIndex();
+			cos.setIndex1(i);
+			for (int j = 0; j < biggestIndex.getIndex1(); j++) {				
+				cos.setIndex2(j);
+				if (i != j) {
+					int array1Size = 0;
+					int array2Size = 0;
+					double[] array1 = new double[biggestIndex.getIndex1() + 1];
+					double[] array2 = new double[biggestIndex.getIndex1() + 1];
+					cos.setIndex1Array(array1);
+					cos.setIndex2Array(array2);
+					for (PMIValueIndexes a : filledMatrix.keySet()) {
+						if (a.getIndex1() == cos.getIndex1()) {
+							BigDecimal totIndex1 = cos.getIndex1Total();
+							if (a.getLogaritmicPmiValue().signum() < 0) {
+								a.setLogaritmicPmiValue(BigDecimal.ZERO);
+							}
+//							if (a.getLogaritmicPmiValue().compareTo(new BigDecimal("999999")) != 0) {								
+								totIndex1 = totIndex1.add(a.getLogaritmicPmiValue());
+//							}
+							cos.setIndex1Total(totIndex1);
+							
+							double[] arr1 = cos.getIndex1Array();
+							arr1[array1Size] = a.getLogaritmicPmiValue().doubleValue();
+							cos.setIndex1Array(arr1);
+							array1Size++;
+							
+						} else if (a.getIndex1() == cos.getIndex2()) {
+							BigDecimal totIndex2 = cos.getIndex2Total();
+							if (a.getLogaritmicPmiValue().signum() < 0) {
+								a.setLogaritmicPmiValue(BigDecimal.ZERO);
+							}
+//							if (a.getLogaritmicPmiValue().compareTo(new BigDecimal("999999")) != 0) {								
+								totIndex2 = totIndex2.add(a.getLogaritmicPmiValue());
+//							}
+							cos.setIndex2Total(totIndex2);
+							
+							double[] arr2 = cos.getIndex2Array();
+							arr2[array2Size] = a.getLogaritmicPmiValue().doubleValue();
+							cos.setIndex2Array(arr2);
+							array2Size++;
+						}
+					}
+					double cosSimilarity = cosineSimilarity(cos.getIndex1Array(), cos.getIndex2Array());
+					cos.setCosineSimilarity(cosSimilarity);
+				}
 			}
 		}
 	}
@@ -765,5 +816,5 @@ public class EngineManagerImpl implements EngineManager {
 			System.err.println("Jaccard benzerliði Excel dosyasý oluþturulurken bir hata oluþtu " + e.getMessage() );
 		}
 	}
-
+	
 }

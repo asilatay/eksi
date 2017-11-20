@@ -1,6 +1,7 @@
 package service;
 
 import java.util.List;
+import java.util.Map;
 
 import model.User;
 
@@ -13,5 +14,7 @@ public interface UserManager {
 	boolean addUser(User user);
 	
 	User getUserByUsername(String username);
+
+	Map<Integer, String> getIdUserNameMap(List<Integer> idList);
 	
 }

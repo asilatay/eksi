@@ -5,7 +5,9 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import model.User;
 
@@ -141,6 +143,42 @@ public class UserRepositoryImpl implements UserRepository{
 			}
 			return null;
 
+		} catch (Exception e) {
+			System.err.println("Database Connection Error ! USER TABLE");
+			System.err.println(e.getMessage());
+			return null;
+		}
+	}
+	
+	@Override
+	public Map<Integer, String> getIdUserNameMap(List<Integer> idList) {
+		try {			
+			String tableName = "user";
+			Class.forName(myDriver);
+			Connection conn = DriverManager.getConnection(db, username, pass);
+			String query = "SELECT ID as id, nickname AS nickname FROM " + tableName + " WHERE id IN(" ;
+			int count = 1;
+			for (Integer i : idList) {
+				if (count == idList.size()) {					
+					query += i ;
+				} else {
+					query += i +",";
+				}
+				count++;
+			}
+			query += ");";
+			Statement st = conn.createStatement();
+			ResultSet rs = st.executeQuery(query);
+			Map<Integer, String> idUserNameMap = new HashMap<Integer, String>();
+			while (rs.next()) {
+				String userName = rs.getString("nickname");
+				int idOfUser = rs.getInt("ID");
+				if (! idUserNameMap.containsKey(idOfUser)) {					
+					idUserNameMap.put(idOfUser, userName);
+				}
+			}
+			return idUserNameMap;
+			
 		} catch (Exception e) {
 			System.err.println("Database Connection Error ! USER TABLE");
 			System.err.println(e.getMessage());

@@ -31,7 +31,7 @@ public interface EntryManager {
 
 	void createTxtFileForVocabs(Map<String, Integer> ranked);
 
-	void createTxtFileForUserUserTitle(List<UserUserTitle> resultList);
+	void createTxtFileForUserUserTitle(List<UserUserTitle> resultList, List<Integer> idList);
 	
 	void getTitleCountOfUsers();
 }

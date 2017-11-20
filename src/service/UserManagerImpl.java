@@ -1,6 +1,7 @@
 package service;
 
 import java.util.List;
+import java.util.Map;
 
 import model.User;
 import repository.UserRepository;
@@ -28,6 +29,11 @@ public class UserManagerImpl implements UserManager{
 	@Override
 	public User getUserByUsername(String username) {
 		return userRepository.getUserByUsername(username);
+	}
+	
+	@Override
+	public  Map<Integer, String> getIdUserNameMap(List<Integer> idList) {
+		return userRepository.getIdUserNameMap(idList);
 	}
 
 }

@@ -276,7 +276,7 @@ public class EntryRepositoryImpl implements EntryRepository{
 					+ " join entry e2 on e2.fk_title_id=t.id"
 					+ " where e1.fk_user_id != e2.fk_user_id and e1.id !=  e2.id"
 					+ " group by e1.fk_user_id, e2.fk_user_id"
-					+ " order by ortaksayi desc limit 200;";
+					+ " order by ortaksayi desc limit 80000;";
 			Statement st = conn.createStatement();        
 			ResultSet rs = st.executeQuery(query);
 			List<UserUserTitle> writeableList = new ArrayList<UserUserTitle>();
@@ -308,7 +308,7 @@ public class EntryRepositoryImpl implements EntryRepository{
 					+ " join title t1 on t1.id = e1.fk_title_id"
 					+ " join user u1 ON u1.id = e1.fk_user_id"
 					+ " group by u1.id"
-					+ " order by titlesayi desc limit 100";
+					+ " order by titlesayi desc;";
 			Statement st = conn.createStatement();        
 			ResultSet rs = st.executeQuery(query);
 			List<UserTitle> writeableList = new ArrayList<UserTitle>();
