@@ -550,6 +550,7 @@ public class EngineManagerImpl implements EngineManager {
 		PMIValueIndexes biggestIndex = filledMatrix.keySet().stream()
                 .max(comp)
                 .get();
+		List<CosineSimilarityIndex> indexList = new ArrayList<CosineSimilarityIndex>();
 		for (int i = 0; i < biggestIndex.getIndex1(); i++) {
 			CosineSimilarityIndex cos = new CosineSimilarityIndex();
 			cos.setIndex1(i);
@@ -596,9 +597,15 @@ public class EngineManagerImpl implements EngineManager {
 					}
 					double cosSimilarity = cosineSimilarity(cos.getIndex1Array(), cos.getIndex2Array());
 					cos.setCosineSimilarity(cosSimilarity);
+					indexList.add(cos);
 				}
 			}
 		}
+		
+		// TXT
+		createCosineSimilarityTxt(indexList);
+		// EXCEL
+		createCosineSimilarityExcel(indexList);
 	}
 	
 	
@@ -814,6 +821,71 @@ public class EngineManagerImpl implements EngineManager {
 			
 		} catch (IOException e) {
 			System.err.println("Jaccard benzerliði Excel dosyasý oluþturulurken bir hata oluþtu " + e.getMessage() );
+		}
+	}
+	
+	private void createCosineSimilarityTxt(List<CosineSimilarityIndex> cosSimilarityList) {
+		try {
+			 BufferedWriter out = new BufferedWriter(new FileWriter("cosineSimilarity.txt"));
+			 for(CosineSimilarityIndex  cos  : cosSimilarityList){
+				 out.write(cos.getIndex1() + "-" + cos.getIndex2() + "-" + cos.getIndex1Total() + "-" + cos.getIndex2Total() + "-" +cos.getCosineSimilarity() +"\r\n");
+			 }
+			 out.close();
+			 System.out.println("Cosine Similarity TXT oluþturuldu.!");
+		}
+		catch (IOException e) {
+			System.err.println("Cosine Similarity TXT oluþturulurken hata oluþtu!");
+       }
+	}
+	
+	private void createCosineSimilarityExcel(List<CosineSimilarityIndex> cosSimilarityList) {
+		System.out.println("Cosine similarity excel oluþturma iþlemi baþladý");
+		try {
+			FileOutputStream fileOut = new FileOutputStream("cosineSimilarity.xlsx");
+
+			XSSFWorkbook workbook = new XSSFWorkbook();
+			XSSFSheet worksheet = workbook.createSheet("POI Worksheet");
+
+			// index from 0,0... cell A1 is cell(0,0)
+			XSSFRow row1 = worksheet.createRow((int) 0);
+			// Create Header of Excel
+			XSSFCell cell = row1.createCell((int) 0);
+			cell.setCellValue("Index1");
+			cell = row1.createCell((int) 1);
+			cell.setCellValue("Index2");
+			cell = row1.createCell((int) 2);
+			cell.setCellValue("Index1Total");
+			cell = row1.createCell((int) 3);
+			cell.setCellValue("Index2Total");
+			cell = row1.createCell((int) 4);
+			cell.setCellValue("CosineSimilarity");
+			int rowNum = 1;
+			// Create Body of Table
+			for (CosineSimilarityIndex a : cosSimilarityList) {
+					row1 = worksheet.createRow((int) rowNum);
+					cell = row1.createCell((int) 0);
+					cell.setCellValue(a.getIndex1());
+					cell = row1.createCell((int) 1);
+					cell.setCellValue(a.getIndex2());
+					cell = row1.createCell((int) 2);
+					cell.setCellValue(a.getIndex1Total().doubleValue());
+					cell = row1.createCell((int) 3);
+					cell.setCellValue(a.getIndex2Total().doubleValue());
+					cell = row1.createCell((int) 4);
+					cell.setCellValue(a.getCosineSimilarity());
+					rowNum++;
+			}
+
+			workbook.write(fileOut);
+			fileOut.flush();
+			fileOut.close();
+			workbook.close();
+			System.out.println("Cosine Similarity excel oluþturma iþlemi baþarýyla tamamlandý");
+		} catch (FileNotFoundException e) {
+			System.err.println("Cosine Similarity Excel dosyasý oluþturulurken bir hata oluþtu " + e.getMessage() );
+			
+		} catch (IOException e) {
+			System.err.println("Cosine Similarity Excel dosyasý oluþturulurken bir hata oluþtu " + e.getMessage() );
 		}
 	}
 	
