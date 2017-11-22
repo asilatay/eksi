@@ -597,6 +597,7 @@ public class EngineManagerImpl implements EngineManager {
 					}
 					double cosSimilarity = cosineSimilarity(cos.getIndex1Array(), cos.getIndex2Array());
 					cos.setCosineSimilarity(cosSimilarity);
+					appendCosineSimilarityOneByOne(cos);
 					indexList.add(cos);
 				}
 			}
@@ -826,7 +827,7 @@ public class EngineManagerImpl implements EngineManager {
 	
 	private void createCosineSimilarityTxt(List<CosineSimilarityIndex> cosSimilarityList) {
 		try {
-			 BufferedWriter out = new BufferedWriter(new FileWriter("cosineSimilarity.txt"));
+			 BufferedWriter out = new BufferedWriter(new FileWriter("cosineSimilarityAll.txt"));
 			 for(CosineSimilarityIndex  cos  : cosSimilarityList){
 				 out.write(cos.getIndex1() + "-" + cos.getIndex2() + "-" + cos.getIndex1Total() + "-" + cos.getIndex2Total() + "-" +cos.getCosineSimilarity() +"\r\n");
 			 }
@@ -886,6 +887,20 @@ public class EngineManagerImpl implements EngineManager {
 			
 		} catch (IOException e) {
 			System.err.println("Cosine Similarity Excel dosyasý oluþturulurken bir hata oluþtu " + e.getMessage() );
+		}
+	}
+	
+	private void appendCosineSimilarityOneByOne(CosineSimilarityIndex cos) {
+		try
+		{
+		    String filename= "cosineSimilarity.txt";
+		    FileWriter fw = new FileWriter(filename,true); //the true will append the new data
+		    fw.write(cos.getIndex1() + "-" + cos.getIndex2() + "-" + cos.getIndex1Total() + "-" + cos.getIndex2Total() + "-" +cos.getCosineSimilarity() +"\r\n");//appends the string to the file
+		    fw.close();
+		}
+		catch(IOException ioe)
+		{
+		    System.err.println("IOException: " + ioe.getMessage());
 		}
 	}
 	
