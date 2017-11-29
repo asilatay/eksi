@@ -17,6 +17,27 @@ public class CosineSimilarityIndex {
 	private double[] index1Array;
 	
 	private double[] index2Array;
+	
+	//Arraylerden ayný cellde 999999 olan veriler temizlendikten sonra sadece arr1 de kalan 999999 un tüm sayýya oraný
+	private String numberOf999999Index1;
+	//Arraylerden ayný cellde 999999 olan veriler temizlendikten sonra sadece arr2 de kalan 999999 un tüm sayýya oraný
+	private String numberOf999999Index2;
+
+	public String getNumberOf999999Index1() {
+		return numberOf999999Index1;
+	}
+
+	public void setNumberOf999999Index1(String numberOf999999Index1) {
+		this.numberOf999999Index1 = numberOf999999Index1;
+	}
+
+	public String getNumberOf999999Index2() {
+		return numberOf999999Index2;
+	}
+
+	public void setNumberOf999999Index2(String numberOf999999Index2) {
+		this.numberOf999999Index2 = numberOf999999Index2;
+	}
 
 	public double[] getIndex1Array() {
 		return index1Array;

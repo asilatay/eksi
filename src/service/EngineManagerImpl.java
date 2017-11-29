@@ -23,6 +23,11 @@ import java.util.Set;
 import java.util.Vector;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.poi.xssf.streaming.SXSSFCell;
+import org.apache.poi.xssf.streaming.SXSSFRow;
+import org.apache.poi.xssf.streaming.SXSSFSheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -59,6 +64,8 @@ public class EngineManagerImpl implements EngineManager {
 	private final static String directoryOfSimilarUsersThatWroteSameTitle = "userUserTitles.txt";
 	
 	private final static String directoryOfTitleCountOfUsers = "userTitle.txt";
+	
+	private final static int parameterOfRemove9999 = 0;
 	
 	public EngineManagerImpl() {
 	}
@@ -557,8 +564,8 @@ public class EngineManagerImpl implements EngineManager {
 			for (int j = 0; j < biggestIndex.getIndex1(); j++) {				
 				cos.setIndex2(j);
 				if (i != j) {
-					int array1Size = 0;
-					int array2Size = 0;
+					cos.setIndex1Total(BigDecimal.ZERO);
+					cos.setIndex2Total(BigDecimal.ZERO);
 					double[] array1 = new double[biggestIndex.getIndex1() + 1];
 					double[] array2 = new double[biggestIndex.getIndex1() + 1];
 					cos.setIndex1Array(array1);
@@ -569,32 +576,35 @@ public class EngineManagerImpl implements EngineManager {
 							if (a.getLogaritmicPmiValue().signum() < 0) {
 								a.setLogaritmicPmiValue(BigDecimal.ZERO);
 							}
-//							if (a.getLogaritmicPmiValue().compareTo(new BigDecimal("999999")) != 0) {								
-								totIndex1 = totIndex1.add(a.getLogaritmicPmiValue());
-//							}
+							totIndex1 = totIndex1.add(a.getLogaritmicPmiValue());
 							cos.setIndex1Total(totIndex1);
-							
+
 							double[] arr1 = cos.getIndex1Array();
-							arr1[array1Size] = a.getLogaritmicPmiValue().doubleValue();
+							arr1[a.getIndex2()] = a.getLogaritmicPmiValue().doubleValue();
 							cos.setIndex1Array(arr1);
-							array1Size++;
 							
 						} else if (a.getIndex1() == cos.getIndex2()) {
 							BigDecimal totIndex2 = cos.getIndex2Total();
 							if (a.getLogaritmicPmiValue().signum() < 0) {
 								a.setLogaritmicPmiValue(BigDecimal.ZERO);
 							}
-//							if (a.getLogaritmicPmiValue().compareTo(new BigDecimal("999999")) != 0) {								
-								totIndex2 = totIndex2.add(a.getLogaritmicPmiValue());
-//							}
+							totIndex2 = totIndex2.add(a.getLogaritmicPmiValue());
 							cos.setIndex2Total(totIndex2);
 							
 							double[] arr2 = cos.getIndex2Array();
-							arr2[array2Size] = a.getLogaritmicPmiValue().doubleValue();
+							arr2[a.getIndex2()] = a.getLogaritmicPmiValue().doubleValue();
 							cos.setIndex2Array(arr2);
-							array2Size++;
 						}
 					}
+					// Array de ayný 2 cell 999999 ise bu celleri uçur
+					Map<Integer,double[]> removedArraysMap = removeNonStandardNumbers(cos.getIndex1Array(), cos.getIndex2Array());
+					cos.setIndex1Array(removedArraysMap.get(1));
+					cos.setIndex2Array(removedArraysMap.get(2));
+					//Temizlikten sonra arraylerde kaçar tane 999999 kaldýðýný çýkar
+					Map<Integer, String> numberOf999999Map = calculateNumber999999OfAllArray(cos.getIndex1Array(), cos.getIndex2Array());
+					cos.setNumberOf999999Index1(numberOf999999Map.get(1));
+					cos.setNumberOf999999Index2(numberOf999999Map.get(2));
+					
 					double cosSimilarity = cosineSimilarity(cos.getIndex1Array(), cos.getIndex2Array());
 					cos.setCosineSimilarity(cosSimilarity);
 					appendCosineSimilarityOneByOne(cos);
@@ -607,6 +617,39 @@ public class EngineManagerImpl implements EngineManager {
 		createCosineSimilarityTxt(indexList);
 		// EXCEL
 		createCosineSimilarityExcel(indexList);
+	}
+	
+	private Map<Integer, String> calculateNumber999999OfAllArray (double[] arr1, double[] arr2) {
+		int forArr1 = 0;
+		int forArr2 = 0;
+		for (int i = 0 ; i < arr1.length; i++) {
+			if (arr1[i] == 999999) {
+				forArr1++;
+			} else if (arr2[i] == 999999) {
+				forArr2++;
+			}
+		}
+		String arr1Info = forArr1 + "/" + arr1.length;
+		String arr2Info = forArr2 + "/" + arr2.length;
+		
+		Map<Integer, String> returnedMap = new HashMap<Integer, String> ();
+		returnedMap.put(1, arr1Info);
+		returnedMap.put(2, arr2Info);
+		
+		return returnedMap;
+	}
+	
+	private Map<Integer,double[]> removeNonStandardNumbers(double[] arr1, double[] arr2) {
+		for (int i = 0 ; i < arr1.length; i++) {
+			if (arr1[i] == arr2[i] && arr1[i] == 999999) {
+				arr1 = ArrayUtils.remove(arr1, i);
+				arr2 = ArrayUtils.remove(arr2, i);
+			}
+		}
+		Map<Integer, double[]> returnedList = new HashMap<Integer, double[]>();
+		returnedList.put(1, arr1);
+		returnedList.put(2, arr2);
+		return returnedList;
 	}
 	
 	
@@ -829,7 +872,8 @@ public class EngineManagerImpl implements EngineManager {
 		try {
 			 BufferedWriter out = new BufferedWriter(new FileWriter("cosineSimilarityAll.txt"));
 			 for(CosineSimilarityIndex  cos  : cosSimilarityList){
-				 out.write(cos.getIndex1() + "-" + cos.getIndex2() + "-" + cos.getIndex1Total() + "-" + cos.getIndex2Total() + "-" +cos.getCosineSimilarity() +"\r\n");
+				 out.write(cos.getIndex1() + "-" + cos.getIndex2() + "-" + cos.getIndex1Total() + "-" + cos.getIndex2Total() + "-" + cos.getNumberOf999999Index1() + "-"
+			 + cos.getNumberOf999999Index2() + "-" +cos.getCosineSimilarity() +"\r\n");
 			 }
 			 out.close();
 			 System.out.println("Cosine Similarity TXT oluþturuldu.!");
@@ -845,12 +889,13 @@ public class EngineManagerImpl implements EngineManager {
 			FileOutputStream fileOut = new FileOutputStream("cosineSimilarity.xlsx");
 
 			XSSFWorkbook workbook = new XSSFWorkbook();
-			XSSFSheet worksheet = workbook.createSheet("POI Worksheet");
+			SXSSFWorkbook wb = new SXSSFWorkbook(workbook);
+			SXSSFSheet worksheet = wb.createSheet("POI Worksheet");
 
 			// index from 0,0... cell A1 is cell(0,0)
-			XSSFRow row1 = worksheet.createRow((int) 0);
+			SXSSFRow row1 = worksheet.createRow((int) 0);
 			// Create Header of Excel
-			XSSFCell cell = row1.createCell((int) 0);
+			SXSSFCell cell = row1.createCell((int) 0);
 			cell.setCellValue("Index1");
 			cell = row1.createCell((int) 1);
 			cell.setCellValue("Index2");
@@ -859,6 +904,10 @@ public class EngineManagerImpl implements EngineManager {
 			cell = row1.createCell((int) 3);
 			cell.setCellValue("Index2Total");
 			cell = row1.createCell((int) 4);
+			cell.setCellValue("Index2Total");
+			cell = row1.createCell((int) 5);
+			cell.setCellValue("Index2Total");
+			cell = row1.createCell((int) 6);
 			cell.setCellValue("CosineSimilarity");
 			int rowNum = 1;
 			// Create Body of Table
@@ -873,14 +922,20 @@ public class EngineManagerImpl implements EngineManager {
 					cell = row1.createCell((int) 3);
 					cell.setCellValue(a.getIndex2Total().doubleValue());
 					cell = row1.createCell((int) 4);
+					cell.setCellValue(a.getNumberOf999999Index1());
+					cell = row1.createCell((int) 5);
+					cell.setCellValue(a.getNumberOf999999Index2());
+					cell = row1.createCell((int) 6);
 					cell.setCellValue(a.getCosineSimilarity());
 					rowNum++;
 			}
 
-			workbook.write(fileOut);
+//			workbook.write(fileOut);
+			wb.write(fileOut);
 			fileOut.flush();
 			fileOut.close();
 			workbook.close();
+			wb.close();
 			System.out.println("Cosine Similarity excel oluþturma iþlemi baþarýyla tamamlandý");
 		} catch (FileNotFoundException e) {
 			System.err.println("Cosine Similarity Excel dosyasý oluþturulurken bir hata oluþtu " + e.getMessage() );
@@ -895,7 +950,8 @@ public class EngineManagerImpl implements EngineManager {
 		{
 		    String filename= "cosineSimilarity.txt";
 		    FileWriter fw = new FileWriter(filename,true); //the true will append the new data
-		    fw.write(cos.getIndex1() + "-" + cos.getIndex2() + "-" + cos.getIndex1Total() + "-" + cos.getIndex2Total() + "-" +cos.getCosineSimilarity() +"\r\n");//appends the string to the file
+		    fw.write(cos.getIndex1() + "-" + cos.getIndex2() + "-" + cos.getIndex1Total() + "-" + cos.getIndex2Total() 
+		    + "-" + cos.getNumberOf999999Index1() + "-" + cos.getNumberOf999999Index2() + "-" +cos.getCosineSimilarity() +"\r\n");//appends the string to the file
 		    fw.close();
 		}
 		catch(IOException ioe)

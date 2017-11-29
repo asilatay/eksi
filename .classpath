@@ -13,5 +13,7 @@
 	<classpathentry kind="lib" path="lib/poi-scratchpad-3.14-20160307.jar"/>
 	<classpathentry kind="lib" path="lib/curvesapi-1.03.jar"/>
 	<classpathentry kind="lib" path="lib/xmlbeans-2.6.0.jar"/>
+	<classpathentry kind="lib" path="lib/apache-commons.jar"/>
+	<classpathentry kind="lib" path="lib/org.apache.commons.lang_2.4.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
