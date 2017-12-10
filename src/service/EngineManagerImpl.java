@@ -21,7 +21,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.poi.xssf.streaming.SXSSFCell;
@@ -64,7 +66,8 @@ public class EngineManagerImpl implements EngineManager {
 	private final static String directoryOfSimilarUsersThatWroteSameTitle = "userUserTitles.txt";
 	
 	private final static String directoryOfTitleCountOfUsers = "userTitle.txt";
-	
+	// Eðer bu parametre 0 ise arraydeki elemanlardan biri bile 999999 ise hesaplamadan çýkar(Ýkisi de 999999 olmamalý)
+	// Eðer bu parametre 1 ise arraydeki elemanlardan biri mantýklý bir sayýysa hesaplamaya sok
 	private final static int parameterOfRemove9999 = 0;
 	
 	public EngineManagerImpl() {
@@ -640,18 +643,52 @@ public class EngineManagerImpl implements EngineManager {
 	}
 	
 	private Map<Integer,double[]> removeNonStandardNumbers(double[] arr1, double[] arr2) {
-		for (int i = 0 ; i < arr1.length; i++) {
-			if (arr1[i] == arr2[i] && arr1[i] == 999999) {
-				arr1 = ArrayUtils.remove(arr1, i);
-				arr2 = ArrayUtils.remove(arr2, i);
+		if (parameterOfRemove9999 == 0) {
+			int countForNewArray = 0;
+			for (int i = 0 ; i < arr1.length; i++) {
+				if (arr1[i] != 999999 && arr2[i] != 999999) {
+					countForNewArray++;
+				}
 			}
+			double [] newArr1 = new double[countForNewArray];
+			double [] newArr2 = new double[countForNewArray];
+			int index = 0;
+			for (int i = 0 ; i < arr1.length; i++) {
+				if (arr1[i] != 999999 && arr2[i] != 999999) {
+					newArr1[index] = arr1[i];
+					newArr2[index] = arr2[i];
+					index++;
+				}
+			}
+			Map<Integer, double[]> returnedList = new HashMap<Integer, double[]>();
+			returnedList.put(1, newArr1);
+			returnedList.put(2, newArr2);
+			return returnedList;
+			
+		} else {
+			int countForNewArray = 0;
+			for (int i = 0 ; i < arr1.length; i++) {
+				if (arr1[i] != 999999  || arr2[i]  != 999999) {
+					countForNewArray++;
+				}
+			}
+			double [] newArr1 = new double[countForNewArray];
+			double [] newArr2 = new double[countForNewArray];
+			//set operation
+			int index = 0;
+			for (int i = 0; i < arr1.length; i++) {
+				if (arr1[i] != 999999 || arr2[i] != 999999) {
+					newArr1[index] = arr1[i];
+					newArr2[index] = arr2[i];
+					index++;
+				}
+			}
+			Map<Integer, double[]> returnedList = new HashMap<Integer, double[]>();
+			returnedList.put(1, newArr1);
+			returnedList.put(2, newArr2);
+			return returnedList;
 		}
-		Map<Integer, double[]> returnedList = new HashMap<Integer, double[]>();
-		returnedList.put(1, arr1);
-		returnedList.put(2, arr2);
-		return returnedList;
 	}
-	
 	
 	//Method
 	public static double cosineSimilarity(double[] vectorA, double[] vectorB) {
@@ -757,6 +794,8 @@ public class EngineManagerImpl implements EngineManager {
 				}
 			}
 		}
+		//Threshold
+		calculateThreshold(userUserTitleList);
 		//Çýktý üret
 		//1 - TXT
 		createJaccardSimilarityTxt(userUserTitleList);
@@ -765,18 +804,127 @@ public class EngineManagerImpl implements EngineManager {
 		
 	}
 	
+	private void calculateThreshold(List<UserUserTitle> userUserTitleList) {
+		Map<BigDecimal, List<UserUserTitle>> thresholdMap = createThresHoldMap();
+		for (UserUserTitle t : userUserTitleList) {
+			BigDecimal jaccSim = t.getJaccardSimilarity().setScale(2, RoundingMode.HALF_UP);
+			List<UserUserTitle> tempList = thresholdMap.get(jaccSim);
+			tempList.add(t);
+			thresholdMap.put(jaccSim, tempList);
+		}
+		
+		//Sort By Key
+		Map<BigDecimal, List<UserUserTitle>> sorted =
+				thresholdMap.entrySet().stream()
+			       .sorted(Map.Entry.comparingByKey()).collect(Collectors.toMap(
+			    	          Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));;
+		
+		createExcelForThresholdJaccardSimilarity(sorted);
+		
+		createTxtForThresholdJaccardSimilarity(sorted);
+	}
+	
+	private Map<BigDecimal, List<UserUserTitle>> createThresHoldMap() {
+		//Baþlangýç noktasý
+		BigDecimal startPoint = new BigDecimal ("0.00");
+		BigDecimal addNumber = new BigDecimal("0.01");
+		// Dönecek map
+		Map<BigDecimal, List<UserUserTitle>> returnedMap = new HashMap<BigDecimal, List<UserUserTitle>>();
+		for (int i = 0; i < 101; i++) {
+			returnedMap.put(startPoint, new ArrayList<UserUserTitle>());
+			startPoint = startPoint.add(addNumber);
+		}
+		
+		return returnedMap;
+	}
+	
+	private void createExcelForThresholdJaccardSimilarity(Map<BigDecimal, List<UserUserTitle>> thresholdMap) {
+		System.out.println("Jaccard benzerliði threshold excel oluþturma iþlemi baþladý");
+		try {
+			FileOutputStream fileOut = new FileOutputStream("jaccardSimilarityThreshold.xlsx");
+
+			XSSFWorkbook workbook = new XSSFWorkbook();
+			SXSSFWorkbook wb = new SXSSFWorkbook(workbook);
+			SXSSFSheet worksheet = wb.createSheet("POI Worksheet");
+
+			// index from 0,0... cell A1 is cell(0,0)
+			SXSSFRow row1 = worksheet.createRow((int) 0);
+			// Create Header of Excel
+			SXSSFCell cell = row1.createCell((int) 0);
+			cell.setCellValue("Number");
+			cell = row1.createCell((int) 1);
+			cell.setCellValue("Size");
+			int rowNum = 1;
+			// Create Body of Table
+			for (Map.Entry<BigDecimal, List<UserUserTitle>> e : thresholdMap.entrySet()) {
+				row1 = worksheet.createRow((int) rowNum);
+				cell = row1.createCell((int) 0);
+				cell.setCellValue(e.getKey().doubleValue());
+				cell = row1.createCell((int) 1);
+				cell.setCellValue(e.getValue().size());
+				rowNum++;
+			}
+
+			wb.write(fileOut);
+			fileOut.flush();
+			fileOut.close();
+			workbook.close();
+			wb.close();
+			System.out.println("Jaccard benzerliði excel oluþturma iþlemi baþarýyla tamamlandý");
+		} catch (FileNotFoundException e) {
+			System.err.println("Jaccard benzerliði Excel dosyasý oluþturulurken bir hata oluþtu " + e.getMessage() );
+			
+		} catch (IOException e) {
+			System.err.println("Jaccard benzerliði Excel dosyasý oluþturulurken bir hata oluþtu " + e.getMessage() );
+		}
+	}
+	
+	private void createTxtForThresholdJaccardSimilarity(Map<BigDecimal, List<UserUserTitle>> thresholdMap) {
+		try {
+			BufferedWriter out = new BufferedWriter(new FileWriter("jaccardSimilarityThreshold.txt"));
+			for (Map.Entry<BigDecimal, List<UserUserTitle>> e : thresholdMap.entrySet()) {
+					out.write(e.getKey() + "-" + e.getValue().size() +"\r\n");
+			}
+			out.close();
+			System.out.println("Jaccard benzerliði threshold TXT dosyasý oluþturuldu!");
+			
+		} catch (Exception e) {
+			System.err.println("Jaccard benzerliði threshold TXT dosyasý oluþturulurken bir hata oluþtu " + e.getMessage() );
+		}
+	}
+	
 	private List<UserUserTitle> getUserUserTitleListFromFile() {
 		try {
 			BufferedReader in = new BufferedReader(new FileReader(directoryOfSimilarUsersThatWroteSameTitle));
 			String line;
 			List<UserUserTitle> userUserTitleList = new ArrayList<UserUserTitle>();
+			int count = 0 ;
+			Map<String, User> usernameUserMap = new HashMap<String, User>();
 			while((line = in.readLine()) != null) {
 				UserUserTitle uut = new UserUserTitle();
 				String[] splitWithLine = line.split("-");
-				uut.setUser1(userManager.getUserByUsername(splitWithLine[0]));
-				uut.setUser2(userManager.getUserByUsername(splitWithLine[1]));
+				User user1 = null;
+				User user2 = null;
+				if (usernameUserMap.containsKey(splitWithLine[0])) {
+					user1 = usernameUserMap.get(splitWithLine[0]);
+				} else {
+					user1 = userManager.getUserByUsername(splitWithLine[0]);
+					usernameUserMap.put(user1.getNickname(), user1);
+				}
+				if (usernameUserMap.containsKey(splitWithLine[1])) {
+					user2 = usernameUserMap.get(splitWithLine[1]);
+				} else {
+					user2 = userManager.getUserByUsername(splitWithLine[1]);
+					usernameUserMap.put(user2.getNickname(), user2);
+				}
+				uut.setUser1(user1);
+				uut.setUser2(user2);
 				uut.setCountOfSimilarTitle(Integer.parseInt(splitWithLine[2]));
 				userUserTitleList.add(uut);
+				if (count % 200 == 0) {					
+					TimeUnit.SECONDS.sleep(1);
+				}
+				count++;
  			}
 			in.close();
 			return userUserTitleList;
@@ -930,7 +1078,6 @@ public class EngineManagerImpl implements EngineManager {
 					rowNum++;
 			}
 
-//			workbook.write(fileOut);
 			wb.write(fileOut);
 			fileOut.flush();
 			fileOut.close();
