@@ -25,5 +25,7 @@ public interface EngineManager {
 	void createTxtFilePMIIndexValues(List<PMIValueIndexes> indexList, boolean isFilled);
 	
 	void calculateJaccardSimilarityAndSave();
+	
+	void runBilkentData(String readXmlPath);
 
 }

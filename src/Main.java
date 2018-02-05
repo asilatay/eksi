@@ -33,6 +33,7 @@ public class Main {
 		String dir = "C:\\webharvest\\KAYDET\\";
 		String ham = "C:\\webharvest\\HAM\\";
 		final String fileReadingPath = "C:\\Users\\ASIL\\git\\eksiGit\\entries.txt";
+		final String bilkentXmlPath ="D:\\Yüksek Lisans\\Tez\\Bilkent DATA\\BilCol2005\\1.xml";
 		String operationSelect ="-1";
 		System.out.println("GitHub Entegrasyonu OK!");
 		Scanner scanIn = new Scanner(System.in);		
@@ -53,6 +54,7 @@ public class Main {
 			System.out.println("Benzer Kullanýcý - Title Hesaplama-> Press 13");
 			System.out.println("Kullanýcý - Title Hesaplama       -> Press 14");
 			System.out.println("Jaccard Benzerliðini Hesaplama    -> Press 15");
+			System.out.println("Bilkent Örnek Veriyi Çalýþtýr     -> Press 16");
 			operationSelect = scanIn.nextLine();
 			if (operationSelect.equals("1")) {
 				crawlerManager.createCrudeLinks(ham);
@@ -141,6 +143,8 @@ public class Main {
 				entryManager.getTitleCountOfUsers();
 			} else if (operationSelect.equals("15")) {
 				engineManager.calculateJaccardSimilarityAndSave();
+			} else if (operationSelect.equals("16")) {
+				engineManager.runBilkentData(bilkentXmlPath);
 			}
 			
 		} while(!operationSelect.equals("0"));

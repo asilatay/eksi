@@ -2,14 +2,22 @@ package service;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -20,12 +28,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import org.apache.commons.lang.ArrayUtils;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+
 import org.apache.poi.xssf.streaming.SXSSFCell;
 import org.apache.poi.xssf.streaming.SXSSFRow;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
@@ -34,6 +45,11 @@ import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 import commons.DateUtil;
 import model.Entry;
@@ -68,7 +84,7 @@ public class EngineManagerImpl implements EngineManager {
 	private final static String directoryOfTitleCountOfUsers = "userTitle.txt";
 	// Eðer bu parametre 0 ise arraydeki elemanlardan biri bile 999999 ise hesaplamadan çýkar(Ýkisi de 999999 olmamalý)
 	// Eðer bu parametre 1 ise arraydeki elemanlardan biri mantýklý bir sayýysa hesaplamaya sok
-	private final static int parameterOfRemove9999 = 0;
+//	private final static int parameterOfRemove9999 = 0;
 	
 	public EngineManagerImpl() {
 	}
@@ -359,7 +375,8 @@ public class EngineManagerImpl implements EngineManager {
 				valueObject.setLogaritmicPmiValue(log10(valueObject.getPmiValue(), 10));
 			} catch (ArithmeticException e) {
 				// logaritma 0 geldiðinde exception fýrlatýlýp yakalandý ve bir deðer set edildi. Deðeri deðiþtirebiliriz.
-				valueObject.setLogaritmicPmiValue(new BigDecimal("999999"));
+				// Deðer son karardan sonra 0 set edildi. (23 Ocak 2018) Daha sonrasýnda operasyonel hesaplamalarda deðerler +1 shift edilecek
+				valueObject.setLogaritmicPmiValue(BigDecimal.ZERO);
 			}
 			
 		}
@@ -414,12 +431,20 @@ public class EngineManagerImpl implements EngineManager {
 			try {
 				object.setLogarithmicAlternatePmiValue(log10(object.getAlternatePmiValue(), 10));
 			} catch (ArithmeticException ex) {
-				object.setLogarithmicAlternatePmiValue(new BigDecimal("999999"));
+				// Deðer son karardan sonra 0 set edildi. (23 Ocak 2018) Daha sonrasýnda operasyonel hesaplamalarda deðerler +1 shift edilecek
+				object.setLogarithmicAlternatePmiValue(BigDecimal.ZERO);
 			}
 		}
 		return matrixData;
 	}
-	
+	/**
+	 * Bu fonksiyon operasyonel iþlemler tamamlandýðýnda wordSize X wordSize kadarlýk bir matrix oluþturulabilmesi için birbirleriyle hiç görülmeyen kelimelere hesaplama olarak 0 deðerlerini atar
+	 * 
+	 * @param matrixData (Kelime bilgilerinin olduðu data)
+	 * @param mapOfIndexes
+	 * @param totalSize (matrix size)
+	 * @return (Diðer tüm bilgilerle doldurulmuþ yeni matrix)
+	 */
 	private Map<PMIValueIndexes, BigDecimal> fillMissingMatrixCell (Map <PMIValueIndexes, BigDecimal> matrixData 
 			,Map<Integer, List<String>> mapOfIndexes, int totalSize) {
 		Map<Integer, Integer> indexSizeMap = new HashMap<Integer, Integer>();
@@ -450,11 +475,10 @@ public class EngineManagerImpl implements EngineManager {
 							newIndex.setIndex1(index1);
 							newIndex.setIndex2(i);
 							newIndex.setPmiValue(BigDecimal.ZERO);
-							newIndex.setLogaritmicPmiValue(new BigDecimal("999999"));
+							newIndex.setLogaritmicPmiValue(BigDecimal.ZERO);
 							newIndex.setAlternatePmiValue(BigDecimal.ZERO);
-							newIndex.setLogarithmicAlternatePmiValue(new BigDecimal("999999"));
+							newIndex.setLogarithmicAlternatePmiValue(BigDecimal.ZERO);
 							filledNewMatrixData.put(newIndex, BigDecimal.ZERO);
-							// matrixData.put(newIndex, BigDecimal.ZERO);
 						} else {
 							for (PMIValueIndexes x : matrixData.keySet()) {
 								if (x.getIndex1() == index1 && x.getIndex2() == i) {
@@ -511,6 +535,12 @@ public class EngineManagerImpl implements EngineManager {
 		return null;
 	}
 	
+	/**
+	 * Calculates log10
+	 * @param b
+	 * @param dp
+	 * @return
+	 */
 	private BigDecimal log10(BigDecimal b, int dp)
 	{
 	    final int NUM_OF_DIGITS = dp+2; // need to add one to get the right number of dp
@@ -600,13 +630,18 @@ public class EngineManagerImpl implements EngineManager {
 						}
 					}
 					// Array de ayný 2 cell 999999 ise bu celleri uçur
-					Map<Integer,double[]> removedArraysMap = removeNonStandardNumbers(cos.getIndex1Array(), cos.getIndex2Array());
-					cos.setIndex1Array(removedArraysMap.get(1));
-					cos.setIndex2Array(removedArraysMap.get(2));
+//					Map<Integer,double[]> removedArraysMap = removeNonStandardNumbers(cos.getIndex1Array(), cos.getIndex2Array());
+//					cos.setIndex1Array(removedArraysMap.get(1));
+//					cos.setIndex2Array(removedArraysMap.get(2));
 					//Temizlikten sonra arraylerde kaçar tane 999999 kaldýðýný çýkar
-					Map<Integer, String> numberOf999999Map = calculateNumber999999OfAllArray(cos.getIndex1Array(), cos.getIndex2Array());
-					cos.setNumberOf999999Index1(numberOf999999Map.get(1));
-					cos.setNumberOf999999Index2(numberOf999999Map.get(2));
+//					Map<Integer, String> numberOf999999Map = calculateNumber999999OfAllArray(cos.getIndex1Array(), cos.getIndex2Array());
+//					cos.setNumberOf999999Index1(numberOf999999Map.get(1));
+//					cos.setNumberOf999999Index2(numberOf999999Map.get(2));
+					
+					//shifting operation
+					Map<Integer,double[]>  shiftedArrayMap = shiftAllValuesBeforeCosineSimilarityCalculation(cos.getIndex1Array(), cos.getIndex2Array(), true);
+					cos.setIndex1Array(shiftedArrayMap.get(1));
+					cos.setIndex2Array(shiftedArrayMap.get(2));
 					
 					double cosSimilarity = cosineSimilarity(cos.getIndex1Array(), cos.getIndex2Array());
 					cos.setCosineSimilarity(cosSimilarity);
@@ -622,75 +657,112 @@ public class EngineManagerImpl implements EngineManager {
 		createCosineSimilarityExcel(indexList);
 	}
 	
-	private Map<Integer, String> calculateNumber999999OfAllArray (double[] arr1, double[] arr2) {
-		int forArr1 = 0;
-		int forArr2 = 0;
-		for (int i = 0 ; i < arr1.length; i++) {
-			if (arr1[i] == 999999) {
-				forArr1++;
-			} else if (arr2[i] == 999999) {
-				forArr2++;
-			}
-		}
-		String arr1Info = forArr1 + "/" + arr1.length;
-		String arr2Info = forArr2 + "/" + arr2.length;
-		
-		Map<Integer, String> returnedMap = new HashMap<Integer, String> ();
-		returnedMap.put(1, arr1Info);
-		returnedMap.put(2, arr2Info);
-		
-		return returnedMap;
-	}
+
 	
-	private Map<Integer,double[]> removeNonStandardNumbers(double[] arr1, double[] arr2) {
-		if (parameterOfRemove9999 == 0) {
-			int countForNewArray = 0;
-			for (int i = 0 ; i < arr1.length; i++) {
-				if (arr1[i] != 999999 && arr2[i] != 999999) {
-					countForNewArray++;
-				}
-			}
-			double [] newArr1 = new double[countForNewArray];
-			double [] newArr2 = new double[countForNewArray];
-			int index = 0;
-			for (int i = 0 ; i < arr1.length; i++) {
-				if (arr1[i] != 999999 && arr2[i] != 999999) {
-					newArr1[index] = arr1[i];
-					newArr2[index] = arr2[i];
-					index++;
-				}
-			}
-			Map<Integer, double[]> returnedList = new HashMap<Integer, double[]>();
-			returnedList.put(1, newArr1);
-			returnedList.put(2, newArr2);
-			return returnedList;
-			
-		} else {
-			int countForNewArray = 0;
-			for (int i = 0 ; i < arr1.length; i++) {
-				if (arr1[i] != 999999  || arr2[i]  != 999999) {
-					countForNewArray++;
-				}
-			}
-			double [] newArr1 = new double[countForNewArray];
-			double [] newArr2 = new double[countForNewArray];
-			//set operation
-			int index = 0;
+	private Map<Integer, double[]> shiftAllValuesBeforeCosineSimilarityCalculation(double[] arr1, double[] arr2, boolean shiftAllValues)  {
+		if (shiftAllValues)  {
+			// Sistemdeki tüm deðerler +1 shift edilir
 			for (int i = 0; i < arr1.length; i++) {
-				if (arr1[i] != 999999 || arr2[i] != 999999) {
-					newArr1[index] = arr1[i];
-					newArr2[index] = arr2[i];
-					index++;
+				arr1[i] = arr1[i] + 1;
+				arr2[i] = arr2[i] + 1;
+			}
+			return setArraysToMap(arr1, arr2);
+		} else {
+			// Sistemde sadece 0 olan deðerler +1 shift edilir
+			for (int i = 0; i < arr1.length; i++) {
+				if (arr1[i] == 0) {
+					arr1[i] = arr1[i] + 1;
+				}
+				if (arr2[i] == 0) {
+					arr2[i] = arr2[i] + 1; 
 				}
 			}
-			Map<Integer, double[]> returnedList = new HashMap<Integer, double[]>();
-			returnedList.put(1, newArr1);
-			returnedList.put(2, newArr2);
-			return returnedList;
+			return setArraysToMap(arr1, arr2);
 		}
 	}
+
+
+	private Map<Integer, double[]> setArraysToMap(double[] arr1, double[] arr2) {
+		Map<Integer, double[]> returnedList = new HashMap<Integer, double[]>();
+		returnedList.put(1, arr1);
+		returnedList.put(2, arr2);
+		return returnedList;
+	}
 	
-	//Method
+//	private Map<Integer, String> calculateNumber999999OfAllArray (double[] arr1, double[] arr2) {
+//		int forArr1 = 0;
+//		int forArr2 = 0;
+//		for (int i = 0 ; i < arr1.length; i++) {
+//			if (arr1[i] == 999999) {
+//				forArr1++;
+//			} else if (arr2[i] == 999999) {
+//				forArr2++;
+//			}
+//		}
+//		String arr1Info = forArr1 + "/" + arr1.length;
+//		String arr2Info = forArr2 + "/" + arr2.length;
+//		
+//		Map<Integer, String> returnedMap = new HashMap<Integer, String> ();
+//		returnedMap.put(1, arr1Info);
+//		returnedMap.put(2, arr2Info);
+//		
+//		return returnedMap;
+//	}
+	
+//	private Map<Integer,double[]> removeNonStandardNumbers(double[] arr1, double[] arr2) {
+//		if (parameterOfRemove9999 == 0) {
+//			int countForNewArray = 0;
+//			for (int i = 0 ; i < arr1.length; i++) {
+//				if (arr1[i] != 999999 && arr2[i] != 999999) {
+//					countForNewArray++;
+//				}
+//			}
+//			double [] newArr1 = new double[countForNewArray];
+//			double [] newArr2 = new double[countForNewArray];
+//			int index = 0;
+//			for (int i = 0 ; i < arr1.length; i++) {
+//				if (arr1[i] != 999999 && arr2[i] != 999999) {
+//					newArr1[index] = arr1[i];
+//					newArr2[index] = arr2[i];
+//					index++;
+//				}
+//			}
+//			Map<Integer, double[]> returnedList = new HashMap<Integer, double[]>();
+//			returnedList.put(1, newArr1);
+//			returnedList.put(2, newArr2);
+//			return returnedList;
+//			
+//		} else {
+//			int countForNewArray = 0;
+//			for (int i = 0 ; i < arr1.length; i++) {
+//				if (arr1[i] != 999999  || arr2[i]  != 999999) {
+//					countForNewArray++;
+//				}
+//			}
+//			double [] newArr1 = new double[countForNewArray];
+//			double [] newArr2 = new double[countForNewArray];
+//			//set operation
+//			int index = 0;
+//			for (int i = 0; i < arr1.length; i++) {
+//				if (arr1[i] != 999999 || arr2[i] != 999999) {
+//					newArr1[index] = arr1[i];
+//					newArr2[index] = arr2[i];
+//					index++;
+//				}
+//			}
+//			Map<Integer, double[]> returnedList = new HashMap<Integer, double[]>();
+//			returnedList.put(1, newArr1);
+//			returnedList.put(2, newArr2);
+//			return returnedList;
+//		}
+//	}
+	
+	/**
+	 * Calculates cosine similarity of two vectors
+	 * @param vectorA
+	 * @param vectorB
+	 * @return cosine similarity value
+	 */
 	public static double cosineSimilarity(double[] vectorA, double[] vectorB) {
 	    double dotProduct = 0.0;
 	    double normA = 0.0;
@@ -746,7 +818,7 @@ public class EngineManagerImpl implements EngineManager {
 			} else {
 				out = new BufferedWriter(new FileWriter("pmiValueIndexes.txt"));
 			}
-			out.write("INDEX-1" + "	" + "INDEX-2" + "	" + "PMI-VALUE" + "	" + "LOG-PMI-VALUE" + "	" + "ALT-PMI-VALUE" + "	" + "LOG-ALT-PMI-VALUE" +"\r\n");
+			out.write("INDEX-1" + "	" + "INDEX-2" + "	" + "TMP-PMI-VALUE" + "	" + "PMI-VALUE" + "	" + "TMP-ALT-PMI-VALUE" + "	" + "ALT-PMI-VALUE" +"\r\n");
 			for (PMIValueIndexes index : indexList) {
 				out.write(index.getIndex1() + "	" + index.getIndex2() + "	" + index.getPmiValue() + "	" 
 							+ index.getLogaritmicPmiValue() + "	" + index.getAlternatePmiValue() + "	" + index.getLogarithmicAlternatePmiValue()+"\r\n");
@@ -1020,8 +1092,7 @@ public class EngineManagerImpl implements EngineManager {
 		try {
 			 BufferedWriter out = new BufferedWriter(new FileWriter("cosineSimilarityAll.txt"));
 			 for(CosineSimilarityIndex  cos  : cosSimilarityList){
-				 out.write(cos.getIndex1() + "-" + cos.getIndex2() + "-" + cos.getIndex1Total() + "-" + cos.getIndex2Total() + "-" + cos.getNumberOf999999Index1() + "-"
-			 + cos.getNumberOf999999Index2() + "-" +cos.getCosineSimilarity() +"\r\n");
+				 out.write(cos.getIndex1() + "-" + cos.getIndex2() + "-" + cos.getIndex1Total() + "-" + cos.getIndex2Total() + "-" +cos.getCosineSimilarity() +"\r\n");
 			 }
 			 out.close();
 			 System.out.println("Cosine Similarity TXT oluþturuldu.!");
@@ -1052,10 +1123,6 @@ public class EngineManagerImpl implements EngineManager {
 			cell = row1.createCell((int) 3);
 			cell.setCellValue("Index2Total");
 			cell = row1.createCell((int) 4);
-			cell.setCellValue("Index2Total");
-			cell = row1.createCell((int) 5);
-			cell.setCellValue("Index2Total");
-			cell = row1.createCell((int) 6);
 			cell.setCellValue("CosineSimilarity");
 			int rowNum = 1;
 			// Create Body of Table
@@ -1070,10 +1137,6 @@ public class EngineManagerImpl implements EngineManager {
 					cell = row1.createCell((int) 3);
 					cell.setCellValue(a.getIndex2Total().doubleValue());
 					cell = row1.createCell((int) 4);
-					cell.setCellValue(a.getNumberOf999999Index1());
-					cell = row1.createCell((int) 5);
-					cell.setCellValue(a.getNumberOf999999Index2());
-					cell = row1.createCell((int) 6);
 					cell.setCellValue(a.getCosineSimilarity());
 					rowNum++;
 			}
@@ -1098,13 +1161,78 @@ public class EngineManagerImpl implements EngineManager {
 		    String filename= "cosineSimilarity.txt";
 		    FileWriter fw = new FileWriter(filename,true); //the true will append the new data
 		    fw.write(cos.getIndex1() + "-" + cos.getIndex2() + "-" + cos.getIndex1Total() + "-" + cos.getIndex2Total() 
-		    + "-" + cos.getNumberOf999999Index1() + "-" + cos.getNumberOf999999Index2() + "-" +cos.getCosineSimilarity() +"\r\n");//appends the string to the file
+		    + "-" +cos.getCosineSimilarity() +"\r\n");//appends the string to the file
 		    fw.close();
 		}
 		catch(IOException ioe)
 		{
 		    System.err.println("IOException: " + ioe.getMessage());
 		}
+	}
+	
+	@Override
+	public void runBilkentData(String readXmlPath) {
+		//read XML file
+		Document document = readXmlFileFromPath(readXmlPath);
+		if (document != null) {			
+			NodeList docNodeList = document.getElementsByTagName("DOC").item(0).getChildNodes();
+			Node text = docNodeList.item(9);
+			String txtDeneme = text.getTextContent();
+			txtDeneme = txtDeneme.replaceAll("\n", " ");
+			try {
+				String abc = new String(txtDeneme.getBytes("UTF-8"),"WINDOWS-1256" );
+				int x = 0;
+			} catch (UnsupportedEncodingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+//			ByteBuffer byteBuffer = Charset.forName("UTF-8").encode(txtDeneme);
+//			byteBuffer.get();
+//			txtDeneme = convertTurkishCharacters(txtDeneme);
+//			txtDeneme = txtDeneme.replaceAll("\uFFFD", "\"");
+//			String pwd = document.getElementsByTagName("password").item(0).getTextContent();
+		}
+	}
+	
+	private String convertTurkishCharacters (String context) {
+		context = context.replaceAll("&#304;", "Ý");
+	    context = context.replaceAll("&#305;", "ý");
+	    context = context.replaceAll("&#214;", "Ö");
+	    context = context.replaceAll("&#246;", "ö");
+	    context = context.replaceAll("&#220;", "Ü");
+	    context = context.replaceAll("&#252;", "ü");
+	    context = context.replaceAll("&#199;", "Ç");
+	    context = context.replaceAll("&#231;", "ç");
+	    context = context.replaceAll("&#286;", "Ð");
+	    context = context.replaceAll("&#287;", "ð");
+	    context = context.replaceAll("&#350;", "Þ");
+	    context = context.replaceAll("&#351;", "þ");
+	    
+	    return context;
+	}
+
+
+	private Document readXmlFileFromPath(String path) {
+		File file = new File(path);
+		DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory
+		        .newInstance();
+		DocumentBuilder documentBuilder = null;
+		try {
+			documentBuilder = documentBuilderFactory.newDocumentBuilder();
+		} catch (ParserConfigurationException e1) {
+			System.err.println(e1.getMessage());
+		}
+		Document document = null;
+		try {
+			document = documentBuilder.parse(file);
+		} catch (SAXException e) {
+			System.err.println(e.getMessage());
+			e.printStackTrace();
+		} catch (IOException e) {
+			System.err.println(e.getMessage());
+		}
+		return document;
+				
 	}
 	
 }
