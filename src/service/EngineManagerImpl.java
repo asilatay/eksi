@@ -3,21 +3,14 @@ package service;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -34,9 +27,8 @@ import java.util.stream.Collectors;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.poi.xssf.streaming.SXSSFCell;
 import org.apache.poi.xssf.streaming.SXSSFRow;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
@@ -48,7 +40,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import commons.DateUtil;
@@ -82,8 +73,8 @@ public class EngineManagerImpl implements EngineManager {
 	private final static String directoryOfSimilarUsersThatWroteSameTitle = "userUserTitles.txt";
 	
 	private final static String directoryOfTitleCountOfUsers = "userTitle.txt";
-	// Eðer bu parametre 0 ise arraydeki elemanlardan biri bile 999999 ise hesaplamadan çýkar(Ýkisi de 999999 olmamalý)
-	// Eðer bu parametre 1 ise arraydeki elemanlardan biri mantýklý bir sayýysa hesaplamaya sok
+	// EÄŸer bu parametre 0 ise arraydeki elemanlardan biri bile 999999 ise hesaplamadan Ã§Ä±kar(Ä°kisi de 999999 olmamalÄ±)
+	// EÄŸer bu parametre 1 ise arraydeki elemanlardan biri mantÄ±klÄ± bir sayÄ±ysa hesaplamaya sok
 //	private final static int parameterOfRemove9999 = 0;
 	
 	public EngineManagerImpl() {
@@ -91,9 +82,9 @@ public class EngineManagerImpl implements EngineManager {
 	
 	
 	/**
-	 * @param parameterForEntryCount = 0 ise tüm entryler üzerinden iþlem yapýlýr
-	 * CoOccurence matrix için gerekli hesaplamalarý yaparak çýktý üreten metoddur.
-	 * Bu metod eski modellerle üretilmiþ bir metoddur ve geçmiþ görülsün diye tutuluyor
+	 * @param parameterForEntryCount = 0 ise tÃ¼m entryler Ã¼zerinden iÅŸlem yapÄ±lÄ±r
+	 * CoOccurence matrix iÃ§in gerekli hesaplamalarÄ± yaparak Ã§Ä±ktÄ± Ã¼reten metoddur.
+	 * Bu metod eski modellerle Ã¼retilmiÅŸ bir metoddur ve geÃ§miÅŸ gÃ¶rÃ¼lsÃ¼n diye tutuluyor
 	 */
 	@Override
 	public void coOccurenceMatrixWithEntryObjectAndReturnWindowSizeOLD(int parameterForEntryCount) {
@@ -104,7 +95,7 @@ public class EngineManagerImpl implements EngineManager {
 				parameterForEntryCount = activeEntryList.size();
 			}
 			Map<String, Integer> MOW = getMostOccuredWordMap(activeEntryList, parameterForEntryCount);
-			//bütyükten küçüðe sýralanmýþ map
+			//bÃ¼tyÃ¼kten kÃ¼Ã§Ã¼ÄŸe sÄ±ralanmÄ±ÅŸ map
 			Map<String, Integer> ordered = sortByValue(MOW, false);
 			Set<String> strSet = ordered.keySet();
 			Map<String, Integer> ranking = new HashMap<String, Integer>();
@@ -118,14 +109,14 @@ public class EngineManagerImpl implements EngineManager {
 			entryManager.createTxtFileForVocabs(rankingOrdered);
 			//TODO GarbageCollector Error
 //				createExcelRankingWords(rankingOrdered);
-			System.out.println("Ranking oluþturuldu!");
+			System.out.println("Ranking oluÅŸturuldu!");
 			List<String> retList = new ArrayList<String> ();
 			for (int i=0; i < parameterForEntryCount; i++) {				
 				retList = splittedEntryDescription(retList, activeEntryList.get(i).getDescription());
 			}
-			//Benim çözümüm(KeyIndex)
+			//Benim Ã§Ã¶zÃ¼mÃ¼m(KeyIndex)
 			Map<KeyIndexOld, Integer> matrixData = new  HashMap<KeyIndexOld, Integer>();
-			System.out.println("KeyIndex çözümü baþladý!");
+			System.out.println("KeyIndex Ã§Ã¶zÃ¼mÃ¼ baÅŸladÄ±!");
 			for (int i = 0; i < retList.size(); i++) {
 				int countBack = i - 1;
 				int countGo = i + 1;
@@ -152,7 +143,7 @@ public class EngineManagerImpl implements EngineManager {
 					}
 				}
 			}
-			System.out.println("KexIndex hesaplandý. TXT oluþturuluyor!");
+			System.out.println("KexIndex hesaplandÄ±. TXT oluÅŸturuluyor!");
 			createTxtForBigCLAMFromMap(matrixData, false);
 			createTxtForBigCLAMFromMap(matrixData, true);
 		}
@@ -160,8 +151,8 @@ public class EngineManagerImpl implements EngineManager {
 	/**
 	 * 
 	 * @param mapList
-	 * @param forBigClam - BigClam algoritmasýna input olarak verilecekse true gönderilmelidir
-	 * BigClam algoritmasýnýn input unu oluþturan metoddur.
+	 * @param forBigClam - BigClam algoritmasÄ±na input olarak verilecekse true gÃ¶nderilmelidir
+	 * BigClam algoritmasÄ±nÄ±n input unu oluÅŸturan metoddur.
 	 */
 	private static void createTxtForBigCLAMFromMap(Map<KeyIndexOld, Integer> mapList, boolean forBigClam){
 		try{
@@ -172,7 +163,7 @@ public class EngineManagerImpl implements EngineManager {
 					out.write(ind.getRow()+"	"+ ind.getColumn()+"\r\n");
 				}
 				out.close();
-				System.out.println("TXT oluþturuldu.!");
+				System.out.println("TXT oluÅŸturuldu.!");
 			} else {
 				BufferedWriter out = new BufferedWriter(new FileWriter("neigbors.txt"));
 				for(Map.Entry<KeyIndexOld,Integer>  entrySet  : mapList.entrySet()){
@@ -180,11 +171,11 @@ public class EngineManagerImpl implements EngineManager {
 					out.write(ind.getRow()+"	"+"["+ind.getRowWord()+"]"+"     "+ ind.getColumn()+"["+ ind.getColumnWord()+"]"+"\r\n");
 				}
 				out.close();
-				System.out.println("TXT oluþturuldu.!");
+				System.out.println("TXT oluÅŸturuldu.!");
 			}
 		}
 		catch (IOException e) {
-			System.err.println("TXT oluþturulurken hata oluþtu!");
+			System.err.println("TXT oluÅŸturulurken hata oluÅŸtu!");
         }
 	}
 	/**
@@ -192,7 +183,7 @@ public class EngineManagerImpl implements EngineManager {
 	 * @param map
 	 * @param isASC
 	 * @return
-	 * Kelimeleri max geçenden min geçene göre sýralayan metoddur.
+	 * Kelimeleri max geÃ§enden min geÃ§ene gÃ¶re sÄ±ralayan metoddur.
 	 */
 	@SuppressWarnings("hiding")
 	private static <String, Integer> Map<String, Integer> sortByValue(Map<String, Integer> map, boolean isASC) {
@@ -243,7 +234,7 @@ public class EngineManagerImpl implements EngineManager {
 				}
 			}
 		}
-		System.out.println("Kelimelerin kaçar defa geçtiði hesaplandý!");
+		System.out.println("Kelimelerin kaÃ§ar defa geÃ§tiÄŸi hesaplandÄ±!");
 		return mostOccuredWords;
 	}
 	
@@ -257,13 +248,18 @@ public class EngineManagerImpl implements EngineManager {
 	}
 	
 	@Override
-	public void createCoOccurenceMatrix(String readTextPath) {
+	public void createCoOccurenceMatrix(String readTextPath, List<String> outputFromAnotherFunction) {
 		System.out.println("Co-Occurence matrix operation is just started!");
-		List<String> readFromTxtEntries = importManager.readFromTxt(readTextPath);
-		if (readFromTxtEntries == null || readFromTxtEntries.size() <= 0) {
-			System.err.println("Okunmaya çalýþýlan dosya boþ veya okuma iþlemi sýrasýnda hata alýndý.");
-			System.err.println("Program kapatýlýyor.");
-			System.exit(0);
+		List<String> readFromTxtEntries = new ArrayList<String>();
+		if (outputFromAnotherFunction == null) {			
+			readFromTxtEntries = importManager.readFromTxt(readTextPath);
+			if (readFromTxtEntries == null || readFromTxtEntries.size() <= 0) {
+				System.err.println("Okunmaya Ã§alÄ±ÅŸÄ±lan dosya boÅŸ veya okuma iÅŸlemi sÄ±rasÄ±nda hata alÄ±ndÄ±.");
+				System.err.println("Program kapatÄ±lÄ±yor.");
+				System.exit(0);
+			}
+		} else {
+			readFromTxtEntries.addAll(outputFromAnotherFunction);
 		}
 		List<WordIndex> wordsOccured = getWordIndexList(readFromTxtEntries);
 		createOutputForWordsOccured(wordsOccured);
@@ -280,7 +276,7 @@ public class EngineManagerImpl implements EngineManager {
 			splittedEntries = splittedEntryDescription(splittedEntries, s);
 		}
 		Map<PMIValueIndexes, BigDecimal> matrixData = new  HashMap<PMIValueIndexes, BigDecimal>();
-		System.out.println("PMI Value Indexes çözümü baþladý!");
+		System.out.println("PMI Value Indexes Ã§Ã¶zÃ¼mÃ¼ baÅŸladÄ±!");
 		for (int i = 0; i < splittedEntries.size(); i++) {
 			int countGo = i + 1;
 			int numberOfCellForPivotWord = ranking.get(splittedEntries.get(i));
@@ -311,19 +307,19 @@ public class EngineManagerImpl implements EngineManager {
 				}
 			}
 		}
-		//Co occurence matrix oluþturma tamamlandý, PMI Deðerini hesaplayacaðýz.
+		//Co occurence matrix oluÅŸturma tamamlandÄ±, PMI DeÄŸerini hesaplayacaÄŸÄ±z.
 		matrixData = calculateAndSetPMIValues(matrixData, wordFrequencyMap, ranking.size());
 		
 		Map<Integer, List<String>> mapOfIndexes = getMapOfIndexes(matrixData);
 		
-		// Alternate PMI deðerini hesaplayacaðýz.
-		matrixData = calculateAndSetAlternatePMIValues (matrixData, mapOfIndexes);
-		//Matrix de 2 farklý row un benzerliði hesaplanmak istendiðinde uzunluklarý eþit olmalý
-		// Bu nedenle mesela index1 = 20 ve index2 = 3 için matrix data da bir kayýt yoksa,
-		// bu kayýt yaratýlýp deðeri 0 yazýlmalýdýr. PMI Value deðerini de 0 ata.
-		// Bu noktada bu iþ yapýlmalý
+		// Alternate PMI deÄŸerini hesaplayacaÄŸÄ±z.
+		matrixData = calculateAndSetAlternatePMIValues (matrixData, mapOfIndexes, ranking.size());
+		//Matrix de 2 farklÄ± row un benzerliÄŸi hesaplanmak istendiÄŸinde uzunluklarÄ± eÅŸit olmalÄ±
+		// Bu nedenle mesela index1 = 20 ve index2 = 3 iÃ§in matrix data da bir kayÄ±t yoksa,
+		// bu kayÄ±t yaratÄ±lÄ±p deÄŸeri 0 yazÄ±lmalÄ±dÄ±r. PMI Value deÄŸerini de 0 ata.
+		// Bu noktada bu iÅŸ yapÄ±lmalÄ±
 		Map<PMIValueIndexes, BigDecimal> clonedMatrixData = matrixData;
-		Map<PMIValueIndexes, BigDecimal> filledMatrix = fillMissingMatrixCell(matrixData, mapOfIndexes, ranking.size());
+		Map<PMIValueIndexes, BigDecimal> filledMatrix = fillMissingMatrixCell(matrixData, mapOfIndexes, ranking.size(), wordFrequencyMap);
 		
 		createTxtFilePMIIndexValues(convertToListPMIValueIndexes(filledMatrix), true);
 		createTxtFilePMIIndexValues(convertToListPMIValueIndexes(clonedMatrixData), false);
@@ -361,92 +357,118 @@ public class EngineManagerImpl implements EngineManager {
 	private Map<PMIValueIndexes, BigDecimal> calculateAndSetPMIValues(Map <PMIValueIndexes, BigDecimal> matrixData, Map<Integer, BigDecimal> wordFrequencyMap, int totalWordSize) {
 		BigDecimal totalWSize = new BigDecimal(totalWordSize);
 		for (Map.Entry<PMIValueIndexes, BigDecimal> data : matrixData.entrySet()) {
-			BigDecimal probW1AndW2 = data.getValue().divide(totalWSize, 10, RoundingMode.HALF_UP);
-			
-			PMIValueIndexes valueObject = data.getKey();
-			BigDecimal frequencyIndex1 = wordFrequencyMap.get(valueObject.getIndex1()).divide(totalWSize, 10, RoundingMode.HALF_UP);
-			BigDecimal frequencyIndex2 = wordFrequencyMap.get(valueObject.getIndex2()).divide(totalWSize, 10, RoundingMode.HALF_UP);
-			
-			BigDecimal pmiValue = probW1AndW2.divide(frequencyIndex1.multiply(frequencyIndex2),10 ,RoundingMode.HALF_UP)
-					.setScale(10, RoundingMode.HALF_UP);
-			// pmiValue deðerinin logaritmasýný alýp tekrar üstüne set et. (Logaritma 0 çýkacak senaryoya dikkat et)
-			valueObject.setPmiValue(pmiValue);
-			try {				
-				valueObject.setLogaritmicPmiValue(log10(valueObject.getPmiValue(), 10));
-			} catch (ArithmeticException e) {
-				// logaritma 0 geldiðinde exception fýrlatýlýp yakalandý ve bir deðer set edildi. Deðeri deðiþtirebiliriz.
-				// Deðer son karardan sonra 0 set edildi. (23 Ocak 2018) Daha sonrasýnda operasyonel hesaplamalarda deðerler +1 shift edilecek
-				valueObject.setLogaritmicPmiValue(BigDecimal.ZERO);
-			}
-			
+			calculationOfPMI(wordFrequencyMap, totalWSize, data.getValue(), data.getKey());
 		}
 		return matrixData;
+	}
+
+	/**
+	 * 
+	 * @param wordFrequencyMap
+	 * @param totalWSize (Toplam Kelime SayÄ±sÄ±)
+	 * @param togetherValue (Ä°ki kelimenin beraber gÃ¶rÃ¼lme sayÄ±sÄ±)
+	 * @param calculativeValue (TÃ¼m veriyi tutan deÄŸer)
+	 */
+	private void calculationOfPMI(Map<Integer, BigDecimal> wordFrequencyMap, BigDecimal totalWSize,
+			BigDecimal togetherValue, PMIValueIndexes calculativeValue) {
+		//SHIFTING
+		//togetherValue = togetherValue.add(BigDecimal.ONE);
+		
+		BigDecimal probW1AndW2 = togetherValue.divide(totalWSize, 10, RoundingMode.HALF_UP);
+		
+		BigDecimal frequencyIndex1 = wordFrequencyMap.get(calculativeValue.getIndex1()).divide(totalWSize, 10, RoundingMode.HALF_UP);
+		BigDecimal frequencyIndex2 = wordFrequencyMap.get(calculativeValue.getIndex2()).divide(totalWSize, 10, RoundingMode.HALF_UP);
+		
+		BigDecimal pmiValue = probW1AndW2.divide(frequencyIndex1.multiply(frequencyIndex2),10 ,RoundingMode.HALF_UP)
+				.setScale(10, RoundingMode.HALF_UP);
+		// pmiValue deÄŸerinin logaritmasÄ±nÄ± alÄ±p tekrar Ã¼stÃ¼ne set et. (Logaritma 0 Ã§Ä±kacak senaryoya dikkat et)
+		calculativeValue.setPmiValue(pmiValue);
+		try {				
+			calculativeValue.setLogaritmicPmiValue(log10(calculativeValue.getPmiValue(), 10));
+		} catch (ArithmeticException e) {
+			// logaritma 0 geldiÄŸinde exception fÄ±rlatÄ±lÄ±p yakalandÄ± ve bir deÄŸer set edildi. DeÄŸeri deÄŸiÅŸtirebiliriz.
+			// DeÄŸer son karardan sonra 0 set edildi. (23 Ocak 2018) Daha sonrasÄ±nda operasyonel hesaplamalarda deÄŸerler +1 shift edilecek
+			calculativeValue.setLogaritmicPmiValue(BigDecimal.ZERO);
+		}
 	}
 	
 	/*
-	 *  PMI (w, c) = log (((w,c)* D )/ w*c) formülünü açýklayacak olursak ;
+	 *  PMI (w, c) = log (((w,c)* D )/ w*c) formÃ¼lÃ¼nÃ¼ aÃ§Ä±klayacak olursak ;
 		index w = 2
 		index c = 3
-		(w,c) deðeri (2,3) cell inde yazan deðer
-		D deðeri birbirleriyle iliþki olan ikililerin toplam sayýsý (Þu andaki matrixData nýn size ý)
-		w deðeri 2.satýrdaki (2,3) dýþýndaki tüm deðerlerin toplamý
-		c deðeri 3.satýrdaki (3,2) dýþýndaki tüm deðerlerin toplamýdýr. 
+		(w,c) deÄŸeri (2,3) cell inde yazan deÄŸer
+		D deÄŸeri birbirleriyle iliÅŸki olan ikililerin toplam sayÄ±sÄ± (Åžu andaki matrixData nÄ±n size Ä±)
+		w deÄŸeri 2.satÄ±rdaki (2,3) dÄ±ÅŸÄ±ndaki tÃ¼m deÄŸerlerin toplamÄ±
+		c deÄŸeri 3.satÄ±rdaki (3,2) dÄ±ÅŸÄ±ndaki tÃ¼m deÄŸerlerin toplamÄ±dÄ±r. 
 
 	 */	
 	private Map<PMIValueIndexes, BigDecimal> calculateAndSetAlternatePMIValues (Map <PMIValueIndexes, BigDecimal> matrixData
-			, Map<Integer, List<String>> mapOfIndexes) {
-		int D = matrixData.size();
+			, Map<Integer, List<String>> mapOfIndexes, int D) {
+//		int D = matrixData.size();
 		for (Map.Entry<PMIValueIndexes, BigDecimal> data : matrixData.entrySet()) {
-			PMIValueIndexes object = data.getKey();
-			BigDecimal probW1AndW2 = data.getValue(); // (w,c)
-			int index1W = object.getIndex1();
-			int index2C = object.getIndex2();
-			List <String> valueList1 = mapOfIndexes.get(index1W);
-			BigDecimal w = BigDecimal.ZERO;
-			if (!valueList1.isEmpty()) {
-				for (String s : valueList1) {
-					String [] arr = s.split("-");
-					if (arr.length == 2 && Integer.parseInt(arr[0]) != index2C) {
-						w = w.add( new BigDecimal(arr[1]));
-					}
-				}
-			}
-			BigDecimal c = BigDecimal.ZERO;
-			List <String> valueList2 = mapOfIndexes.get(index2C);
-			if (!valueList2.isEmpty()) {
-				for (String s : valueList2) {
-					String [] arr = s.split("-");
-					if (arr.length == 2 && Integer.parseInt(arr[0]) != index1W) {
-						c = c.add(new BigDecimal(arr[1]));
-					}
-				}
-			}
-			//TOP (w,c) * D
-			BigDecimal top = probW1AndW2.multiply(new BigDecimal(D));
-			//BOTTOM w*c
-			BigDecimal bottom = w.multiply(c);
-			//TOTAL
-			BigDecimal total = top.divide(bottom, 10, RoundingMode.HALF_UP);
-			object.setAlternatePmiValue(total);
-			try {
-				object.setLogarithmicAlternatePmiValue(log10(object.getAlternatePmiValue(), 10));
-			} catch (ArithmeticException ex) {
-				// Deðer son karardan sonra 0 set edildi. (23 Ocak 2018) Daha sonrasýnda operasyonel hesaplamalarda deðerler +1 shift edilecek
-				object.setLogarithmicAlternatePmiValue(BigDecimal.ZERO);
-			}
+			calculationOfAlternatePMI(mapOfIndexes, D, data.getValue(), data.getKey());
 		}
 		return matrixData;
 	}
+
 	/**
-	 * Bu fonksiyon operasyonel iþlemler tamamlandýðýnda wordSize X wordSize kadarlýk bir matrix oluþturulabilmesi için birbirleriyle hiç görülmeyen kelimelere hesaplama olarak 0 deðerlerini atar
 	 * 
-	 * @param matrixData (Kelime bilgilerinin olduðu data)
+	 * @param mapOfIndexes
+	 * @param D (tÃ¼m kelime sayÄ±sÄ±)
+	 * @param calculativeValue (TÃ¼m veriyi tutan deÄŸer)
+	 * @param probW1AndW2 (iki kelimenin beraber gÃ¶rÃ¼lme sayÄ±sÄ±)
+	 */
+	private void calculationOfAlternatePMI(Map<Integer, List<String>> mapOfIndexes, int D,
+			 BigDecimal probW1AndW2, PMIValueIndexes calculativeValue) {
+	     // (w,c) probW1AndW2
+		int index1W = calculativeValue.getIndex1();
+		int index2C = calculativeValue.getIndex2();
+		List <String> valueList1 = mapOfIndexes.get(index1W);
+		BigDecimal w = BigDecimal.ZERO;
+		if (!valueList1.isEmpty()) {
+			for (String s : valueList1) {
+				String [] arr = s.split("-");
+				if (arr.length == 2 && Integer.parseInt(arr[0]) != index2C) {
+					w = w.add( new BigDecimal(arr[1]));
+				}
+			}
+		}
+		BigDecimal c = BigDecimal.ZERO;
+		List <String> valueList2 = mapOfIndexes.get(index2C);
+		if (!valueList2.isEmpty()) {
+			for (String s : valueList2) {
+				String [] arr = s.split("-");
+				if (arr.length == 2 && Integer.parseInt(arr[0]) != index1W) {
+					c = c.add(new BigDecimal(arr[1]));
+				}
+			}
+		}
+		//SHIFTING
+		//probW1AndW2 = probW1AndW2.add(BigDecimal.ONE);
+		//TOP (w,c) * D
+		BigDecimal top = probW1AndW2.multiply(new BigDecimal(D));
+		//BOTTOM w*c
+		BigDecimal bottom = w.multiply(c);
+		//TOTAL
+		BigDecimal total = top.divide(bottom, 10, RoundingMode.HALF_UP);
+		calculativeValue.setAlternatePmiValue(total);
+		try {
+			calculativeValue.setLogarithmicAlternatePmiValue(log10(calculativeValue.getAlternatePmiValue(), 10));
+		} catch (ArithmeticException ex) {
+			// DeÄŸer son karardan sonra 0 set edildi. (23 Ocak 2018) Daha sonrasÄ±nda operasyonel hesaplamalarda deÄŸerler +1 shift edilecek
+			calculativeValue.setLogarithmicAlternatePmiValue(BigDecimal.ZERO);
+		}
+	}
+	/**
+	 * Bu fonksiyon operasyonel iÅŸlemler tamamlandÄ±ÄŸÄ±nda wordSize X wordSize kadarlÄ±k bir matrix oluÅŸturulabilmesi iÃ§in birbirleriyle hiÃ§ gÃ¶rÃ¼lmeyen kelimelere hesaplama olarak 0 deÄŸerlerini atar
+	 * 
+	 * @param matrixData (Kelime bilgilerinin olduÄŸu data)
 	 * @param mapOfIndexes
 	 * @param totalSize (matrix size)
-	 * @return (Diðer tüm bilgilerle doldurulmuþ yeni matrix)
+	 * @return (DiÄŸer tÃ¼m bilgilerle doldurulmuÅŸ yeni matrix)
 	 */
 	private Map<PMIValueIndexes, BigDecimal> fillMissingMatrixCell (Map <PMIValueIndexes, BigDecimal> matrixData 
-			,Map<Integer, List<String>> mapOfIndexes, int totalSize) {
+			,Map<Integer, List<String>> mapOfIndexes, int totalSize, Map<Integer, BigDecimal> wordFrequencyMap) {
 		Map<Integer, Integer> indexSizeMap = new HashMap<Integer, Integer>();
 		Map<PMIValueIndexes, BigDecimal> filledNewMatrixData  = new HashMap<>();
 		for (Map.Entry<PMIValueIndexes, BigDecimal> data : matrixData.entrySet()) {
@@ -474,10 +496,8 @@ public class EngineManagerImpl implements EngineManager {
 							PMIValueIndexes newIndex = new PMIValueIndexes();
 							newIndex.setIndex1(index1);
 							newIndex.setIndex2(i);
-							newIndex.setPmiValue(BigDecimal.ZERO);
-							newIndex.setLogaritmicPmiValue(BigDecimal.ZERO);
-							newIndex.setAlternatePmiValue(BigDecimal.ZERO);
-							newIndex.setLogarithmicAlternatePmiValue(BigDecimal.ZERO);
+							calculationOfPMI(wordFrequencyMap, new BigDecimal(totalSize), BigDecimal.ZERO, newIndex);
+							calculationOfAlternatePMI(mapOfIndexes, totalSize, BigDecimal.ZERO, newIndex);
 							filledNewMatrixData.put(newIndex, BigDecimal.ZERO);
 						} else {
 							for (PMIValueIndexes x : matrixData.keySet()) {
@@ -500,7 +520,7 @@ public class EngineManagerImpl implements EngineManager {
 	}
 	
 	private List<WordIndex> getWordIndexList (List<String> readFromTxtEntries) {
-		//kelimelerin deðerleri hesaplanýyor.
+		//kelimelerin deÄŸerleri hesaplanÄ±yor.
 		Map<String, Integer> mostOccuredWords = new HashMap<String, Integer>();
 		for (String s : readFromTxtEntries) {
 			List<String> retList = new ArrayList<String>(); 
@@ -517,10 +537,10 @@ public class EngineManagerImpl implements EngineManager {
 				}
 			}
 		}
-		//Hesaplama bitti sýralama yapýlýyor.
+		//Hesaplama bitti sÄ±ralama yapÄ±lÄ±yor.
 		if (mostOccuredWords.size() > 0) {			
 			Map<String, Integer> orderedDESC = sortByValue(mostOccuredWords, false);
-			//Hesaplanan deðerler nesneye atýlýyor.
+			//Hesaplanan deÄŸerler nesneye atÄ±lÄ±yor.
 			List<WordIndex> wordIndexList = new ArrayList<WordIndex>();
 			int count = 0;
 			for(Map.Entry<String,Integer>  entrySet  : orderedDESC.entrySet()){
@@ -530,7 +550,7 @@ public class EngineManagerImpl implements EngineManager {
 			}
 			return wordIndexList;
 		} else {
-			System.err.println("Hesaplanacak MAP bulunamadý");
+			System.err.println("Hesaplanacak MAP bulunamadÄ±");
 		}
 		return null;
 	}
@@ -594,6 +614,8 @@ public class EngineManagerImpl implements EngineManager {
 		for (int i = 0; i < biggestIndex.getIndex1(); i++) {
 			CosineSimilarityIndex cos = new CosineSimilarityIndex();
 			cos.setIndex1(i);
+			List<PMIValueIndexes> index1List = filledMatrix.keySet().stream().filter(a -> a.getIndex1() == cos.getIndex1()).sorted((x,y) -> Integer.compare( x.getIndex2(), y.getIndex2())).collect(Collectors.toList());
+			
 			for (int j = 0; j < biggestIndex.getIndex1(); j++) {				
 				cos.setIndex2(j);
 				if (i != j) {
@@ -603,40 +625,42 @@ public class EngineManagerImpl implements EngineManager {
 					double[] array2 = new double[biggestIndex.getIndex1() + 1];
 					cos.setIndex1Array(array1);
 					cos.setIndex2Array(array2);
-					for (PMIValueIndexes a : filledMatrix.keySet()) {
-						if (a.getIndex1() == cos.getIndex1()) {
-							BigDecimal totIndex1 = cos.getIndex1Total();
-							if (a.getLogaritmicPmiValue().signum() < 0) {
-								a.setLogaritmicPmiValue(BigDecimal.ZERO);
-							}
-							totIndex1 = totIndex1.add(a.getLogaritmicPmiValue());
-							cos.setIndex1Total(totIndex1);
-
-							double[] arr1 = cos.getIndex1Array();
-							arr1[a.getIndex2()] = a.getLogaritmicPmiValue().doubleValue();
-							cos.setIndex1Array(arr1);
-							
-						} else if (a.getIndex1() == cos.getIndex2()) {
-							BigDecimal totIndex2 = cos.getIndex2Total();
-							if (a.getLogaritmicPmiValue().signum() < 0) {
-								a.setLogaritmicPmiValue(BigDecimal.ZERO);
-							}
-							totIndex2 = totIndex2.add(a.getLogaritmicPmiValue());
-							cos.setIndex2Total(totIndex2);
-							
-							double[] arr2 = cos.getIndex2Array();
-							arr2[a.getIndex2()] = a.getLogaritmicPmiValue().doubleValue();
-							cos.setIndex2Array(arr2);
+					
+					List<PMIValueIndexes> index2List = filledMatrix.keySet().stream().filter(a -> a.getIndex1() == cos.getIndex2()).sorted((x,y) -> Integer.compare( x.getIndex2(), y.getIndex2())).collect(Collectors.toList());
+					
+					for (PMIValueIndexes index1 : index1List) {
+						BigDecimal totIndex1 = cos.getIndex1Total();
+						
+						//NEDEN SoralÄ±m
+						if (index1.getLogaritmicPmiValue().signum() < 0) {
+							index1.setLogaritmicPmiValue(BigDecimal.ZERO);
 						}
+						
+						totIndex1 = totIndex1.add(index1.getLogaritmicPmiValue());
+						cos.setIndex1Total(totIndex1);
+						
+						double[] arr1 = cos.getIndex1Array();
+						arr1[index1.getIndex2()] = index1.getLogaritmicPmiValue().doubleValue();
+						
+						cos.setIndex1Array(arr1);
 					}
-					// Array de ayný 2 cell 999999 ise bu celleri uçur
-//					Map<Integer,double[]> removedArraysMap = removeNonStandardNumbers(cos.getIndex1Array(), cos.getIndex2Array());
-//					cos.setIndex1Array(removedArraysMap.get(1));
-//					cos.setIndex2Array(removedArraysMap.get(2));
-					//Temizlikten sonra arraylerde kaçar tane 999999 kaldýðýný çýkar
-//					Map<Integer, String> numberOf999999Map = calculateNumber999999OfAllArray(cos.getIndex1Array(), cos.getIndex2Array());
-//					cos.setNumberOf999999Index1(numberOf999999Map.get(1));
-//					cos.setNumberOf999999Index2(numberOf999999Map.get(2));
+					
+					for (PMIValueIndexes index2 : index2List) {
+						BigDecimal totIndex2 = cos.getIndex2Total();
+						
+						//NEDEN SORALIM
+						if (index2.getLogaritmicPmiValue().signum() < 0) {
+							index2.setLogaritmicPmiValue(BigDecimal.ZERO);
+						}
+						
+						totIndex2 = totIndex2.add(index2.getLogaritmicPmiValue());
+						cos.setIndex2Total(totIndex2);
+						
+						double[] arr2 = cos.getIndex2Array();
+						arr2[index2.getIndex2()] = index2.getLogaritmicPmiValue().doubleValue();
+						cos.setIndex2Array(arr2);
+						
+					}
 					
 					//shifting operation
 					Map<Integer,double[]>  shiftedArrayMap = shiftAllValuesBeforeCosineSimilarityCalculation(cos.getIndex1Array(), cos.getIndex2Array(), true);
@@ -657,18 +681,16 @@ public class EngineManagerImpl implements EngineManager {
 		createCosineSimilarityExcel(indexList);
 	}
 	
-
-	
 	private Map<Integer, double[]> shiftAllValuesBeforeCosineSimilarityCalculation(double[] arr1, double[] arr2, boolean shiftAllValues)  {
 		if (shiftAllValues)  {
-			// Sistemdeki tüm deðerler +1 shift edilir
+			// Sistemdeki tÃ¼m deÃ°erler +1 shift edilir
 			for (int i = 0; i < arr1.length; i++) {
 				arr1[i] = arr1[i] + 1;
 				arr2[i] = arr2[i] + 1;
 			}
 			return setArraysToMap(arr1, arr2);
 		} else {
-			// Sistemde sadece 0 olan deðerler +1 shift edilir
+			// Sistemde sadece 0 olan deÃ°erler +1 shift edilir
 			for (int i = 0; i < arr1.length; i++) {
 				if (arr1[i] == 0) {
 					arr1[i] = arr1[i] + 1;
@@ -689,73 +711,6 @@ public class EngineManagerImpl implements EngineManager {
 		return returnedList;
 	}
 	
-//	private Map<Integer, String> calculateNumber999999OfAllArray (double[] arr1, double[] arr2) {
-//		int forArr1 = 0;
-//		int forArr2 = 0;
-//		for (int i = 0 ; i < arr1.length; i++) {
-//			if (arr1[i] == 999999) {
-//				forArr1++;
-//			} else if (arr2[i] == 999999) {
-//				forArr2++;
-//			}
-//		}
-//		String arr1Info = forArr1 + "/" + arr1.length;
-//		String arr2Info = forArr2 + "/" + arr2.length;
-//		
-//		Map<Integer, String> returnedMap = new HashMap<Integer, String> ();
-//		returnedMap.put(1, arr1Info);
-//		returnedMap.put(2, arr2Info);
-//		
-//		return returnedMap;
-//	}
-	
-//	private Map<Integer,double[]> removeNonStandardNumbers(double[] arr1, double[] arr2) {
-//		if (parameterOfRemove9999 == 0) {
-//			int countForNewArray = 0;
-//			for (int i = 0 ; i < arr1.length; i++) {
-//				if (arr1[i] != 999999 && arr2[i] != 999999) {
-//					countForNewArray++;
-//				}
-//			}
-//			double [] newArr1 = new double[countForNewArray];
-//			double [] newArr2 = new double[countForNewArray];
-//			int index = 0;
-//			for (int i = 0 ; i < arr1.length; i++) {
-//				if (arr1[i] != 999999 && arr2[i] != 999999) {
-//					newArr1[index] = arr1[i];
-//					newArr2[index] = arr2[i];
-//					index++;
-//				}
-//			}
-//			Map<Integer, double[]> returnedList = new HashMap<Integer, double[]>();
-//			returnedList.put(1, newArr1);
-//			returnedList.put(2, newArr2);
-//			return returnedList;
-//			
-//		} else {
-//			int countForNewArray = 0;
-//			for (int i = 0 ; i < arr1.length; i++) {
-//				if (arr1[i] != 999999  || arr2[i]  != 999999) {
-//					countForNewArray++;
-//				}
-//			}
-//			double [] newArr1 = new double[countForNewArray];
-//			double [] newArr2 = new double[countForNewArray];
-//			//set operation
-//			int index = 0;
-//			for (int i = 0; i < arr1.length; i++) {
-//				if (arr1[i] != 999999 || arr2[i] != 999999) {
-//					newArr1[index] = arr1[i];
-//					newArr2[index] = arr2[i];
-//					index++;
-//				}
-//			}
-//			Map<Integer, double[]> returnedList = new HashMap<Integer, double[]>();
-//			returnedList.put(1, newArr1);
-//			returnedList.put(2, newArr2);
-//			return returnedList;
-//		}
-//	}
 	
 	/**
 	 * Calculates cosine similarity of two vectors
@@ -789,7 +744,7 @@ public class EngineManagerImpl implements EngineManager {
 			}
 			out.close();
 		} catch (IOException e) {
-			System.err.println("Linklerin txt dosyasýna yazýmý sýrasýnda beklenmeyen bir hata oluþtu!");
+			System.err.println("Linklerin txt dosyasÄ±na yazÄ±mÄ± sÄ±rasÄ±nda beklenmeyen bir hata oluÅŸtu!");
 			e.printStackTrace();
 		}
 	}
@@ -802,10 +757,10 @@ public class EngineManagerImpl implements EngineManager {
 				 out.write(word.getWord() +"	"+ word.getIndex()+"	"+word.getFrequency()+"\r\n");
 			 }
 			 out.close();
-			 System.out.println("TXT oluþturuldu.!");
+			 System.out.println("TXT oluÅŸturuldu.!");
 		}
 		catch (IOException e) {
-			System.err.println("TXT oluþturulurken hata oluþtu!");
+			System.err.println("TXT oluÅŸturulurken hata oluÅŸtu!");
         }
 	}
 
@@ -824,10 +779,10 @@ public class EngineManagerImpl implements EngineManager {
 							+ index.getLogaritmicPmiValue() + "	" + index.getAlternatePmiValue() + "	" + index.getLogarithmicAlternatePmiValue()+"\r\n");
 			}
 			out.close();
-			System.out.println("PMI Index Value nesnesi için çýktý oluþturuldu");
+			System.out.println("PMI Index Value nesnesi iÃ§in Ã§Ä±ktÄ± oluÅŸturuldu");
 			
 		} catch (Exception e) {
-			System.err.println("TXT oluþturulurken hata oluþtu! " + e.getMessage() );
+			System.err.println("TXT oluÅŸturulurken hata oluÅŸtu! " + e.getMessage() );
 		}
 	}
 	
@@ -836,11 +791,11 @@ public class EngineManagerImpl implements EngineManager {
 		List<UserUserTitle> userUserTitleList = getUserUserTitleListFromFile();
 		List<UserTitle> userTitleList = getUserTitleListFromFile();
 		if (userUserTitleList == null || userUserTitleList.isEmpty()) {
-			System.err.println("UserUserTitle dosyasýna veri ekleyin" );
+			System.err.println("UserUserTitle dosyasÄ±na veri ekleyin" );
 			return;
 		}
 		if (userTitleList == null || userTitleList.isEmpty()) {
-			System.err.println("UserTitle dosyasýna veri ekleyin" );
+			System.err.println("UserTitle dosyasÄ±na veri ekleyin" );
 			return;
 		}
 		for (UserUserTitle uut : userUserTitleList) {
@@ -868,7 +823,7 @@ public class EngineManagerImpl implements EngineManager {
 		}
 		//Threshold
 		calculateThreshold(userUserTitleList);
-		//Çýktý üret
+		//Ã‡Ä±ktÄ± Ã¼ret
 		//1 - TXT
 		createJaccardSimilarityTxt(userUserTitleList);
 		//2 - Excel
@@ -897,10 +852,10 @@ public class EngineManagerImpl implements EngineManager {
 	}
 	
 	private Map<BigDecimal, List<UserUserTitle>> createThresHoldMap() {
-		//Baþlangýç noktasý
+		//BaÅŸlangÄ±Ã§ noktasÄ±
 		BigDecimal startPoint = new BigDecimal ("0.00");
 		BigDecimal addNumber = new BigDecimal("0.01");
-		// Dönecek map
+		// DÃ¶necek map
 		Map<BigDecimal, List<UserUserTitle>> returnedMap = new HashMap<BigDecimal, List<UserUserTitle>>();
 		for (int i = 0; i < 101; i++) {
 			returnedMap.put(startPoint, new ArrayList<UserUserTitle>());
@@ -911,7 +866,7 @@ public class EngineManagerImpl implements EngineManager {
 	}
 	
 	private void createExcelForThresholdJaccardSimilarity(Map<BigDecimal, List<UserUserTitle>> thresholdMap) {
-		System.out.println("Jaccard benzerliði threshold excel oluþturma iþlemi baþladý");
+		System.out.println("Jaccard benzerliÄŸi threshold excel oluÅŸturma iÅŸlemi baÅŸladÄ±");
 		try {
 			FileOutputStream fileOut = new FileOutputStream("jaccardSimilarityThreshold.xlsx");
 
@@ -942,12 +897,12 @@ public class EngineManagerImpl implements EngineManager {
 			fileOut.close();
 			workbook.close();
 			wb.close();
-			System.out.println("Jaccard benzerliði excel oluþturma iþlemi baþarýyla tamamlandý");
+			System.out.println("Jaccard benzerliÄŸi excel oluÅŸturma iÅŸlemi baÅŸarÄ±yla tamamlandÄ±");
 		} catch (FileNotFoundException e) {
-			System.err.println("Jaccard benzerliði Excel dosyasý oluþturulurken bir hata oluþtu " + e.getMessage() );
+			System.err.println("Jaccard benzerliÄŸi Excel dosyasÄ± oluÅŸturulurken bir hata oluÅŸtu " + e.getMessage() );
 			
 		} catch (IOException e) {
-			System.err.println("Jaccard benzerliði Excel dosyasý oluþturulurken bir hata oluþtu " + e.getMessage() );
+			System.err.println("Jaccard benzerliÄŸi Excel dosyasÄ± oluÅŸturulurken bir hata oluÅŸtu " + e.getMessage() );
 		}
 	}
 	
@@ -958,10 +913,10 @@ public class EngineManagerImpl implements EngineManager {
 					out.write(e.getKey() + "-" + e.getValue().size() +"\r\n");
 			}
 			out.close();
-			System.out.println("Jaccard benzerliði threshold TXT dosyasý oluþturuldu!");
+			System.out.println("Jaccard benzerliÄŸi threshold TXT dosyasÄ± oluÅŸturuldu!");
 			
 		} catch (Exception e) {
-			System.err.println("Jaccard benzerliði threshold TXT dosyasý oluþturulurken bir hata oluþtu " + e.getMessage() );
+			System.err.println("Jaccard benzerliÄŸi threshold TXT dosyasÄ± oluÅŸturulurken bir hata oluÅŸtu " + e.getMessage() );
 		}
 	}
 	
@@ -1002,7 +957,7 @@ public class EngineManagerImpl implements EngineManager {
 			return userUserTitleList;
 			
 		} catch (Exception e) {
-			System.err.println("UserUserTitle dosyasý okunurken bir hata oluþtu " + e.getMessage() );
+			System.err.println("UserUserTitle dosyasÄ± okunurken bir hata oluÅŸtu " + e.getMessage() );
 			return null;
 		}
 	}
@@ -1022,7 +977,7 @@ public class EngineManagerImpl implements EngineManager {
 			in.close();
 			return userTitleList;
 		} catch (Exception e) {
-			System.err.println("UserTitle dosyasý okunurken bir hata oluþtu " + e.getMessage() );
+			System.err.println("UserTitle dosyasÄ± okunurken bir hata oluÅŸtu " + e.getMessage() );
 			return null;
 		}
 	}
@@ -1036,15 +991,15 @@ public class EngineManagerImpl implements EngineManager {
 				}
 			}
 			out.close();
-			System.out.println("Jaccard benzerliði TXT dosyasý oluþturuldu!");
+			System.out.println("Jaccard benzerliÄŸi TXT dosyasÄ± oluÅŸturuldu!");
 			
 		} catch (Exception e) {
-			System.err.println("Jaccard benzerliði TXT dosyasý oluþturulurken bir hata oluþtu " + e.getMessage() );
+			System.err.println("Jaccard benzerliÄŸi TXT dosyasÄ± oluÅŸturulurken bir hata oluÅŸtu " + e.getMessage() );
 		}
 	}
 	
 	private void createJaccardSimilarityExcel(List<UserUserTitle> userUserTitleList) {
-		System.out.println("Jaccard benzerliði excel oluþturma iþlemi baþladý");
+		System.out.println("Jaccard benzerliÄŸi excel oluÅŸturma iÅŸlemi baÅŸladÄ±");
 		try {
 			FileOutputStream fileOut = new FileOutputStream("jaccardSimilarity.xlsx");
 
@@ -1079,12 +1034,12 @@ public class EngineManagerImpl implements EngineManager {
 			fileOut.flush();
 			fileOut.close();
 			workbook.close();
-			System.out.println("Jaccard benzerliði excel oluþturma iþlemi baþarýyla tamamlandý");
+			System.out.println("Jaccard benzerliÄŸi excel oluÅŸturma iÅŸlemi baÅŸarÄ±yla tamamlandÄ±");
 		} catch (FileNotFoundException e) {
-			System.err.println("Jaccard benzerliði Excel dosyasý oluþturulurken bir hata oluþtu " + e.getMessage() );
+			System.err.println("Jaccard benzerliÄŸi Excel dosyasÄ± oluÅŸturulurken bir hata oluÅŸtu " + e.getMessage() );
 			
 		} catch (IOException e) {
-			System.err.println("Jaccard benzerliði Excel dosyasý oluþturulurken bir hata oluþtu " + e.getMessage() );
+			System.err.println("Jaccard benzerliÄŸi Excel dosyasÄ± oluÅŸturulurken bir hata oluÅŸtu " + e.getMessage() );
 		}
 	}
 	
@@ -1095,15 +1050,15 @@ public class EngineManagerImpl implements EngineManager {
 				 out.write(cos.getIndex1() + "-" + cos.getIndex2() + "-" + cos.getIndex1Total() + "-" + cos.getIndex2Total() + "-" +cos.getCosineSimilarity() +"\r\n");
 			 }
 			 out.close();
-			 System.out.println("Cosine Similarity TXT oluþturuldu.!");
+			 System.out.println("Cosine Similarity TXT oluÅŸturuldu.!");
 		}
 		catch (IOException e) {
-			System.err.println("Cosine Similarity TXT oluþturulurken hata oluþtu!");
+			System.err.println("Cosine Similarity TXT oluÅŸturulurken hata oluÅŸtu!");
        }
 	}
 	
 	private void createCosineSimilarityExcel(List<CosineSimilarityIndex> cosSimilarityList) {
-		System.out.println("Cosine similarity excel oluþturma iþlemi baþladý");
+		System.out.println("Cosine similarity excel oluÅŸturma iÅŸlemi baÅŸladÄ±");
 		try {
 			FileOutputStream fileOut = new FileOutputStream("cosineSimilarity.xlsx");
 
@@ -1146,12 +1101,12 @@ public class EngineManagerImpl implements EngineManager {
 			fileOut.close();
 			workbook.close();
 			wb.close();
-			System.out.println("Cosine Similarity excel oluþturma iþlemi baþarýyla tamamlandý");
+			System.out.println("Cosine Similarity excel oluÅŸturma iÅŸlemi baÅŸarÄ±yla tamamlandÄ±");
 		} catch (FileNotFoundException e) {
-			System.err.println("Cosine Similarity Excel dosyasý oluþturulurken bir hata oluþtu " + e.getMessage() );
+			System.err.println("Cosine Similarity Excel dosyasÄ± oluÅŸturulurken bir hata oluÅŸtu " + e.getMessage() );
 			
 		} catch (IOException e) {
-			System.err.println("Cosine Similarity Excel dosyasý oluþturulurken bir hata oluþtu " + e.getMessage() );
+			System.err.println("Cosine Similarity Excel dosyasÄ± oluÅŸturulurken bir hata oluÅŸtu " + e.getMessage() );
 		}
 	}
 	
@@ -1174,41 +1129,25 @@ public class EngineManagerImpl implements EngineManager {
 	public void runBilkentData(String readXmlPath) {
 		//read XML file
 		Document document = readXmlFileFromPath(readXmlPath);
-		if (document != null) {			
-			NodeList docNodeList = document.getElementsByTagName("DOC").item(0).getChildNodes();
-			Node text = docNodeList.item(9);
-			String txtDeneme = text.getTextContent();
-			txtDeneme = txtDeneme.replaceAll("\n", " ");
-			try {
-				String abc = new String(txtDeneme.getBytes("UTF-8"),"WINDOWS-1256" );
-				int x = 0;
-			} catch (UnsupportedEncodingException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+		if (document != null) {
+			// XML den okunan bilgiyi string iÃ§ine doldur
+			NodeList docNodeList = document.getElementsByTagName("DOC");
+			List<String> allDataContent = new ArrayList<String>();
+			for (int i = 0; i < docNodeList.getLength(); i++)  {				
+				Node text = docNodeList.item(i).getChildNodes().item(9);
+				String[] txtOneContent = text.getTextContent().split("\n");
+				if (txtOneContent.length > 0) {
+					for (int j = 0; j < txtOneContent.length; j++) {
+						if (StringUtils.isNotEmpty(txtOneContent[j])) {							
+							allDataContent.add(txtOneContent[j]);
+						}
+					}
+				}
 			}
-//			ByteBuffer byteBuffer = Charset.forName("UTF-8").encode(txtDeneme);
-//			byteBuffer.get();
-//			txtDeneme = convertTurkishCharacters(txtDeneme);
-//			txtDeneme = txtDeneme.replaceAll("\uFFFD", "\"");
-//			String pwd = document.getElementsByTagName("password").item(0).getTextContent();
+			//Veri artÄ±k toplandÄ±. CoOccurrence Matrix fonksiyonu Ã§aÄŸrÄ±lÄ±yor.
+			createCoOccurenceMatrix(null, allDataContent);
 		}
-	}
-	
-	private String convertTurkishCharacters (String context) {
-		context = context.replaceAll("&#304;", "Ý");
-	    context = context.replaceAll("&#305;", "ý");
-	    context = context.replaceAll("&#214;", "Ö");
-	    context = context.replaceAll("&#246;", "ö");
-	    context = context.replaceAll("&#220;", "Ü");
-	    context = context.replaceAll("&#252;", "ü");
-	    context = context.replaceAll("&#199;", "Ç");
-	    context = context.replaceAll("&#231;", "ç");
-	    context = context.replaceAll("&#286;", "Ð");
-	    context = context.replaceAll("&#287;", "ð");
-	    context = context.replaceAll("&#350;", "Þ");
-	    context = context.replaceAll("&#351;", "þ");
-	    
-	    return context;
+			
 	}
 
 

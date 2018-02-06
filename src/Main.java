@@ -33,7 +33,7 @@ public class Main {
 		String dir = "C:\\webharvest\\KAYDET\\";
 		String ham = "C:\\webharvest\\HAM\\";
 		final String fileReadingPath = "C:\\Users\\ASIL\\git\\eksiGit\\entries.txt";
-		final String bilkentXmlPath ="D:\\Yüksek Lisans\\Tez\\Bilkent DATA\\BilCol2005\\1.xml";
+		final String bilkentXmlPath ="D:\\Yüksek Lisans\\Tez\\Bilkent DATA\\BilCol2005\\turkishTest.xml";
 		String operationSelect ="-1";
 		System.out.println("GitHub Entegrasyonu OK!");
 		Scanner scanIn = new Scanner(System.in);		
@@ -136,7 +136,7 @@ public class Main {
 				int parameterForEntryCount = scanIn.nextInt();
 				entryManager.writeSpecificEntryCountToDocument(parameterForEntryCount);
 			} else if (operationSelect.equals("12")) {
-				engineManager.createCoOccurenceMatrix(fileReadingPath);
+				engineManager.createCoOccurenceMatrix(fileReadingPath, null);
 			} else if (operationSelect.equals("13")) {
 				entryManager.getSimilarUsersThatWriteTheSameTitle();
 			} else if (operationSelect.equals("14")) {

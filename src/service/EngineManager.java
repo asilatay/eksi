@@ -14,7 +14,7 @@ public interface EngineManager {
 	
 	List<String> splittedEntryDescription(List<String>retList,String  entryDescription);
 	
-	void createCoOccurenceMatrix(String readTextPath);
+	void createCoOccurenceMatrix(String readTextPath, List<String> outputFromAnotherFunction);
 	
 	void createVectors (Map<PMIValueIndexes, BigDecimal> filledMatrix);
 
