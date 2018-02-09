@@ -663,9 +663,9 @@ public class EngineManagerImpl implements EngineManager {
 					}
 					
 					//shifting operation
-					Map<Integer,double[]>  shiftedArrayMap = shiftAllValuesBeforeCosineSimilarityCalculation(cos.getIndex1Array(), cos.getIndex2Array(), true);
-					cos.setIndex1Array(shiftedArrayMap.get(1));
-					cos.setIndex2Array(shiftedArrayMap.get(2));
+//					Map<Integer,double[]>  shiftedArrayMap = shiftAllValuesBeforeCosineSimilarityCalculation(cos.getIndex1Array(), cos.getIndex2Array(), true);
+//					cos.setIndex1Array(shiftedArrayMap.get(1));
+//					cos.setIndex2Array(shiftedArrayMap.get(2));
 					
 					double cosSimilarity = cosineSimilarity(cos.getIndex1Array(), cos.getIndex2Array());
 					cos.setCosineSimilarity(cosSimilarity);

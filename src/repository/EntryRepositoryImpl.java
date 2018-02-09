@@ -47,6 +47,7 @@ public class EntryRepositoryImpl implements EntryRepository{
 				currentEntry.setUserId(fk_userId);
 				currentEntry.setUser(userRepository.getUserById(fk_userId));
 				entryList.add(currentEntry);
+
 			}
 			st.close();
 			conn.close();
