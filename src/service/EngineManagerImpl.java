@@ -14,6 +14,7 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -307,6 +308,7 @@ public class EngineManagerImpl implements EngineManager {
 				}
 			}
 		}
+		System.out.println("Matrix is created. Its size = " + matrixData.size());
 		//Co occurence matrix oluşturma tamamlandı, PMI Değerini hesaplayacağız.
 		matrixData = calculateAndSetPMIValues(matrixData, wordFrequencyMap, ranking.size());
 		
@@ -318,13 +320,21 @@ public class EngineManagerImpl implements EngineManager {
 		// Bu nedenle mesela index1 = 20 ve index2 = 3 için matrix data da bir kayıt yoksa,
 		// bu kayıt yaratılıp değeri 0 yazılmalıdır. PMI Value değerini de 0 ata.
 		// Bu noktada bu iş yapılmalı
-		Map<PMIValueIndexes, BigDecimal> clonedMatrixData = matrixData;
-		Map<PMIValueIndexes, BigDecimal> filledMatrix = fillMissingMatrixCell(matrixData, mapOfIndexes, ranking.size(), wordFrequencyMap);
+		/**
+		 * Bu alan memory leak oluşmasına neden olan bir alan. Yapı olarak doğru çalışmasına rağmen disk le daha çok çalışan koda geçiyorum
+		 * 326 - 334 silinmemeli
+		 */
+//		Map<PMIValueIndexes, BigDecimal> clonedMatrixData = matrixData;
+//		Map<PMIValueIndexes, BigDecimal> filledMatrix = fillMissingMatrixCell(matrixData, mapOfIndexes, ranking.size(), wordFrequencyMap);
 		
-		createTxtFilePMIIndexValues(convertToListPMIValueIndexes(filledMatrix), true);
-		createTxtFilePMIIndexValues(convertToListPMIValueIndexes(clonedMatrixData), false);
+//		System.out.println("Filled matrix data is created. Its size = " + filledMatrix.size());
 		
-		createVectors(filledMatrix);
+//		createTxtFilePMIIndexValues(convertToListPMIValueIndexes(filledMatrix), true);
+//		createTxtFilePMIIndexValues(convertToListPMIValueIndexes(clonedMatrixData), false);
+		
+//		createVectors(filledMatrix);
+		
+		createVectorsOneByOneWithVirtualMatrix(matrixData, ranking.size());
 		
 	}
 	
@@ -355,10 +365,15 @@ public class EngineManagerImpl implements EngineManager {
 	}
 	
 	private Map<PMIValueIndexes, BigDecimal> calculateAndSetPMIValues(Map <PMIValueIndexes, BigDecimal> matrixData, Map<Integer, BigDecimal> wordFrequencyMap, int totalWordSize) {
+		System.out.println("PMI calculation is just started!!");
+		
 		BigDecimal totalWSize = new BigDecimal(totalWordSize);
 		for (Map.Entry<PMIValueIndexes, BigDecimal> data : matrixData.entrySet()) {
 			calculationOfPMI(wordFrequencyMap, totalWSize, data.getValue(), data.getKey());
 		}
+		
+		System.out.println("PMI calculation is just finished");
+		
 		return matrixData;
 	}
 
@@ -405,9 +420,14 @@ public class EngineManagerImpl implements EngineManager {
 	private Map<PMIValueIndexes, BigDecimal> calculateAndSetAlternatePMIValues (Map <PMIValueIndexes, BigDecimal> matrixData
 			, Map<Integer, List<String>> mapOfIndexes, int D) {
 //		int D = matrixData.size();
+		System.out.println("Alternate PMI calculation is just started");
+		
 		for (Map.Entry<PMIValueIndexes, BigDecimal> data : matrixData.entrySet()) {
 			calculationOfAlternatePMI(mapOfIndexes, D, data.getValue(), data.getKey());
 		}
+		
+		System.out.println("Alternate PMI calculation is just finished");
+		
 		return matrixData;
 	}
 
@@ -467,57 +487,110 @@ public class EngineManagerImpl implements EngineManager {
 	 * @param totalSize (matrix size)
 	 * @return (Diğer tüm bilgilerle doldurulmuş yeni matrix)
 	 */
-	private Map<PMIValueIndexes, BigDecimal> fillMissingMatrixCell (Map <PMIValueIndexes, BigDecimal> matrixData 
-			,Map<Integer, List<String>> mapOfIndexes, int totalSize, Map<Integer, BigDecimal> wordFrequencyMap) {
-		Map<Integer, Integer> indexSizeMap = new HashMap<Integer, Integer>();
-		Map<PMIValueIndexes, BigDecimal> filledNewMatrixData  = new HashMap<>();
-		for (Map.Entry<PMIValueIndexes, BigDecimal> data : matrixData.entrySet()) {
-			PMIValueIndexes value = data.getKey();
-			int index1 = value.getIndex1();
-			if (! indexSizeMap.containsKey(index1)) {
-				List<String> valueableIndexes  = mapOfIndexes.get(index1);
-				if (!valueableIndexes.isEmpty()) {				
-					List<Integer> indexes = new ArrayList<Integer>();
-					for (String s : valueableIndexes) {
-						String [] arr = s.split("-");
-						if (arr.length == 2) {
-							indexes.add(Integer.parseInt(arr[0]));
-						}
+//	private Map<PMIValueIndexes, BigDecimal> fillMissingMatrixCell (Map <PMIValueIndexes, BigDecimal> matrixData 
+//			,Map<Integer, List<String>> mapOfIndexes, int totalSize, Map<Integer, BigDecimal> wordFrequencyMap) {
+//		Map<Integer, Integer> indexSizeMap = new HashMap<Integer, Integer>();
+//		Map<PMIValueIndexes, BigDecimal> filledNewMatrixData  = new HashMap<>();
+//		for (Map.Entry<PMIValueIndexes, BigDecimal> data : matrixData.entrySet()) {
+//			PMIValueIndexes value = data.getKey();
+//			int index1 = value.getIndex1();
+//			if (! indexSizeMap.containsKey(index1)) {
+//				List<String> valueableIndexes  = mapOfIndexes.get(index1);
+//				if (!valueableIndexes.isEmpty()) {				
+//					List<Integer> indexes = new ArrayList<Integer>();
+//					for (String s : valueableIndexes) {
+//						String [] arr = s.split("-");
+//						if (arr.length == 2) {
+//							indexes.add(Integer.parseInt(arr[0]));
+//						}
+//					}
+//					for (int i = 0; i < totalSize; i++) {
+//						boolean found = false;
+//						for (Integer ind : indexes) {
+//							if (ind == i) {
+//								found = true;
+//								break;
+//							}
+//						}
+//						if (!found) {
+//							PMIValueIndexes newIndex = new PMIValueIndexes();
+//							newIndex.setIndex1(index1);
+//							newIndex.setIndex2(i);
+//							calculationOfPMI(wordFrequencyMap, new BigDecimal(totalSize), BigDecimal.ZERO, newIndex);
+//							calculationOfAlternatePMI(mapOfIndexes, totalSize, BigDecimal.ZERO, newIndex);
+//							filledNewMatrixData.put(newIndex, BigDecimal.ZERO);
+//						} else {
+//							for (PMIValueIndexes x : matrixData.keySet()) {
+//								if (x.getIndex1() == index1 && x.getIndex2() == i) {
+//									filledNewMatrixData.put(x, matrixData.get(x));
+//									break;
+//								}
+//							}
+//						}
+//						if (indexSizeMap.containsKey(index1)) {
+//							indexSizeMap.put(index1, indexSizeMap.get(index1) + 1);
+//						} else {
+//							indexSizeMap.put(index1, 1);
+//						}
+//					}
+//				}
+//			}
+//		}
+//		return filledNewMatrixData;
+//	}
+	
+	
+	/**
+	 * Bu fonksiyon matrix data nın içindeki tüm değerleri teker teker dolaşıp cosinüs benzerliğini hesaplamada kullanılır.
+	 * 
+	 * @param matrixData -> oluşturulan matrix data
+	 * @param totalSize -> toplam unique kelime sayısı
+	 */
+	private void createVectorsOneByOneWithVirtualMatrix (Map <PMIValueIndexes, BigDecimal> matrixData, int totalSize) {
+		for (int i = 0; i < totalSize; i++) {
+			int tempI = i;
+			List<PMIValueIndexes> listIndex1EqualsI = matrixData.keySet().stream().filter(a -> a.getIndex1() == tempI).sorted((x,y) -> Integer.compare(x.getIndex2(), y.getIndex2())).collect(Collectors.toList());
+			
+			for(int j = 0; j < totalSize; j++) {
+				if (i != j) {
+					int tempJ = j;
+					List<PMIValueIndexes> listIndex2EqualsJ = matrixData.keySet().stream().filter(b -> b.getIndex1() == tempJ).sorted((x,y) -> Integer.compare(x.getIndex2(), y.getIndex2())).collect(Collectors.toList());
+					
+					//2 index için değerler sort edilerek hazırlandı. Şimdi operasyon başlıyor.
+					double[] array1 = new double[totalSize];
+					double[] array2 = new double[totalSize];
+					
+					BigDecimal index1Total = BigDecimal.ZERO;
+					for (PMIValueIndexes index1 : listIndex1EqualsI) {
+						array1[index1.getIndex2()] = index1.getLogaritmicPmiValue().doubleValue();
+						index1Total = index1Total.add(index1.getLogaritmicPmiValue());
 					}
-					for (int i = 0; i < totalSize; i++) {
-						boolean found = false;
-						for (Integer ind : indexes) {
-							if (ind == i) {
-								found = true;
-								break;
-							}
-						}
-						if (!found) {
-							PMIValueIndexes newIndex = new PMIValueIndexes();
-							newIndex.setIndex1(index1);
-							newIndex.setIndex2(i);
-							calculationOfPMI(wordFrequencyMap, new BigDecimal(totalSize), BigDecimal.ZERO, newIndex);
-							calculationOfAlternatePMI(mapOfIndexes, totalSize, BigDecimal.ZERO, newIndex);
-							filledNewMatrixData.put(newIndex, BigDecimal.ZERO);
-						} else {
-							for (PMIValueIndexes x : matrixData.keySet()) {
-								if (x.getIndex1() == index1 && x.getIndex2() == i) {
-									filledNewMatrixData.put(x, matrixData.get(x));
-									break;
-								}
-							}
-						}
-						if (indexSizeMap.containsKey(index1)) {
-							indexSizeMap.put(index1, indexSizeMap.get(index1) + 1);
-						} else {
-							indexSizeMap.put(index1, 1);
-						}
+					
+					BigDecimal index2Total = BigDecimal.ZERO;
+					for (PMIValueIndexes index2 : listIndex2EqualsJ) {
+						array2[index2.getIndex2()] = index2.getLogaritmicPmiValue().doubleValue();
+						index2Total = index2Total.add(index2.getLogaritmicPmiValue());
 					}
+					
+					CosineSimilarityIndex cos = new CosineSimilarityIndex();
+					cos.setIndex1(i);
+					cos.setIndex2(j);
+					cos.setIndex1Total(index1Total);
+					cos.setIndex2Total(index2Total);
+					cos.setIndex1Array(array1);
+					cos.setIndex2Array(array2);
+					
+					double cosSimilarity = cosineSimilarity(cos.getIndex1Array(), cos.getIndex2Array());
+					
+					cos.setCosineSimilarity(cosSimilarity);
+					
+					appendCosineSimilarityOneByOne(cos);
 				}
 			}
+			System.out.println("I is successfully finished : " + i + "Tarih : " + new Date());
 		}
-		return filledNewMatrixData;
 	}
+	
 	
 	private List<WordIndex> getWordIndexList (List<String> readFromTxtEntries) {
 		//kelimelerin değerleri hesaplanıyor.
@@ -610,7 +683,7 @@ public class EngineManagerImpl implements EngineManager {
 		PMIValueIndexes biggestIndex = filledMatrix.keySet().stream()
                 .max(comp)
                 .get();
-		List<CosineSimilarityIndex> indexList = new ArrayList<CosineSimilarityIndex>();
+//		List<CosineSimilarityIndex> indexList = new ArrayList<CosineSimilarityIndex>();
 		for (int i = 0; i < biggestIndex.getIndex1(); i++) {
 			CosineSimilarityIndex cos = new CosineSimilarityIndex();
 			cos.setIndex1(i);
@@ -670,15 +743,18 @@ public class EngineManagerImpl implements EngineManager {
 					double cosSimilarity = cosineSimilarity(cos.getIndex1Array(), cos.getIndex2Array());
 					cos.setCosineSimilarity(cosSimilarity);
 					appendCosineSimilarityOneByOne(cos);
-					indexList.add(cos);
+//					indexList.add(cos);
+//					if (indexList.size() % 1000 == 0) {
+//						System.out.println("IndexList size = " + indexList.size());
+//					}
 				}
 			}
 		}
 		
 		// TXT
-		createCosineSimilarityTxt(indexList);
+//		createCosineSimilarityTxt(indexList);
 		// EXCEL
-		createCosineSimilarityExcel(indexList);
+//		createCosineSimilarityExcel(indexList);
 	}
 	
 	private Map<Integer, double[]> shiftAllValuesBeforeCosineSimilarityCalculation(double[] arr1, double[] arr2, boolean shiftAllValues)  {
