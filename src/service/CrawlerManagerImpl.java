@@ -122,7 +122,7 @@ public class CrawlerManagerImpl implements CrawlerManager {
 								} else {
 									doc = Jsoup.connect(url + line).get();
 								}
-								Elements ulIds = doc.select("ul[id='entry-list']");
+								Elements ulIds = doc.select("ul[id='entry-item-list']");
 								for (Element element : ulIds) {
 									Elements lis = element.select("li");
 									for (Element liElement : lis) {
