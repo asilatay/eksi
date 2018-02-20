@@ -398,8 +398,13 @@ public class EngineManagerImpl implements EngineManager {
 				.setScale(10, RoundingMode.HALF_UP);
 		// pmiValue değerinin logaritmasını alıp tekrar üstüne set et. (Logaritma 0 çıkacak senaryoya dikkat et)
 		calculativeValue.setPmiValue(pmiValue);
-		try {				
-			calculativeValue.setLogaritmicPmiValue(log10(calculativeValue.getPmiValue(), 10));
+		try {
+			BigDecimal logarithmicValue = log10(calculativeValue.getPmiValue(), 10);
+			if (logarithmicValue.signum() < 0) {				
+				calculativeValue.setLogaritmicPmiValue(BigDecimal.ZERO);
+			} else {
+				calculativeValue.setLogaritmicPmiValue(logarithmicValue);
+			}
 		} catch (ArithmeticException e) {
 			// logaritma 0 geldiğinde exception fırlatılıp yakalandı ve bir değer set edildi. Değeri değiştirebiliriz.
 			// Değer son karardan sonra 0 set edildi. (23 Ocak 2018) Daha sonrasında operasyonel hesaplamalarda değerler +1 shift edilecek
@@ -473,7 +478,12 @@ public class EngineManagerImpl implements EngineManager {
 		BigDecimal total = top.divide(bottom, 10, RoundingMode.HALF_UP);
 		calculativeValue.setAlternatePmiValue(total);
 		try {
-			calculativeValue.setLogarithmicAlternatePmiValue(log10(calculativeValue.getAlternatePmiValue(), 10));
+			BigDecimal logarithmicValue = log10(calculativeValue.getAlternatePmiValue(), 10);
+			if (logarithmicValue.signum() < 0) {				
+				calculativeValue.setLogarithmicAlternatePmiValue(BigDecimal.ZERO);
+			} else {
+				calculativeValue.setLogarithmicAlternatePmiValue(logarithmicValue);
+			}
 		} catch (ArithmeticException ex) {
 			// Değer son karardan sonra 0 set edildi. (23 Ocak 2018) Daha sonrasında operasyonel hesaplamalarda değerler +1 shift edilecek
 			calculativeValue.setLogarithmicAlternatePmiValue(BigDecimal.ZERO);
