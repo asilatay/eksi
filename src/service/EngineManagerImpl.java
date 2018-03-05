@@ -3,14 +3,20 @@ package service;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -41,6 +47,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import commons.DateUtil;
@@ -557,6 +564,7 @@ public class EngineManagerImpl implements EngineManager {
 	 * @param totalSize -> toplam unique kelime sayısı
 	 */
 	private void createVectorsOneByOneWithVirtualMatrix (Map <PMIValueIndexes, BigDecimal> matrixData, int totalSize) {
+		List<CosineSimilarityIndex> cosList = new ArrayList<CosineSimilarityIndex>();
 		for (int i = 0; i < totalSize; i++) {
 			int tempI = i;
 			List<PMIValueIndexes> listIndex1EqualsI = matrixData.keySet().stream().filter(a -> a.getIndex1() == tempI).sorted((x,y) -> Integer.compare(x.getIndex2(), y.getIndex2())).collect(Collectors.toList());
@@ -594,7 +602,14 @@ public class EngineManagerImpl implements EngineManager {
 					
 					cos.setCosineSimilarity(cosSimilarity);
 					
-					appendCosineSimilarityOneByOne(cos);
+					cosList.add(cos);
+					
+					if (cosList.size() % 1000 == 0) {
+						appendCosineSimilarityWithList(cosList);
+						cosList.clear();
+					}
+					//Bu metod teker teker ekleme yapıyor, daha az IO yapalım diye şimdilik 1000 er 1000 er ekliyorum
+//					appendCosineSimilarityOneByOne(cos);
 				}
 			}
 			System.out.println("I is successfully finished : " + i + "Tarih : " + new Date());
@@ -1211,25 +1226,39 @@ public class EngineManagerImpl implements EngineManager {
 		}
 	}
 	
+	private void appendCosineSimilarityWithList(List<CosineSimilarityIndex> cosList) {
+		try {
+			String filename= "cosineSimilarity.txt";
+		    FileWriter fw = new FileWriter(filename,true); //the true will append the new data
+		    
+		    for (CosineSimilarityIndex cos : cosList) {
+		    	fw.write(cos.getIndex1() + "-" + cos.getIndex2() + "-" + cos.getIndex1Total() + "-" + cos.getIndex2Total() 
+			    + "-" +cos.getCosineSimilarity() +"\r\n");//appends the string to the file
+		    }
+		    
+		    fw.close();
+			
+		} catch (IOException ioe) {
+			System.err.println("IOException: " + ioe.getMessage());
+		}
+	}
+	
 	@Override
 	public void runBilkentData(String readXmlPath) {
 		//read XML file
-		Document document = readXmlFileFromPath(readXmlPath);
-		if (document != null) {
 			// XML den okunan bilgiyi string içine doldur
-			NodeList docNodeList = document.getElementsByTagName("DOC");
+			NodeList docNodeList = readXML(readXmlPath);
 			List<String> allDataContent = new ArrayList<String>();
 			for (int i = 0; i < docNodeList.getLength(); i++)  {				
 				Node text = docNodeList.item(i).getChildNodes().item(9);
 				String[] txtOneContent = text.getTextContent().split("\n");
 				if (txtOneContent.length > 0) {
 					for (int j = 0; j < txtOneContent.length; j++) {
-						if (StringUtils.isNotEmpty(txtOneContent[j])) {							
-							allDataContent.add(txtOneContent[j]);
+						if (StringUtils.isNotEmpty(txtOneContent[j])) {
+							allDataContent.add(txtOneContent[j].toLowerCase());
 						}
 					}
 				}
-			}
 			//Veri artık toplandı. CoOccurrence Matrix fonksiyonu çağrılıyor.
 			createCoOccurenceMatrix(null, allDataContent);
 		}
@@ -1258,6 +1287,35 @@ public class EngineManagerImpl implements EngineManager {
 		}
 		return document;
 				
+	}
+	
+	private NodeList readXML(String filePath) {
+		InputSource is;
+		try {
+			InputStream inputStream = new FileInputStream(filePath);
+			Reader reader = new InputStreamReader(inputStream, "Cp1252");
+			is = new InputSource(reader);
+			is.setEncoding("Cp1252");
+		} catch (FileNotFoundException | UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			is = null;
+		}
+		
+//        File xmlFile = new File(filePath);
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder;
+        try {
+            dBuilder = dbFactory.newDocumentBuilder();
+            Document doc = dBuilder.parse(is);
+            doc.getDocumentElement().normalize();
+            System.out.println("Root element :" + doc.getDocumentElement().getNodeName());
+            NodeList nodeList = doc.getElementsByTagName("DOC");
+            return nodeList;
+        } catch (SAXException | ParserConfigurationException | IOException e1) {
+            e1.printStackTrace();
+            return null;
+        }
 	}
 	
 }

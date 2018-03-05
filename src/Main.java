@@ -33,7 +33,7 @@ public class Main {
 		String dir = "C:\\webharvest\\KAYDET\\";
 		String ham = "C:\\webharvest\\HAM\\";
 		final String fileReadingPath = "C:\\Users\\ASIL\\git\\eksiGit\\entries.txt";
-		final String bilkentXmlPath ="D:\\Yüksek Lisans\\Tez\\Bilkent DATA\\BilCol2005\\copyFromProgramTest.xml";
+		final String bilkentXmlPath ="D:\\Yüksek Lisans\\Tez\\Bilkent DATA\\BilCol2005\\Orijinal Data\\ALLOK.xml";
 		String operationSelect ="-1";
 		System.out.println("GitHub Entegrasyonu OK!");
 		Scanner scanIn = new Scanner(System.in);		
