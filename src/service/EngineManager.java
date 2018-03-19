@@ -27,5 +27,7 @@ public interface EngineManager {
 	void calculateJaccardSimilarityAndSave();
 	
 	void runBilkentData(String readXmlPath);
+	
+	void runBilkentDataWithTxt(String txtPath);
 
 }

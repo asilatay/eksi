@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -35,6 +36,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.poi.xssf.streaming.SXSSFCell;
 import org.apache.poi.xssf.streaming.SXSSFRow;
@@ -79,6 +81,10 @@ public class EngineManagerImpl implements EngineManager {
 	private final static int turningNumberForNewCoOccurence = 5;
 	
 	private final static String directoryOfSimilarUsersThatWroteSameTitle = "userUserTitles.txt";
+	
+	private final static int globalColumnCount = 1000;
+	
+	private final static int globalRowCount = 2000;
 	
 	private final static String directoryOfTitleCountOfUsers = "userTitle.txt";
 	// Eğer bu parametre 0 ise arraydeki elemanlardan biri bile 999999 ise hesaplamadan çıkar(İkisi de 999999 olmamalı)
@@ -257,7 +263,7 @@ public class EngineManagerImpl implements EngineManager {
 	
 	@Override
 	public void createCoOccurenceMatrix(String readTextPath, List<String> outputFromAnotherFunction) {
-		System.out.println("Co-Occurence matrix operation is just started!");
+		System.out.println("Co-Occurrence matrix oluşturma operasyonu başladı!");
 		List<String> readFromTxtEntries = new ArrayList<String>();
 		if (outputFromAnotherFunction == null) {			
 			readFromTxtEntries = importManager.readFromTxt(readTextPath);
@@ -268,7 +274,9 @@ public class EngineManagerImpl implements EngineManager {
 			}
 		} else {
 			readFromTxtEntries.addAll(outputFromAnotherFunction);
+			outputFromAnotherFunction.clear();
 		}
+		System.out.println("Bir kelimenin kaç defa sistemde görüldüğüyle ilgili liste oluşturuluyor");
 		List<WordIndex> wordsOccured = getWordIndexList(readFromTxtEntries);
 		createOutputForWordsOccured(wordsOccured);
 		
@@ -278,11 +286,12 @@ public class EngineManagerImpl implements EngineManager {
 			ranking.put(w.getWord(), w.getIndex());
 			wordFrequencyMap.put(w.getIndex(), w.getFrequency());
 		}
-		
+		wordsOccured.clear();
 		List<String> splittedEntries = new ArrayList<String> ();
 		for (String s : readFromTxtEntries) {				
 			splittedEntries = splittedEntryDescription(splittedEntries, s);
 		}
+		readFromTxtEntries.clear();
 		Map<PMIValueIndexes, BigDecimal> matrixData = new  HashMap<PMIValueIndexes, BigDecimal>();
 		System.out.println("PMI Value Indexes çözümü başladı!");
 		for (int i = 0; i < splittedEntries.size(); i++) {
@@ -293,21 +302,22 @@ public class EngineManagerImpl implements EngineManager {
 					int numberOfCellForAlternativeWord = ranking.get(splittedEntries.get(countGo));
 					PMIValueIndexes ind = new PMIValueIndexes(numberOfCellForPivotWord, numberOfCellForAlternativeWord, BigDecimal.ZERO, BigDecimal.ZERO);
 					PMIValueIndexes symIndex = new PMIValueIndexes(numberOfCellForAlternativeWord, numberOfCellForPivotWord, BigDecimal.ZERO, BigDecimal.ZERO);
-					if (matrixData.containsKey(ind)) {
+					if (matrixData.containsKey(ind) && ind.getIndex1() < globalRowCount && ind.getIndex2() < globalColumnCount) {
 						matrixData.put(ind, matrixData.get(ind).add(BigDecimal.ONE));
 						if (matrixData.get(symIndex) != null) {							
 							matrixData.put(symIndex, matrixData.get(symIndex).add(BigDecimal.ONE));
 						} else {
 							matrixData.put(symIndex, BigDecimal.ONE);
 						}
-					} else if (matrixData.containsKey(symIndex)) {
+					} else if (matrixData.containsKey(symIndex) && symIndex.getIndex1() < globalRowCount && symIndex.getIndex2() < globalColumnCount) {
 						matrixData.put(symIndex, matrixData.get(symIndex).add(BigDecimal.ONE));
 						if (matrixData.get(ind) != null) {							
 							matrixData.put(ind, matrixData.get(ind).add(BigDecimal.ONE));
 						} else {
 							matrixData.put(ind, BigDecimal.ONE);
 						}
-					} else {
+					} else if (ind.getIndex1() < globalRowCount && ind.getIndex2() < globalColumnCount 
+							&& symIndex.getIndex1() < globalRowCount && symIndex.getIndex2() < globalColumnCount){
 						matrixData.put(symIndex, BigDecimal.ONE);
 						matrixData.put(ind, BigDecimal.ONE);
 					}
@@ -315,43 +325,74 @@ public class EngineManagerImpl implements EngineManager {
 				}
 			}
 		}
-		System.out.println("Matrix is created. Its size = " + matrixData.size());
-		//Co occurence matrix oluşturma tamamlandı, PMI Değerini hesaplayacağız.
-		matrixData = calculateAndSetPMIValues(matrixData, wordFrequencyMap, ranking.size());
 		
-		Map<Integer, List<String>> mapOfIndexes = getMapOfIndexes(matrixData);
+		createBigClamInputFromMatrix(matrixData);
+		
+		splittedEntries.clear();
+		int rankingSize = ranking.size();
+		ranking.clear();
+
+		for (int i = 0; i < globalRowCount; i++) {
+			int tempI = i;
+			List<PMIValueIndexes> index1List = matrixData.keySet().stream()
+					.filter(a -> a.getIndex1() == tempI).collect(Collectors.toList());
+			if (CollectionUtils.isNotEmpty(index1List)) {
+				for (int j = 0; j < globalColumnCount; j++) {
+					int tempJ = j;
+					Optional<PMIValueIndexes> optIndex2 = index1List.stream().filter(a -> a.getIndex2() == tempJ)
+							.findFirst();
+					if (!optIndex2.isPresent()) {
+						PMIValueIndexes newIndex = new PMIValueIndexes(tempI, tempJ, BigDecimal.ZERO, BigDecimal.ZERO);
+						matrixData.put(newIndex, BigDecimal.ZERO);
+					}
+				}
+			} else {
+				for (int j = 0; j < globalColumnCount; j++) {
+					int tempJ = j;
+					PMIValueIndexes newIndex = new PMIValueIndexes(tempI, tempJ, BigDecimal.ZERO, BigDecimal.ZERO);
+					matrixData.put(newIndex, BigDecimal.ZERO);
+				}
+			}
+		}
+		System.out.println("Matrix oluşturuldu... Size= " + matrixData.size());
+		//Co occurence matrix oluşturma tamamlandı, PMI Değerini hesaplayacağız.
+		matrixData = calculateAndSetPMIValues(matrixData, wordFrequencyMap, rankingSize);
+		
+		//TODO alternate i açarken map of indexes aç
+//		Map<Integer, List<String>> mapOfIndexes = getMapOfIndexes(matrixData);
 		
 		// Alternate PMI değerini hesaplayacağız.
-		matrixData = calculateAndSetAlternatePMIValues (matrixData, mapOfIndexes, ranking.size());
-		//Matrix de 2 farklı row un benzerliği hesaplanmak istendiğinde uzunlukları eşit olmalı
-		// Bu nedenle mesela index1 = 20 ve index2 = 3 için matrix data da bir kayıt yoksa,
-		// bu kayıt yaratılıp değeri 0 yazılmalıdır. PMI Value değerini de 0 ata.
-		// Bu noktada bu iş yapılmalı
-		/**
-		 * Bu alan memory leak oluşmasına neden olan bir alan. Yapı olarak doğru çalışmasına rağmen disk le daha çok çalışan koda geçiyorum
-		 * 326 - 334 silinmemeli
-		 */
-//		Map<PMIValueIndexes, BigDecimal> clonedMatrixData = matrixData;
-//		Map<PMIValueIndexes, BigDecimal> filledMatrix = fillMissingMatrixCell(matrixData, mapOfIndexes, ranking.size(), wordFrequencyMap);
+//		matrixData = calculateAndSetAlternatePMIValues (matrixData, mapOfIndexes, rankingSize);
+//		mapOfIndexes.clear();
 		
-//		System.out.println("Filled matrix data is created. Its size = " + filledMatrix.size());
-		
-//		createTxtFilePMIIndexValues(convertToListPMIValueIndexes(filledMatrix), true);
-//		createTxtFilePMIIndexValues(convertToListPMIValueIndexes(clonedMatrixData), false);
-		
-//		createVectors(filledMatrix);
-		
-		createVectorsOneByOneWithVirtualMatrix(matrixData, ranking.size());
+		//TODO burada totalWordNumberBigData yerine tüm veri çalıştığında ranking size yazar!!
+		createVectorsOneByOneWithVirtualMatrix(matrixData, globalRowCount, globalColumnCount);
 		
 	}
 	
-	private List<PMIValueIndexes> convertToListPMIValueIndexes (Map<PMIValueIndexes, BigDecimal> filledMatrix) {
-		List<PMIValueIndexes> indexList = new ArrayList<PMIValueIndexes>();
-		for (Map.Entry<PMIValueIndexes, BigDecimal> data : filledMatrix.entrySet()) {
-			indexList.add(data.getKey());
+	/**
+	 * 
+	 * @param matrixData
+	 * Bu metod bigclam algoritmasına verilecek veriyi oluşturan dosyadır. 
+	 * Unweighted network oluşturacak!!
+	 */
+	private void createBigClamInputFromMatrix(Map<PMIValueIndexes, BigDecimal> matrixData) {
+		try {
+			BufferedWriter out = new BufferedWriter(new FileWriter("forBigClam.txt"));
+			for(Map.Entry<PMIValueIndexes, BigDecimal>  entry  : matrixData.entrySet()){
+				PMIValueIndexes index = entry.getKey();
+				BigDecimal numberOfOccurredSameWindow = entry.getValue();
+				if (numberOfOccurredSameWindow.signum() > 0)  {
+					out.write(index.getIndex1()+"	"+ index.getIndex2()+"\r\n");
+				}
+			}
+			out.close();
+			System.out.println("BigClam algoritmasına verilecek input oluşturuldu!!");
+		} catch (IOException e) {
+			System.err.println("BigClam input için oluşturulacak dosya açılırken bir hata oluştu");
 		}
-		return indexList;
 	}
+
 	
 	private Map<Integer, List<String>> getMapOfIndexes (Map<PMIValueIndexes, BigDecimal> matrixData) {
 		Map<Integer, List<String>> returnData = new HashMap<Integer, List<String>>();
@@ -496,66 +537,6 @@ public class EngineManagerImpl implements EngineManager {
 			calculativeValue.setLogarithmicAlternatePmiValue(BigDecimal.ZERO);
 		}
 	}
-	/**
-	 * Bu fonksiyon operasyonel işlemler tamamlandığında wordSize X wordSize kadarlık bir matrix oluşturulabilmesi için birbirleriyle hiç görülmeyen kelimelere hesaplama olarak 0 değerlerini atar
-	 * 
-	 * @param matrixData (Kelime bilgilerinin olduğu data)
-	 * @param mapOfIndexes
-	 * @param totalSize (matrix size)
-	 * @return (Diğer tüm bilgilerle doldurulmuş yeni matrix)
-	 */
-//	private Map<PMIValueIndexes, BigDecimal> fillMissingMatrixCell (Map <PMIValueIndexes, BigDecimal> matrixData 
-//			,Map<Integer, List<String>> mapOfIndexes, int totalSize, Map<Integer, BigDecimal> wordFrequencyMap) {
-//		Map<Integer, Integer> indexSizeMap = new HashMap<Integer, Integer>();
-//		Map<PMIValueIndexes, BigDecimal> filledNewMatrixData  = new HashMap<>();
-//		for (Map.Entry<PMIValueIndexes, BigDecimal> data : matrixData.entrySet()) {
-//			PMIValueIndexes value = data.getKey();
-//			int index1 = value.getIndex1();
-//			if (! indexSizeMap.containsKey(index1)) {
-//				List<String> valueableIndexes  = mapOfIndexes.get(index1);
-//				if (!valueableIndexes.isEmpty()) {				
-//					List<Integer> indexes = new ArrayList<Integer>();
-//					for (String s : valueableIndexes) {
-//						String [] arr = s.split("-");
-//						if (arr.length == 2) {
-//							indexes.add(Integer.parseInt(arr[0]));
-//						}
-//					}
-//					for (int i = 0; i < totalSize; i++) {
-//						boolean found = false;
-//						for (Integer ind : indexes) {
-//							if (ind == i) {
-//								found = true;
-//								break;
-//							}
-//						}
-//						if (!found) {
-//							PMIValueIndexes newIndex = new PMIValueIndexes();
-//							newIndex.setIndex1(index1);
-//							newIndex.setIndex2(i);
-//							calculationOfPMI(wordFrequencyMap, new BigDecimal(totalSize), BigDecimal.ZERO, newIndex);
-//							calculationOfAlternatePMI(mapOfIndexes, totalSize, BigDecimal.ZERO, newIndex);
-//							filledNewMatrixData.put(newIndex, BigDecimal.ZERO);
-//						} else {
-//							for (PMIValueIndexes x : matrixData.keySet()) {
-//								if (x.getIndex1() == index1 && x.getIndex2() == i) {
-//									filledNewMatrixData.put(x, matrixData.get(x));
-//									break;
-//								}
-//							}
-//						}
-//						if (indexSizeMap.containsKey(index1)) {
-//							indexSizeMap.put(index1, indexSizeMap.get(index1) + 1);
-//						} else {
-//							indexSizeMap.put(index1, 1);
-//						}
-//					}
-//				}
-//			}
-//		}
-//		return filledNewMatrixData;
-//	}
-	
 	
 	/**
 	 * Bu fonksiyon matrix data nın içindeki tüm değerleri teker teker dolaşıp cosinüs benzerliğini hesaplamada kullanılır.
@@ -563,20 +544,20 @@ public class EngineManagerImpl implements EngineManager {
 	 * @param matrixData -> oluşturulan matrix data
 	 * @param totalSize -> toplam unique kelime sayısı
 	 */
-	private void createVectorsOneByOneWithVirtualMatrix (Map <PMIValueIndexes, BigDecimal> matrixData, int totalSize) {
+	private void createVectorsOneByOneWithVirtualMatrix (Map <PMIValueIndexes, BigDecimal> matrixData, int globalRowCount, int globalColumnCount) {
 		List<CosineSimilarityIndex> cosList = new ArrayList<CosineSimilarityIndex>();
-		for (int i = 0; i < totalSize; i++) {
+		for (int i = 0; i < globalRowCount; i++) {
 			int tempI = i;
 			List<PMIValueIndexes> listIndex1EqualsI = matrixData.keySet().stream().filter(a -> a.getIndex1() == tempI).sorted((x,y) -> Integer.compare(x.getIndex2(), y.getIndex2())).collect(Collectors.toList());
 			
-			for(int j = 0; j < totalSize; j++) {
+			for(int j = 0; j < globalRowCount; j++) {
 				if (i != j) {
 					int tempJ = j;
 					List<PMIValueIndexes> listIndex2EqualsJ = matrixData.keySet().stream().filter(b -> b.getIndex1() == tempJ).sorted((x,y) -> Integer.compare(x.getIndex2(), y.getIndex2())).collect(Collectors.toList());
 					
 					//2 index için değerler sort edilerek hazırlandı. Şimdi operasyon başlıyor.
-					double[] array1 = new double[totalSize];
-					double[] array2 = new double[totalSize];
+					double[] array1 = new double[globalColumnCount];
+					double[] array2 = new double[globalColumnCount];
 					
 					BigDecimal index1Total = BigDecimal.ZERO;
 					for (PMIValueIndexes index1 : listIndex1EqualsI) {
@@ -602,14 +583,14 @@ public class EngineManagerImpl implements EngineManager {
 					
 					cos.setCosineSimilarity(cosSimilarity);
 					
-					cosList.add(cos);
-					
-					if (cosList.size() % 1000 == 0) {
-						appendCosineSimilarityWithList(cosList);
-						cosList.clear();
-					}
+//					cosList.add(cos);
+//					
+//					if (cosList.size() % 1000 == 0) {
+//						appendCosineSimilarityWithList(cosList);
+//						cosList.clear();
+//					}
 					//Bu metod teker teker ekleme yapıyor, daha az IO yapalım diye şimdilik 1000 er 1000 er ekliyorum
-//					appendCosineSimilarityOneByOne(cos);
+					appendCosineSimilarityOneByOne(cos);
 				}
 			}
 			System.out.println("I is successfully finished : " + i + "Tarih : " + new Date());
@@ -858,7 +839,7 @@ public class EngineManagerImpl implements EngineManager {
 				 out.write(word.getWord() +"	"+ word.getIndex()+"	"+word.getFrequency()+"\r\n");
 			 }
 			 out.close();
-			 System.out.println("TXT oluşturuldu.!");
+			 System.out.println("Bir kelimenin hangi index de kaç defa sistemde geçtiğiyle ilgili TXT dosyası oluşturuldu!");
 		}
 		catch (IOException e) {
 			System.err.println("TXT oluşturulurken hata oluştu!");
@@ -1246,23 +1227,30 @@ public class EngineManagerImpl implements EngineManager {
 	@Override
 	public void runBilkentData(String readXmlPath) {
 		//read XML file
-			// XML den okunan bilgiyi string içine doldur
-			NodeList docNodeList = readXML(readXmlPath);
-			List<String> allDataContent = new ArrayList<String>();
-			for (int i = 0; i < docNodeList.getLength(); i++)  {				
-				Node text = docNodeList.item(i).getChildNodes().item(9);
-				String[] txtOneContent = text.getTextContent().split("\n");
-				if (txtOneContent.length > 0) {
-					for (int j = 0; j < txtOneContent.length; j++) {
-						if (StringUtils.isNotEmpty(txtOneContent[j])) {
-							allDataContent.add(txtOneContent[j].toLowerCase());
-						}
+		// XML den okunan bilgiyi string içine doldur
+		NodeList docNodeList = readXML(readXmlPath);
+		List<String> allDataContent = new ArrayList<String>();
+		for (int i = 0; i < docNodeList.getLength(); i++) {
+			Node text = docNodeList.item(i).getChildNodes().item(9);
+			String[] txtOneContent = text.getTextContent().split("\n");
+			if (txtOneContent.length > 0) {
+				for (int j = 0; j < txtOneContent.length; j++) {
+					if (StringUtils.isNotEmpty(txtOneContent[j])) {
+						allDataContent.add(txtOneContent[j].toLowerCase());
 					}
 				}
-			//Veri artık toplandı. CoOccurrence Matrix fonksiyonu çağrılıyor.
-			createCoOccurenceMatrix(null, allDataContent);
+			}
 		}
-			
+		// Veri artık toplandı. CoOccurrence Matrix fonksiyonu çağrılıyor.
+		createCoOccurenceMatrix(null, allDataContent);
+
+	}
+
+	@Override
+	public void runBilkentDataWithTxt(String txtPath) {
+		List<String> allDataContent = importManager.readBilkentDataTxt(txtPath);
+		//Veri artık toplandı. CoOccurrence Matrix fonksiyonu çağrılıyor.
+		createCoOccurenceMatrix(null, allDataContent);
 	}
 
 
