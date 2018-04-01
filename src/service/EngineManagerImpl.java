@@ -82,14 +82,13 @@ public class EngineManagerImpl implements EngineManager {
 	
 	private final static String directoryOfSimilarUsersThatWroteSameTitle = "userUserTitles.txt";
 	
-	private final static int globalColumnCount = 1000;
+	private final static int globalColumnCount = 100;
 	
-	private final static int globalRowCount = 2000;
+	private final static int globalRowCount = 800;
+	
+	private final static int globalMostSimilarWordCount = 10;
 	
 	private final static String directoryOfTitleCountOfUsers = "userTitle.txt";
-	// Eğer bu parametre 0 ise arraydeki elemanlardan biri bile 999999 ise hesaplamadan çıkar(İkisi de 999999 olmamalı)
-	// Eğer bu parametre 1 ise arraydeki elemanlardan biri mantıklı bir sayıysa hesaplamaya sok
-//	private final static int parameterOfRemove9999 = 0;
 	
 	public EngineManagerImpl() {
 	}
@@ -291,6 +290,8 @@ public class EngineManagerImpl implements EngineManager {
 		for (String s : readFromTxtEntries) {				
 			splittedEntries = splittedEntryDescription(splittedEntries, s);
 		}
+		//Bu değer ekşi verisi çalıştırılırken splittedEntries.size() olarak değiştirilecek
+		int allWordOfCorpusSize = readFromTxtEntries.size();
 		readFromTxtEntries.clear();
 		Map<PMIValueIndexes, BigDecimal> matrixData = new  HashMap<PMIValueIndexes, BigDecimal>();
 		System.out.println("PMI Value Indexes çözümü başladı!");
@@ -304,22 +305,27 @@ public class EngineManagerImpl implements EngineManager {
 					PMIValueIndexes symIndex = new PMIValueIndexes(numberOfCellForAlternativeWord, numberOfCellForPivotWord, BigDecimal.ZERO, BigDecimal.ZERO);
 					if (matrixData.containsKey(ind) && ind.getIndex1() < globalRowCount && ind.getIndex2() < globalColumnCount) {
 						matrixData.put(ind, matrixData.get(ind).add(BigDecimal.ONE));
-						if (matrixData.get(symIndex) != null) {							
-							matrixData.put(symIndex, matrixData.get(symIndex).add(BigDecimal.ONE));
-						} else {
-							matrixData.put(symIndex, BigDecimal.ONE);
+						if (symIndex.getIndex1() < globalRowCount && symIndex.getIndex2() < globalColumnCount) {							
+							if (matrixData.get(symIndex) != null) {							
+								matrixData.put(symIndex, matrixData.get(symIndex).add(BigDecimal.ONE));
+							} else {
+								matrixData.put(symIndex, BigDecimal.ONE);
+							}
 						}
 					} else if (matrixData.containsKey(symIndex) && symIndex.getIndex1() < globalRowCount && symIndex.getIndex2() < globalColumnCount) {
 						matrixData.put(symIndex, matrixData.get(symIndex).add(BigDecimal.ONE));
-						if (matrixData.get(ind) != null) {							
-							matrixData.put(ind, matrixData.get(ind).add(BigDecimal.ONE));
-						} else {
-							matrixData.put(ind, BigDecimal.ONE);
+						if (ind.getIndex1() < globalRowCount && ind.getIndex2() < globalColumnCount) {							
+							if (matrixData.get(ind) != null) {							
+								matrixData.put(ind, matrixData.get(ind).add(BigDecimal.ONE));
+							} else {
+								matrixData.put(ind, BigDecimal.ONE);
+							}
 						}
-					} else if (ind.getIndex1() < globalRowCount && ind.getIndex2() < globalColumnCount 
-							&& symIndex.getIndex1() < globalRowCount && symIndex.getIndex2() < globalColumnCount){
-						matrixData.put(symIndex, BigDecimal.ONE);
+					} else if (ind.getIndex1() < globalRowCount && ind.getIndex2() < globalColumnCount){
 						matrixData.put(ind, BigDecimal.ONE);
+						if (symIndex.getIndex1() < globalRowCount && symIndex.getIndex2() < globalColumnCount) {
+							matrixData.put(symIndex, BigDecimal.ONE);
+						}
 					}
 					countGo++;
 				}
@@ -332,31 +338,36 @@ public class EngineManagerImpl implements EngineManager {
 		int rankingSize = ranking.size();
 		ranking.clear();
 
-		for (int i = 0; i < globalRowCount; i++) {
-			int tempI = i;
-			List<PMIValueIndexes> index1List = matrixData.keySet().stream()
-					.filter(a -> a.getIndex1() == tempI).collect(Collectors.toList());
-			if (CollectionUtils.isNotEmpty(index1List)) {
-				for (int j = 0; j < globalColumnCount; j++) {
-					int tempJ = j;
-					Optional<PMIValueIndexes> optIndex2 = index1List.stream().filter(a -> a.getIndex2() == tempJ)
-							.findFirst();
-					if (!optIndex2.isPresent()) {
+		//Matrix oluşturulduğunda zaten verilen aralık kadar hesaplama yapılmışsa burayı atlayarak zaman kazan
+		int multipliedValue = globalRowCount * globalColumnCount;
+		if (matrixData.size() != multipliedValue) {			
+			for (int i = 0; i < globalRowCount; i++) {
+				int tempI = i;
+				List<PMIValueIndexes> index1List = matrixData.keySet().stream()
+						.filter(a -> a.getIndex1() == tempI).collect(Collectors.toList());
+				if (CollectionUtils.isNotEmpty(index1List)) {
+					for (int j = 0; j < globalColumnCount; j++) {
+						int tempJ = j;
+						Optional<PMIValueIndexes> optIndex2 = index1List.stream().filter(a -> a.getIndex2() == tempJ)
+								.findFirst();
+						if (!optIndex2.isPresent()) {
+							PMIValueIndexes newIndex = new PMIValueIndexes(tempI, tempJ, BigDecimal.ZERO, BigDecimal.ZERO);
+							matrixData.put(newIndex, BigDecimal.ZERO);
+						}
+					}
+				} else {
+					for (int j = 0; j < globalColumnCount; j++) {
+						int tempJ = j;
 						PMIValueIndexes newIndex = new PMIValueIndexes(tempI, tempJ, BigDecimal.ZERO, BigDecimal.ZERO);
 						matrixData.put(newIndex, BigDecimal.ZERO);
 					}
-				}
-			} else {
-				for (int j = 0; j < globalColumnCount; j++) {
-					int tempJ = j;
-					PMIValueIndexes newIndex = new PMIValueIndexes(tempI, tempJ, BigDecimal.ZERO, BigDecimal.ZERO);
-					matrixData.put(newIndex, BigDecimal.ZERO);
 				}
 			}
 		}
 		System.out.println("Matrix oluşturuldu... Size= " + matrixData.size());
 		//Co occurence matrix oluşturma tamamlandı, PMI Değerini hesaplayacağız.
-		matrixData = calculateAndSetPMIValues(matrixData, wordFrequencyMap, rankingSize);
+//		matrixData = calculateAndSetPMIValues(matrixData, wordFrequencyMap, rankingSize);
+		matrixData = calculateAndSetPMIValues(matrixData, wordFrequencyMap, allWordOfCorpusSize);
 		
 		//TODO alternate i açarken map of indexes aç
 //		Map<Integer, List<String>> mapOfIndexes = getMapOfIndexes(matrixData);
@@ -367,6 +378,8 @@ public class EngineManagerImpl implements EngineManager {
 		
 		//TODO burada totalWordNumberBigData yerine tüm veri çalıştığında ranking size yazar!!
 		createVectorsOneByOneWithVirtualMatrix(matrixData, globalRowCount, globalColumnCount);
+		
+		findMostSimilarWords(matrixData, globalRowCount);
 		
 	}
 	
@@ -550,7 +563,7 @@ public class EngineManagerImpl implements EngineManager {
 			int tempI = i;
 			List<PMIValueIndexes> listIndex1EqualsI = matrixData.keySet().stream().filter(a -> a.getIndex1() == tempI).sorted((x,y) -> Integer.compare(x.getIndex2(), y.getIndex2())).collect(Collectors.toList());
 			
-			for(int j = 0; j < globalRowCount; j++) {
+			for(int j = 0; j < globalColumnCount; j++) {
 				if (i != j) {
 					int tempJ = j;
 					List<PMIValueIndexes> listIndex2EqualsJ = matrixData.keySet().stream().filter(b -> b.getIndex1() == tempJ).sorted((x,y) -> Integer.compare(x.getIndex2(), y.getIndex2())).collect(Collectors.toList());
@@ -583,17 +596,77 @@ public class EngineManagerImpl implements EngineManager {
 					
 					cos.setCosineSimilarity(cosSimilarity);
 					
-//					cosList.add(cos);
-//					
-//					if (cosList.size() % 1000 == 0) {
-//						appendCosineSimilarityWithList(cosList);
-//						cosList.clear();
-//					}
+					Optional<PMIValueIndexes> isFindIndexes = matrixData.keySet().stream().filter(a -> a.getIndex1() == tempI && a.getIndex2() == tempJ).findFirst();
+					
+					if (isFindIndexes.isPresent()) {
+						PMIValueIndexes specificIndex = isFindIndexes.get();
+						specificIndex.setCosineSimilarityData(cos);
+					}
+					
+					cosList.add(cos);
+					
+					if (cosList.size() % 1000 == 0) {
+						appendCosineSimilarityWithList(cosList);
+						cosList.clear();
+					}
 					//Bu metod teker teker ekleme yapıyor, daha az IO yapalım diye şimdilik 1000 er 1000 er ekliyorum
-					appendCosineSimilarityOneByOne(cos);
+//					appendCosineSimilarityOneByOne(cos);
 				}
 			}
-			System.out.println("I is successfully finished : " + i + "Tarih : " + new Date());
+			System.out.println("I is successfully finished : " + i + " Tarih : " + new Date());
+		}
+		//İşlem bittiğinde cosList içinde değer varsa onu da yaz ve çık
+		if (CollectionUtils.isNotEmpty(cosList)) {
+			appendCosineSimilarityWithList(cosList);
+			cosList.clear();
+		}
+	}
+	
+	/**
+	 * Benzerlik hesapları bittikten sonra index leri tek tek dolaşarak o indexdeki kelimenin hangi index deki kelimeyle
+	 * en fazla benzerliğe sahip olduğuyla ilgili çıktı üreten metoddur.
+	 * @param matrixData
+	 */
+	private void findMostSimilarWords(Map <PMIValueIndexes, BigDecimal> matrixData, int globalRowCount) {
+		for (int i = 0; i < globalRowCount; i++) {
+			int tempI = i;
+			//index1 ve index2 sinde istediğimiz sayı olan liste
+			List<PMIValueIndexes> listIndex1EqualsI = matrixData.keySet().stream().filter(a -> (a.getIndex1() == tempI || a.getIndex2() == tempI) && a.getIndex1() != a.getIndex2())
+					.sorted((o1, o2)-> Double.compare(o2.getCosineSimilarityData().getCosineSimilarity(), o1.getCosineSimilarityData().getCosineSimilarity())).collect(Collectors.toList());
+			
+			List<PMIValueIndexes> filteredList = new ArrayList<PMIValueIndexes>();
+			
+			for (PMIValueIndexes index : listIndex1EqualsI) {
+				Optional<PMIValueIndexes> isAnyFind = filteredList.stream().filter(a -> (a.getIndex1() == index.getIndex1() && a.getIndex2() == index.getIndex2()) || (a.getIndex2() == index.getIndex1() && a.getIndex1() == index.getIndex2())).findFirst();
+				
+				if (isAnyFind.isPresent()) {
+					continue;
+				}
+				
+				filteredList.add(index);
+				
+				if (filteredList.size() == globalMostSimilarWordCount) {
+					break;
+				}
+			}
+			
+			//Liste yazdırılıyor
+			try {
+				String filename= "mostSimilarWords.txt";
+			    FileWriter fw = new FileWriter(filename,true); //the true will append the new data
+			    
+			    for (PMIValueIndexes ind : filteredList) {
+			    	fw.write(ind.getIndex1() + "-" + ind.getIndex2() + "-" + ind.getCosineSimilarityData().getCosineSimilarity() +"\r\n");//appends the string to the file
+			    }
+			    
+			    fw.write("----------------------------------------------------------------------------------- INDEX = " +tempI +"\r\n");
+			    
+			    fw.close();
+			} catch (IOException ioe) {
+				System.err.println("IOException: " + ioe.getMessage());
+			}
+			
+			System.out.println("I is successfully finished to calculate MOST SIMILAR WORDS : " + i + " Tarih : " + new Date());
 		}
 	}
 	

@@ -33,7 +33,8 @@ public class ImportManagerImpl implements ImportManager {
 			List<String> wordList = new ArrayList<String>();
 			while((line = in.readLine()) != null){
 				if (! line.contains("<DOC>") && ! line.contains("<TITLE>")  && ! line.contains("<DOCID>") 
-						&& ! line.contains("<SOURCE>") && ! line.contains("<DATE>") && ! line.contains("<TEXT>") && ! line.contains("</TEXT>")) {	
+						&& ! line.contains("<SOURCE>") && ! line.contains("<DATE>") && ! line.contains("<TEXT>") && ! line.contains("</TEXT>")
+						&& ! line.contains("<ALL>") && ! line.contains("</ALL>") && ! line.contains("<doc>") && ! line.contains("</doc>")) {	
 					wordList.add(line);
 				}
 			}

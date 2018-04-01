@@ -20,6 +20,16 @@ public class PMIValueIndexes {
 	
 	private BigDecimal logarithmicAlternatePmiValue;
 	
+	private CosineSimilarityIndex cosineSimilarityData;
+	
+	public CosineSimilarityIndex getCosineSimilarityData() {
+		return cosineSimilarityData;
+	}
+
+	public void setCosineSimilarityData(CosineSimilarityIndex cosineSimilarityData) {
+		this.cosineSimilarityData = cosineSimilarityData;
+	}
+
 	public PMIValueIndexes() {
 		
 	}
@@ -84,6 +94,7 @@ public class PMIValueIndexes {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((alternatePmiValue == null) ? 0 : alternatePmiValue.hashCode());
+		result = prime * result + ((cosineSimilarityData == null) ? 0 : cosineSimilarityData.hashCode());
 		result = prime * result + index1;
 		result = prime * result + index2;
 		result = prime * result
@@ -106,6 +117,11 @@ public class PMIValueIndexes {
 			if (other.alternatePmiValue != null)
 				return false;
 		} else if (!alternatePmiValue.equals(other.alternatePmiValue))
+			return false;
+		if (cosineSimilarityData == null) {
+			if (other.cosineSimilarityData != null)
+				return false;
+		} else if (!cosineSimilarityData.equals(other.cosineSimilarityData))
 			return false;
 		if (index1 != other.index1)
 			return false;
@@ -133,9 +149,8 @@ public class PMIValueIndexes {
 	public String toString() {
 		return "PMIValueIndexes [index1=" + index1 + ", index2=" + index2 + ", pmiValue=" + pmiValue
 				+ ", logaritmicPmiValue=" + logaritmicPmiValue + ", alternatePmiValue=" + alternatePmiValue
-				+ ", logarithmicAlternatePmiValue=" + logarithmicAlternatePmiValue + "]";
+				+ ", logarithmicAlternatePmiValue=" + logarithmicAlternatePmiValue + ", cosineSimilarityData="
+				+ cosineSimilarityData + "]";
 	}
-
 	
-
 }
