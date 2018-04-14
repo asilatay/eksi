@@ -17,6 +17,9 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -31,6 +34,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -82,11 +86,11 @@ public class EngineManagerImpl implements EngineManager {
 	
 	private final static String directoryOfSimilarUsersThatWroteSameTitle = "userUserTitles.txt";
 	
-	private final static int globalColumnCount = 100;
+	private final static int globalColumnCount = 400;
 	
-	private final static int globalRowCount = 800;
+	private final static int globalRowCount = 1000;
 	
-	private final static int globalMostSimilarWordCount = 10;
+	private final static int globalMostSimilarWordCount = 15;
 	
 	private final static String directoryOfTitleCountOfUsers = "userTitle.txt";
 	
@@ -278,6 +282,7 @@ public class EngineManagerImpl implements EngineManager {
 		System.out.println("Bir kelimenin kaç defa sistemde görüldüğüyle ilgili liste oluşturuluyor");
 		List<WordIndex> wordsOccured = getWordIndexList(readFromTxtEntries);
 		createOutputForWordsOccured(wordsOccured);
+		createOutputNodeIdNodeNameForBigClam(wordsOccured);
 		
 		Map<String, Integer> ranking = new HashMap<String, Integer>();
 		Map<Integer, BigDecimal> wordFrequencyMap = new HashMap<Integer, BigDecimal>();
@@ -367,7 +372,7 @@ public class EngineManagerImpl implements EngineManager {
 		System.out.println("Matrix oluşturuldu... Size= " + matrixData.size());
 		//Co occurence matrix oluşturma tamamlandı, PMI Değerini hesaplayacağız.
 //		matrixData = calculateAndSetPMIValues(matrixData, wordFrequencyMap, rankingSize);
-		matrixData = calculateAndSetPMIValues(matrixData, wordFrequencyMap, allWordOfCorpusSize);
+		matrixData = calculateAndSetPMIValues(matrixData, wordFrequencyMap, rankingSize);
 		
 		//TODO alternate i açarken map of indexes aç
 //		Map<Integer, List<String>> mapOfIndexes = getMapOfIndexes(matrixData);
@@ -383,6 +388,27 @@ public class EngineManagerImpl implements EngineManager {
 		
 	}
 	
+	private void createOutputNodeIdNodeNameForBigClam(List<WordIndex> wordsOccured) {
+		try {
+			 BufferedWriter out = new BufferedWriter(new FileWriter("nodeName.txt"));
+			 int count = 0;
+			 for(WordIndex  word  : wordsOccured){
+				 if (count == globalRowCount) {
+					 break;
+				 }
+				 out.write(word.getIndex() + "	" + word.getWord() + "\r\n");
+				 count++;
+			 }
+			 out.close();
+			 System.out.println("BigCLAM algoritması için nodeId ve nodeName bilgilerini içeren TXT dosyası oluşturuldu!");
+		}
+		catch (IOException e) {
+			System.err.println("TXT oluşturulurken hata oluştu!");
+       }
+		
+	}
+
+
 	/**
 	 * 
 	 * @param matrixData
@@ -643,7 +669,9 @@ public class EngineManagerImpl implements EngineManager {
 					continue;
 				}
 				
-				filteredList.add(index);
+				if (! Double.isNaN(index.getCosineSimilarityData().getCosineSimilarity())) {				    
+					filteredList.add(index);
+				}
 				
 				if (filteredList.size() == globalMostSimilarWordCount) {
 					break;
@@ -1379,4 +1407,86 @@ public class EngineManagerImpl implements EngineManager {
         }
 	}
 	
+	@Override
+	public void runEnglishContent(String xmlFilePath) {
+		//Directory içinde ne kadar dosya varsa bunların path ini bir listeye doldurur
+		List<Path> filesInDirectory = new ArrayList<Path>();
+		try (Stream<Path> paths = Files.walk(Paths.get(xmlFilePath))) {
+		    paths
+		        .filter(Files::isRegularFile)
+		        .forEach(filesInDirectory :: add);
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.err.println("Veri okunurken problem oluştu");
+		}
+		
+		List<String> globalWordList = new ArrayList<String>();
+		
+		for (Path p : filesInDirectory) {
+			List<String> wordListFromFile = filterEnglishDocument(p.toString());
+			globalWordList.addAll(wordListFromFile);
+		}
+		
+		createCoOccurenceMatrix(null, globalWordList);
+	}
+	
+	private List<String> filterEnglishDocument(String path) {
+		try {
+			BufferedReader in = new BufferedReader(new FileReader(path));
+			String line;
+			List<String> wordList = new ArrayList<String>();
+			while((line = in.readLine()) != null){
+				if (! StringUtils.isBlank(line)) {
+					line = line.trim();
+					String[] splittedLine = line.split(" ");
+					for (String word : splittedLine) {
+						if (word.contains(",")) {
+							word = word.replace(",", "");
+						} 
+						if (word.contains("!")) {
+							word = word.replace("!", "");
+						}
+						if (word.contains(".")) {
+							word = word.replace(".", "");
+						}
+						if (word.contains(":")) {
+							word = word.replace(":", "");
+						}
+						if (word.contains(";")) {
+							word = word.replace(";", "");
+						}
+						if (word.contains("@")) {
+							word = word.replace("@", "");
+						}
+						if (word.contains("<section>")) {
+							word = word.replace("<section>", "");
+						}
+						if (word.contains("</section>")) {
+							word = word.replace("</section>", "");
+						}
+						if (word.contains("<title>")) {
+							word = word.replace("<title>", "");
+						}
+						if (word.contains("(")) {
+							word = word.replace("(", "");
+						}
+						if (word.contains(")")) {
+							word = word.replace(")", "");
+						}
+						
+						if (! StringUtils.isBlank(word)) {
+							wordList.add(word.toLowerCase());
+						}
+					}
+				}
+			}
+			in.close();
+			System.out.println("TXT den İngilizce veri okuması tamamlandı. Veri Büyüklüğü : " + wordList.size());
+			return wordList;
+		} catch (Exception e) {
+			System.err.println("TXT dosyası okunurken kritik bir hata oluştu.");
+			e.printStackTrace();
+			return null;
+		}
+	}
 }

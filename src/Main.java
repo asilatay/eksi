@@ -35,6 +35,7 @@ public class Main {
 		final String fileReadingPath = "C:\\Users\\ASIL\\git\\eksiGit\\entries.txt";
 		final String bilkentXmlPath ="D:\\Yüksek Lisans\\Tez\\Bilkent DATA\\BilCol2005\\copyFromProgramTest.xml";
 		final String bilkentTxtPath ="D:\\Yüksek Lisans\\Tez\\Bilkent DATA\\BilCol2005\\Orijinal Data\\ALLOK.txt";
+		final String englishPath ="D:\\Yüksek Lisans\\Tez\\Data\\txtData";
 		String operationSelect ="-1";
 		System.out.println("GitHub Entegrasyonu OK!");
 		Scanner scanIn = new Scanner(System.in);		
@@ -57,6 +58,7 @@ public class Main {
 			System.out.println("Jaccard Benzerliðini Hesaplama    -> Press 15");
 			System.out.println("Bilkent Örnek Veriyi Çalýþtýr     -> Press 16");
 			System.out.println("Bilkent Örnek Veriyi Çalýþtýr TXT -> Press 17");
+			System.out.println("Ýngilizce Veriyi Çalýþtýr         -> Press 18");
 			operationSelect = scanIn.nextLine();
 			if (operationSelect.equals("1")) {
 				crawlerManager.createCrudeLinks(ham);
@@ -149,6 +151,8 @@ public class Main {
 				engineManager.runBilkentData(bilkentXmlPath);
 			} else if (operationSelect.equals("17")) {
 				engineManager.runBilkentDataWithTxt(bilkentTxtPath);
+			} else if (operationSelect.equals("18")) {
+				engineManager.runEnglishContent(englishPath);
 			}
 			
 		} while(!operationSelect.equals("0"));

@@ -29,5 +29,7 @@ public interface EngineManager {
 	void runBilkentData(String readXmlPath);
 	
 	void runBilkentDataWithTxt(String txtPath);
+	
+	void runEnglishContent(String xmlFilePath);
 
 }
