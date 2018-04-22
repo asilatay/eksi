@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -62,6 +63,8 @@ import model.KeyIndexOld;
 import model.User;
 import viewmodel.CosineSimilarityIndex;
 import viewmodel.PMIValueIndexes;
+import viewmodel.TitleEntry;
+import viewmodel.UserEntry;
 import viewmodel.UserTitle;
 import viewmodel.UserUserTitle;
 import viewmodel.WordIndex;
@@ -91,6 +94,8 @@ public class EngineManagerImpl implements EngineManager {
 	private final static int globalRowCount = 1000;
 	
 	private final static int globalMostSimilarWordCount = 15;
+	
+	private final static int globalTotalUserEntryCount = 20;
 	
 	private final static String directoryOfTitleCountOfUsers = "userTitle.txt";
 	
@@ -981,6 +986,9 @@ public class EngineManagerImpl implements EngineManager {
 			System.err.println("UserTitle dosyasına veri ekleyin" );
 			return;
 		}
+		
+		Set <User> userList = new HashSet<User>();
+		
 		for (UserUserTitle uut : userUserTitleList) {
 			User user1 = uut.getUser1();
 			User user2 = uut.getUser2();
@@ -1003,6 +1011,8 @@ public class EngineManagerImpl implements EngineManager {
 					break;
 				}
 			}
+			userList.add(user1);
+			userList.add(user2);
 		}
 		//Threshold
 		calculateThreshold(userUserTitleList);
@@ -1011,6 +1021,11 @@ public class EngineManagerImpl implements EngineManager {
 		createJaccardSimilarityTxt(userUserTitleList);
 		//2 - Excel
 		createJaccardSimilarityExcel(userUserTitleList);
+		//Bir yazarın en çok kullandığı kelimeleri hesapla.
+//		Set<Integer> userIdList = userList.stream().map(User::getId).collect(Collectors.toSet());
+//		findWordsByAuthorFromDatabase(userIdList);
+		Set<String> userNameList = userList.stream().map(User::getNickname).collect(Collectors.toSet());
+		findWordsByAuthorFromTxtFile(userNameList);
 		
 	}
 	
@@ -1488,5 +1503,255 @@ public class EngineManagerImpl implements EngineManager {
 			e.printStackTrace();
 			return null;
 		}
+	}
+	
+	/**
+	 * Bir kullanıcının en fazla hangi kelimeleri kullandığını gösteren metoddur
+	 */
+	@Override
+	public void findWordsByAuthorFromTxtFile(Set <String> usernameList) {
+		System.out.println("Kullanıcıların en çok kullandıkları kelimeler bulunuyor.");
+		
+		for (String username : usernameList) {			
+			List<String> entryForUser = readEntryFromTxt(username);
+			
+			List<WordIndex>  wordIndexList = getWordIndexList(entryForUser);
+			
+			createTxtForUserEntryOperation(username, wordIndexList);
+		}
+		
+		System.out.println("Kullanıcıların en çok kullandıkları kelimelerin hesabı tamamlandı");
+	}
+	
+	private List<String> readEntryFromTxt(String username) {
+		List<String> entryList = new ArrayList<String>();
+		BufferedReader br = null;
+        try {
+            br = new BufferedReader(new FileReader("D:\\YL_DATA\\users\\" +username + ".txt"));
+            String line;
+            while ((line = br.readLine()) != null) {
+            	entryList.add(line);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (br != null) {
+                    br.close();
+                }
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+        
+        return entryList;
+    }
+
+
+	/**
+	 * Bir kullanıcının en fazla hangi kelimeleri kullandığını gösteren metoddur
+	 */
+	@Override
+	public void findWordsByAuthorFromDatabase(Set <Integer> userIdList) {
+		System.out.println("Kullanıcıların en çok kullandıkları kelimeler bulunuyor.");
+		
+		List<UserEntry> userEntryList = entryManager.getUserEntryList(userIdList);
+		if (CollectionUtils.isEmpty(userEntryList)) {
+			return;
+		}
+		
+		Map<String, List<UserEntry>> usernameEntryList = userEntryList.stream().collect(Collectors.groupingBy(a-> a.getUsername()));
+		
+		userIdList.clear();
+		
+		System.out.println("Hesaplanacak veri -> " + usernameEntryList.size());
+		
+		for (Map.Entry<String, List<UserEntry>> entrySet : usernameEntryList.entrySet()) {
+			String username = entrySet.getKey();
+			System.out.println("Kullanıcı hesaplama başladı -> " + username);
+			
+			List<String> entryList = entrySet.getValue().stream().map(a-> a.getEntryDescription()).collect(Collectors.toList());
+			
+			List<WordIndex>  wordIndexList = getWordIndexList(entryList);
+			
+			createTxtForUserEntryOperation(username, wordIndexList);
+		}
+		
+		System.out.println("Kullanıcıların en çok kullandıkları kelimelerin hesabı tamamlandı");
+	}
+
+
+	private void createTxtForUserEntryOperation(String username, List<WordIndex> wordIndexList) {
+		int count = 0;
+		try {
+			String filename= "userWordList.txt";
+		    FileWriter fw = new FileWriter(filename,true); //the true will append the new data
+		    
+		    for (WordIndex word : wordIndexList) {
+		    	if (globalTotalUserEntryCount == count) {
+		    		break;
+		    	}
+		    	fw.write(username + "-" + word.getWord() + "-" + word.getIndex() + "-" + word.getFrequency() +"\r\n");//appends the string to the file
+		    	
+		    	count ++;
+		    }
+		    fw.write("----------------------------------------------------------------------------------- username = " + username +"\r\n");
+		    
+		    fw.close();
+			
+		} catch (IOException ioe) {
+			System.err.println("IOException: " + ioe.getMessage());
+		}
+	}
+	
+	/**
+	 * Entryleri title a göre gruplayıp zemberek için dışarı aktaran metoddur.
+	 */
+	@Override
+	public void exportEntriesGroupByTitle() {
+		System.out.println("Başlığa göre gruplanmış dışa aktarım başladı");
+		
+		List<Integer> titleIdList = titleManager.getTitleIdList();
+		
+		System.out.println("Toplam Title Sayısı -> " + titleIdList.size());
+		int logCount = 0;
+		List<Integer> splittedIdList = new ArrayList<Integer>();
+		for (Integer titleId : titleIdList) {
+			splittedIdList.add(titleId);
+			
+			if (splittedIdList.size() % 5 == 0) {
+				List<TitleEntry> titleEntryList = entryManager.getEntriesByTitleIdList(splittedIdList);
+				
+				splittedIdList.clear();
+
+				Map<String, List<TitleEntry>> titleIdEntryList = titleEntryList.stream().collect(Collectors.groupingBy(a-> a.getTitleName()));
+
+				for (Map.Entry<String, List<TitleEntry>> entrySet : titleIdEntryList.entrySet()) {
+
+					String titleName = entrySet.getKey();
+
+					List<String> entryList = entrySet.getValue().stream().map(a -> a.getEntryDescription())
+							.collect(Collectors.toList());
+
+					createTxtForGroupingTitle(titleName, entryList);
+				}
+
+			}
+			
+			logCount++;
+			
+			if (logCount % 10 == 0) {
+				System.out.println("Çalışılan toplam veri sayısı -> " + titleIdList.size() + " --- Kalan Veri Sayısı -> " + (titleIdList.size() - logCount));
+			}
+		}
+		
+		System.out.println("Title a göre gruplanmış çıktı alma tamamlandı");
+
+	}
+	
+	private void createTxtForGroupingTitle (String titleName, List<String> entryList) {
+		try {
+			String path="D:\\YL_DATA\\titles\\" +titleName +".txt";
+            File file = new File(path);
+
+            // If file doesn't exists, then create it
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+
+            FileWriter fw = new FileWriter(file.getAbsoluteFile());
+            BufferedWriter bw = new BufferedWriter(fw);
+
+            // Write in file
+            for (String entry : entryList) {
+		    	fw.write(entry + " ");//appends the string to the file
+		    }
+
+            // Close connection
+            bw.close();
+			
+		    fw.close();
+		    
+		    System.out.println("TXT dosyası şu başlık için oluşturuldu -> " + titleName);
+			
+		} catch (IOException ioe) {
+			System.err.println("IOException: " + ioe.getMessage());
+		}
+		
+	}
+
+
+	/**
+	 * Entryleri kullanıcılara göre gruplayıp dışarı aktaran metoddur.
+	 */
+	@Override
+	public void exportEntriesGroupByUser() {
+		System.out.println("Kullanıcılara göre gruplanmış entry dışa aktarım başladı");
+		
+		List<Integer> userIdList = userManager.getUserIdList();
+		
+		System.out.println("Toplam Kullanıcı Sayısı -> " + userIdList.size());
+		int logCount = 0;
+
+		Set<Integer> splittedIdList = new HashSet<Integer>();
+
+		for (Integer userId : userIdList) {
+			splittedIdList.add(userId);
+
+			if (splittedIdList.size() % 10 == 0) {
+				List<UserEntry> userEntryList = entryManager.getUserEntryList(splittedIdList);
+
+				Map<String, List<UserEntry>> usernameEntryList = userEntryList.stream()
+						.collect(Collectors.groupingBy(a -> a.getUsername()));
+
+				for (Map.Entry<String, List<UserEntry>> entrySet : usernameEntryList.entrySet()) {
+					String username = entrySet.getKey();
+					
+					List<String> entryList = entrySet.getValue().stream().map(a -> a.getEntryDescription())
+							.collect(Collectors.toList());
+
+					createTxtForGroupingUser(username, entryList);
+				}
+
+			}
+			
+			logCount++;
+			
+			if (logCount % 40 == 0) {
+				System.out.println("Çalışılan toplam veri sayısı -> " + userIdList.size() + " --- Kalan Veri Sayısı -> " + (userIdList.size() - logCount));
+			}
+		}
+	}
+
+
+	private void createTxtForGroupingUser(String username, List<String> entryList) {
+		try {
+			String path="D:\\YL_DATA\\users\\" +username +".txt";
+            File file = new File(path);
+
+            // If file doesn't exists, then create it
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+
+            FileWriter fw = new FileWriter(file.getAbsoluteFile());
+            BufferedWriter bw = new BufferedWriter(fw);
+
+            // Write in file
+            for (String entry : entryList) {
+		    	fw.write(entry + " ");//appends the string to the file
+		    }
+
+            // Close connection
+            bw.close();
+			
+		    fw.close();
+		    
+		    System.out.println("TXT dosyası şu kullanıcı için oluşturuldu -> " + username);
+			
+		} catch (IOException ioe) {
+			System.err.println("IOException: " + ioe.getMessage());
+		}
+		
 	}
 }

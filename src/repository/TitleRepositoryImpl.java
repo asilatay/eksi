@@ -154,4 +154,36 @@ public class TitleRepositoryImpl implements TitleRepository{
 	        System.err.println(e.getMessage());
 		}
 	}
+	
+	@Override
+	public List<Integer> getTitleIdList() {
+		try {
+			String tableName = "title";
+			Class.forName(myDriver);
+			
+			Connection conn = DriverManager.getConnection(db, username, pass);
+			
+			String query = "SELECT id FROM " +tableName;
+			
+			Statement st = conn.createStatement();        
+			ResultSet rs = st.executeQuery(query);
+			
+			List<Integer> titleIdList = new ArrayList<Integer>();
+			
+			while (rs.next()) {
+				int s_id = rs.getInt("ID");
+				titleIdList.add(s_id);
+			}
+			
+			st.close();
+			conn.close();
+			
+			return titleIdList;		
+			
+		} catch (Exception e) {
+			System.err.println("Database Connection Error ! TITLE TABLE");
+	        System.err.println(e.getMessage());        
+	        return null;
+		}
+	}
 }

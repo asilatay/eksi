@@ -6,8 +6,11 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import model.Entry;
+import viewmodel.TitleEntry;
+import viewmodel.UserEntry;
 import viewmodel.UserTitle;
 import viewmodel.UserUserTitle;
 
@@ -322,6 +325,98 @@ public class EntryRepositoryImpl implements EntryRepository{
 				writeableList.add(newUserTitle);
 			}
 			return writeableList;
+		} catch (Exception e) {
+			System.err.println("Database Connection Error ! ENTRY TABLE");
+	        System.err.println(e.getMessage());        
+	        return null;
+		}
+	}
+	
+	@Override
+	public List<UserEntry> getUserEntryList(Set<Integer> userIdList) {
+		try {			
+			Class.forName(myDriver);
+			Connection conn = DriverManager.getConnection(db, username, pass);
+			String query = "SELECT u.id AS userId, u.nickname AS username, e.description AS description FROM entry e" + 
+					" JOIN user u ON u.id = e.fk_user_id" + 
+					" where u.id IN (";
+			
+			
+			for (Integer ids : userIdList) {
+				query += ids + ",";
+			}
+			
+			query = query.substring(0, query.length()-1);
+			
+			query += ");";
+			
+			Statement st = conn.createStatement();        
+			ResultSet rs = st.executeQuery(query);
+			
+			List<UserEntry> userEntryList = new ArrayList<UserEntry>();
+			while (rs.next()) {
+				UserEntry userEntry = new UserEntry();
+				
+				String username = rs.getString("username");
+				int userId = rs.getInt("userId");
+				String entryDescription = rs.getString("description");
+				
+				userEntry.setUserId(userId);
+				userEntry.setUsername(username);
+				userEntry.setEntryDescription(entryDescription);
+				
+				userEntryList.add(userEntry);
+			}
+			
+			return userEntryList;
+			
+		} catch (Exception e) {
+			System.err.println("Database Connection Error ! ENTRY TABLE");
+	        System.err.println(e.getMessage());        
+	        return null;
+		}
+	}
+	
+	@Override
+	public List<TitleEntry> getEntriesByTitleIdList(List<Integer> splittedIdList) {
+		try {			
+			Class.forName(myDriver);
+			Connection conn = DriverManager.getConnection(db, username, pass);
+			String query = "SELECT t.id AS titleId, t.name AS titleName, e.description AS entryDescription FROM entry e" + 
+					" JOIN title t ON t.id = e.fk_title_id" + 
+					" WHERE t.id IN (";
+			
+			
+			for (Integer ids : splittedIdList) {
+				query += ids + ",";
+			}
+			
+			query = query.substring(0, query.length()-1);
+			
+			query += ");";
+			
+			Statement st = conn.createStatement();        
+			ResultSet rs = st.executeQuery(query);
+			
+			List<TitleEntry> titleEntryList = new ArrayList<TitleEntry>();
+			while (rs.next()) {
+				TitleEntry titleEntry = new TitleEntry();
+				
+				String titleName = rs.getString("titleName");
+				
+				int titleId = rs.getInt("titleId");
+				
+				String entryDescription = rs.getString("entryDescription");
+				
+				titleEntry.setTitleId(titleId);
+				titleEntry.setTitleName(titleName);
+				titleEntry.setEntryDescription(entryDescription);
+				
+				titleEntryList.add(titleEntry);
+			}
+			
+			return titleEntryList;
+			
 		} catch (Exception e) {
 			System.err.println("Database Connection Error ! ENTRY TABLE");
 	        System.err.println(e.getMessage());        

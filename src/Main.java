@@ -1,6 +1,8 @@
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
+import java.util.Set;
 
 import model.Title;
 import model.User;
@@ -59,6 +61,9 @@ public class Main {
 			System.out.println("Bilkent Örnek Veriyi Çalýþtýr     -> Press 16");
 			System.out.println("Bilkent Örnek Veriyi Çalýþtýr TXT -> Press 17");
 			System.out.println("Ýngilizce Veriyi Çalýþtýr         -> Press 18");
+			System.out.println("Yazara göre kelimeleri ayrýþtýr(TEST)-> Press 19");
+			System.out.println("Entry leri Title a göre gruplayýp dýþa aktar -> Press 20");
+			System.out.println("Entryleri User a göre gruplayýp dýþa aktar -> Press 21");
 			operationSelect = scanIn.nextLine();
 			if (operationSelect.equals("1")) {
 				crawlerManager.createCrudeLinks(ham);
@@ -153,6 +158,24 @@ public class Main {
 				engineManager.runBilkentDataWithTxt(bilkentTxtPath);
 			} else if (operationSelect.equals("18")) {
 				engineManager.runEnglishContent(englishPath);
+			} else if (operationSelect.equals("19")) {
+//				Set<Integer> set = new HashSet<Integer>();
+//				set.add(1);
+//				set.add(2);
+//				
+//				engineManager.findWordsByAuthorFromDatabase(set);
+				
+				Set<String> set = new HashSet<String>();
+				set.add("the wade");
+				set.add("sia");
+				engineManager.findWordsByAuthorFromTxtFile(set);
+				
+				
+			} else if (operationSelect.equals("20")) {
+				engineManager.exportEntriesGroupByTitle();
+				
+			} else if (operationSelect.equals("21")) {
+				engineManager.exportEntriesGroupByUser();
 			}
 			
 		} while(!operationSelect.equals("0"));

@@ -185,4 +185,35 @@ public class UserRepositoryImpl implements UserRepository{
 			return null;
 		}
 	}
+	
+	@Override
+	public List<Integer> getUserIdList() {
+		try {
+			String tableName = "user";
+			Class.forName(myDriver);
+			
+			Connection conn = DriverManager.getConnection(db, username, pass);
+			
+			String query = "SELECT id as ID FROM " + tableName;
+			
+			Statement st = conn.createStatement();
+			ResultSet rs = st.executeQuery(query);
+			
+			List<Integer> userIdList = new ArrayList<Integer>();
+			while (rs.next()) {
+				int s_id = rs.getInt("ID");
+				userIdList.add(s_id);
+			}
+			
+			st.close();
+			conn.close();
+			
+			return userIdList;
+
+		} catch (Exception e) {
+			System.err.println("Database Connection Error ! USER TABLE");
+			System.err.println(e.getMessage());
+			return null;
+		}
+	}
 }

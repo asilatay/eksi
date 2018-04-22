@@ -15,4 +15,6 @@ public interface TitleRepository {
 	Title getLastSavedTitle();
 	
 	void removeTitleWithId(int titleId);
+
+	List<Integer> getTitleIdList();
 }

@@ -16,4 +16,6 @@ public interface TitleManager {
 	
 	void removeTitleWithId(int titleId);
 
+	List<Integer> getTitleIdList();
+
 }

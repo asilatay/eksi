@@ -34,5 +34,10 @@ public class TitleManagerImpl implements TitleManager{
 	public void removeTitleWithId(int titleId) {
 		titleRepository.removeTitleWithId(titleId);
 	}
+	
+	@Override
+	public List<Integer> getTitleIdList() {
+		return titleRepository.getTitleIdList();
+	}
 
 }

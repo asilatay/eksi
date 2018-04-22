@@ -12,6 +12,8 @@ import java.util.Set;
 import model.Entry;
 import repository.EntryRepository;
 import repository.EntryRepositoryImpl;
+import viewmodel.TitleEntry;
+import viewmodel.UserEntry;
 import viewmodel.UserTitle;
 import viewmodel.UserUserTitle;
 
@@ -183,5 +185,15 @@ public class EntryManagerImpl implements EntryManager{
 		} catch (Exception e) {
 			System.err.println("TXT oluþturulurken hata oluþtu! " + e.getMessage());
 		}
+	}
+	
+	@Override
+	public List<UserEntry> getUserEntryList (Set<Integer> userIdList) {
+		return entryRepository.getUserEntryList(userIdList);
+	}
+	
+	@Override
+	public List<TitleEntry> getEntriesByTitleIdList(List<Integer> splittedIdList) {
+		return entryRepository.getEntriesByTitleIdList(splittedIdList);
 	}
 }

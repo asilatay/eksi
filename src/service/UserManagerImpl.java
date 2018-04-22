@@ -35,5 +35,10 @@ public class UserManagerImpl implements UserManager{
 	public  Map<Integer, String> getIdUserNameMap(List<Integer> idList) {
 		return userRepository.getIdUserNameMap(idList);
 	}
+	
+	@Override
+	public List<Integer> getUserIdList() {
+		return userRepository.getUserIdList();
+	}
 
 }

@@ -15,4 +15,6 @@ public interface UserRepository {
 	User getUserByUsername(String username);
 	
 	 Map<Integer, String> getIdUserNameMap(List<Integer> idList);
+
+	List<Integer> getUserIdList();
 }

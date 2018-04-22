@@ -3,7 +3,9 @@ package service;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import model.User;
 import viewmodel.PMIValueIndexes;
 import viewmodel.WordIndex;
 
@@ -31,5 +33,13 @@ public interface EngineManager {
 	void runBilkentDataWithTxt(String txtPath);
 	
 	void runEnglishContent(String xmlFilePath);
+
+	void findWordsByAuthorFromDatabase(Set <Integer> userList);
+	
+	void findWordsByAuthorFromTxtFile(Set <String> usernameList);
+
+	void exportEntriesGroupByTitle();
+
+	void exportEntriesGroupByUser();
 
 }
