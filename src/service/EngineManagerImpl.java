@@ -1368,30 +1368,6 @@ public class EngineManagerImpl implements EngineManager {
 		//Veri artık toplandı. CoOccurrence Matrix fonksiyonu çağrılıyor.
 		createCoOccurenceMatrix(null, allDataContent);
 	}
-
-
-	private Document readXmlFileFromPath(String path) {
-		File file = new File(path);
-		DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory
-		        .newInstance();
-		DocumentBuilder documentBuilder = null;
-		try {
-			documentBuilder = documentBuilderFactory.newDocumentBuilder();
-		} catch (ParserConfigurationException e1) {
-			System.err.println(e1.getMessage());
-		}
-		Document document = null;
-		try {
-			document = documentBuilder.parse(file);
-		} catch (SAXException e) {
-			System.err.println(e.getMessage());
-			e.printStackTrace();
-		} catch (IOException e) {
-			System.err.println(e.getMessage());
-		}
-		return document;
-				
-	}
 	
 	private NodeList readXML(String filePath) {
 		InputSource is;
