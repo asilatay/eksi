@@ -41,5 +41,7 @@ public interface EngineManager {
 	void exportEntriesGroupByTitle();
 
 	void exportEntriesGroupByUser();
+	
+	void exportWrongVocabs();
 
 }

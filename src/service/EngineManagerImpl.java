@@ -20,6 +20,9 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -32,6 +35,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -1595,11 +1599,9 @@ public class EngineManagerImpl implements EngineManager {
 		for (Integer titleId : titleIdList) {
 			splittedIdList.add(titleId);
 			
-			if (splittedIdList.size() % 5 == 0) {
+			if (splittedIdList.size() % 60 == 0) {
 				List<TitleEntry> titleEntryList = entryManager.getEntriesByTitleIdList(splittedIdList);
 				
-				splittedIdList.clear();
-
 				Map<String, List<TitleEntry>> titleIdEntryList = titleEntryList.stream().collect(Collectors.groupingBy(a-> a.getTitleName()));
 
 				for (Map.Entry<String, List<TitleEntry>> entrySet : titleIdEntryList.entrySet()) {
@@ -1611,6 +1613,8 @@ public class EngineManagerImpl implements EngineManager {
 
 					createTxtForGroupingTitle(titleName, entryList);
 				}
+				
+				splittedIdList.clear();
 
 			}
 			
@@ -1674,7 +1678,7 @@ public class EngineManagerImpl implements EngineManager {
 		for (Integer userId : userIdList) {
 			splittedIdList.add(userId);
 
-			if (splittedIdList.size() % 10 == 0) {
+			if (splittedIdList.size() % 300 == 0) {
 				List<UserEntry> userEntryList = entryManager.getUserEntryList(splittedIdList);
 
 				Map<String, List<UserEntry>> usernameEntryList = userEntryList.stream()
@@ -1688,6 +1692,8 @@ public class EngineManagerImpl implements EngineManager {
 
 					createTxtForGroupingUser(username, entryList);
 				}
+				
+				splittedIdList.clear();
 
 			}
 			
@@ -1729,5 +1735,204 @@ public class EngineManagerImpl implements EngineManager {
 			System.err.println("IOException: " + ioe.getMessage());
 		}
 		
+	}
+	
+	@Override
+	public void exportWrongVocabs() {
+		// Directory içinde ne kadar dosya varsa bunların path ini bir listeye doldurur
+		List<Path> filesInDirectory = new ArrayList<Path>();
+
+		try (Stream<Path> paths = Files.walk(Paths.get("D:\\YL_DATA\\users\\"))) {
+			paths.filter(Files::isRegularFile).forEach(filesInDirectory::add);
+
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.err.println("Veri okunurken problem oluştu");
+		}
+		
+		//Sessiz harfler -> b, c, ç, d, f, g, ğ, h, j, k, I, m, n, p, r, s, ş, t, v, y, z
+		
+		List<String> silentLetters = new ArrayList<String>();
+		silentLetters.add("b");
+		silentLetters.add("c");
+		silentLetters.add("ç");
+		silentLetters.add("d");
+		silentLetters.add("f");
+		silentLetters.add("g");
+		silentLetters.add("ğ");
+		silentLetters.add("h");
+		silentLetters.add("j");
+		silentLetters.add("k");
+		silentLetters.add("l");
+		silentLetters.add("m");
+		silentLetters.add("n");
+		silentLetters.add("p");
+		silentLetters.add("r");
+		silentLetters.add("s");
+		silentLetters.add("ş");
+		silentLetters.add("t");
+		silentLetters.add("v");
+		silentLetters.add("y");
+		silentLetters.add("z");
+		
+
+		Scanner scn = new Scanner(System.in);
+		
+		Map<String, String> map = entryManager.getWrongCorrectWordMap();
+
+		for (Path p : filesInDirectory) {
+			try {
+				List<String> entryList = readToTxt(p.toString());
+
+				for (String paragraph : entryList) {
+
+					String[] arr = paragraph.split(" ");
+
+					for (String word : arr) {
+						if (word.contains("?")) {
+							if (word.contains(".")) {
+								word = word.replace(".", "");
+							}
+							if (word.contains("!")) {
+								word = word.replace("!", "");
+							}
+							if (word.contains(",")) {
+								word = word.replace(",", "");
+							}
+							if (word.contains("(")) {
+								word = word.replace("(", "");
+							}
+							if (word.contains(")")) {
+								word = word.replace(")", "");
+							}
+							if (word.contains("...")) {
+								word = word.replace("...", "");
+							}
+							if (word.contains(";")) {
+								word = word.replace(";", "");
+							}
+							if (word.contains("*")) {
+								word = word.replace("*", "");
+							}
+							if (word.contains(":")) {
+								word = word.replace(":", "");
+							}
+							if (word.contains("-")) {
+								word = word.replace("-", "");
+							}
+							if (word.contains("+")) {
+								word = word.replace("+", "");
+							}
+							if (word.contains("http")) {
+								continue;
+							}
+							word = word.trim();
+							
+							if (! map.containsKey(word)) {
+								System.out.println("KELİME : " + word);
+								String firstWordStatus = word;
+								for (int i = 1; i < word.length(); i++) {
+									String tmpWord = word.substring(0, i);
+									if (map.containsKey(tmpWord)) {
+										word = word.replace(tmpWord, map.get(tmpWord));
+									}
+								}
+								System.out.println("KELİME DÜZENLENDİ: " + word);
+//								int count = StringUtils.countMatches(word, "?");
+//								if (count == 1) {
+//									int questionMarkIndex = word.indexOf("?");
+//									String word1 = word.substring(questionMarkIndex-1, questionMarkIndex);
+//									
+//									boolean equality1 = silentLetters.stream().filter(a -> a.equals(word1)).findFirst().isPresent();
+//									if (equality1) {
+//										int control = questionMarkIndex+1;
+//										if (control < word.length()) {											
+//											String word2 = word.substring(questionMarkIndex+1, control + 1);
+//											boolean equality2 =  silentLetters.stream().filter(a -> a.equals(word2)).findFirst().isPresent();
+//											if (equality2) {
+//												word = word.replace("?", "ı");
+//												
+//											}
+//										}
+//									}
+//									System.out.println("HARF GİRİNİZ : ");
+//									String onlyCharacter = scn.nextLine();
+//									if (! StringUtils.isBlank(onlyCharacter)) {										
+//										word = word.replace("?", onlyCharacter);
+//									}
+//								}
+								
+//								if (! word.contains("?")) {
+									System.out.println("OTOMATİK KAYIT : " + word);
+									entryManager.saveToWrongWordTable(firstWordStatus, word);
+									map.put(firstWordStatus, word);
+//								} 
+//									else {									
+//									if (! map.containsKey(word)) {									
+//										System.out.println(word);
+//										
+//										System.out.println("Yeni Değeri Giriniz : ");
+//										
+//										String newWord = scn.nextLine();
+//										if (!newWord.equals("")) {
+//											entryManager.saveToWrongWordTable(word, newWord);
+//											map.put(word, newWord);
+//										}
+//									}
+//								}
+							}
+
+						}
+					}
+				}
+				
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			//MOVING
+			moveToAnotherDirectory(p.toString(), "D:\\YL_DATA\\WordCorrection\\users\\");
+		}
+		
+		
+		scn.close();
+		
+	}
+    
+    private void moveToAnotherDirectory(java.lang.String filePath, java.lang.String tmpFilePath) {
+    	try{
+    		
+      	   File afile =new File(filePath);
+      		
+      	   if(afile.renameTo(new File(tmpFilePath + afile.getName()))){
+      		System.out.println("Dosya başka bir dizine taşındı!");
+      	   }else{
+      		System.out.println("Taşıma HATASI!");
+      	   }
+      	    
+      	}catch(Exception e){
+      		e.printStackTrace();
+      	}
+		
+	}
+
+
+	private List<String> readToTxt(String path) {		
+		try {
+			BufferedReader in = new BufferedReader(new FileReader(path));
+			String line;
+			List<String> wordList = new ArrayList<String>();
+			while ((line = in.readLine()) != null) {
+				wordList.add(line);
+			}
+			in.close();
+			
+			return wordList;
+		} catch (Exception e) {
+			System.err.println("TXT dosyası okunurken kritik bir hata oluştu.");
+			e.printStackTrace();
+			return null;
+		}
 	}
 }

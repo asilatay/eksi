@@ -5,7 +5,9 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import model.Entry;
@@ -420,6 +422,69 @@ public class EntryRepositoryImpl implements EntryRepository{
 		} catch (Exception e) {
 			System.err.println("Database Connection Error ! ENTRY TABLE");
 	        System.err.println(e.getMessage());        
+	        return null;
+		}
+	}
+	
+	@Override
+	public void saveToWrongWordTable(String origin, String correctValue) {
+    	try {
+			String tableName = "wrong_vocabs";
+			Class.forName(myDriver);
+			Connection conn = DriverManager.getConnection(db, username, pass);
+//			String q1 = "SELECT MAX(ID) +1 AS id FROM " +tableName;
+//			Statement st1 = conn.createStatement();	          
+//	        ResultSet rs = st1.executeQuery(q1);
+//	        int id = 0;
+//	        while (rs.next()){
+//	        	id = rs.getInt("id");
+//	        }
+//	        st1.close();
+	        
+			String query = "INSERT INTO "+tableName +" (origin,correctly)VALUES('";
+			query += origin +"','" + correctValue + "');";
+			Statement st = conn.createStatement();
+			st.executeUpdate(query);
+			st.close();        
+			conn.close();
+			
+		} catch (Exception e) {
+			System.err.println("Database Connection Error ! WRONG VOCABS TABLE");
+	        System.err.println(e.getMessage()); 
+		}
+    }
+	
+	@Override
+	public Map<String, String> getWrongCorrectWordMap() {
+    	try {
+   		
+			String tableName = "wrong_vocabs";
+			Class.forName(myDriver);
+			Connection conn = DriverManager.getConnection(db, username, pass);
+	        
+			String query = "SELECT * FROM " +tableName;
+			
+			Statement st = conn.createStatement();        
+			ResultSet rs = st.executeQuery(query);
+			
+			Map<String, String> map = new HashMap<String, String>();
+			
+			while (rs.next()) {
+				String origin = rs.getString("origin");
+				String correctly = rs.getString("correctly");
+				
+				if (! map.containsKey(origin)) {
+					map.put(origin, correctly);
+				}
+
+			}
+			st.close();
+			conn.close();
+			return map;
+			
+		} catch (Exception e) {
+			System.err.println("Database Connection Error ! WRONG VOCABS TABLE");
+	        System.err.println(e.getMessage()); 
 	        return null;
 		}
 	}

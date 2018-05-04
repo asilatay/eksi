@@ -64,6 +64,7 @@ public class Main {
 			System.out.println("Yazara göre kelimeleri ayrýþtýr(TEST)-> Press 19");
 			System.out.println("Entry leri Title a göre gruplayýp dýþa aktar -> Press 20");
 			System.out.println("Entryleri User a göre gruplayýp dýþa aktar -> Press 21");
+			System.out.println("Vocab düzelt data gir -> Press 22");
 			operationSelect = scanIn.nextLine();
 			if (operationSelect.equals("1")) {
 				crawlerManager.createCrudeLinks(ham);
@@ -176,6 +177,8 @@ public class Main {
 				
 			} else if (operationSelect.equals("21")) {
 				engineManager.exportEntriesGroupByUser();
+			} else if (operationSelect.equals("22")) {
+				engineManager.exportWrongVocabs();
 			}
 			
 		} while(!operationSelect.equals("0"));

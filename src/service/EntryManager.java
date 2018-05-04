@@ -41,4 +41,8 @@ public interface EntryManager {
 	List<UserEntry> getUserEntryList (Set<Integer> userIdList);
 
 	List<TitleEntry> getEntriesByTitleIdList(List<Integer> splittedIdList);
+	
+	void saveToWrongWordTable(String origin, String correctValue);
+	
+	Map<String, String> getWrongCorrectWordMap();
 }

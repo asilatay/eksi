@@ -196,4 +196,14 @@ public class EntryManagerImpl implements EntryManager{
 	public List<TitleEntry> getEntriesByTitleIdList(List<Integer> splittedIdList) {
 		return entryRepository.getEntriesByTitleIdList(splittedIdList);
 	}
+	
+	@Override
+	public void saveToWrongWordTable(String origin, String correctValue) {
+		entryRepository.saveToWrongWordTable(origin, correctValue);
+	}
+	
+	@Override
+	public Map<String, String> getWrongCorrectWordMap() {
+		return entryRepository.getWrongCorrectWordMap();
+	}
 }
