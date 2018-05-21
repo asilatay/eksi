@@ -2,27 +2,56 @@ package service;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class ImportManagerImpl implements ImportManager {
 
 	@Override
 	public List<String> readFromTxt(String readTextPath) {
 		try {
-			BufferedReader in = new BufferedReader(new FileReader("entries.txt"));
-			String line;
-			List<String> wordList = new ArrayList<String>();
-			while ((line = in.readLine()) != null) {
-				wordList.add(line);
+			
+			// Directory içinde ne kadar dosya varsa bunlarýn path ini bir listeye doldurur
+			List<Path> filesInDirectory = new ArrayList<Path>();
+			
+			try (Stream<Path> paths = Files.walk(Paths.get(readTextPath))) 
+			{
+				paths.filter(Files::isRegularFile).forEach(filesInDirectory::add);
+				
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.err.println("Veri okunurken problem oluþtu");
 			}
-			in.close();
+			
+			int fileCount = filesInDirectory.size();
+			System.out.println("Sistemdeki toplam dosya sayýsý -> " + fileCount);
+			
+			List<String> wordList = new ArrayList<String>();
+			for (Path p : filesInDirectory) {
+				
+				BufferedReader in = new BufferedReader(new FileReader(p.toString()));
+				String line;
+				while ((line = in.readLine()) != null) {
+					wordList.add(line);
+				}
+				in.close();
+			}
+			
+			System.out.println("Dosyalar okundu, memory e alýndý");
+			
 			return wordList;
+			
 		} catch (Exception e) {
 			System.err.println("TXT dosyasý okunurken kritik bir hata oluþtu.");
 			e.printStackTrace();
 			return null;
 		}
+		
 	}
 	
 	@Override

@@ -18,6 +18,12 @@ public interface EngineManager {
 	
 	void createCoOccurenceMatrix(String readTextPath, List<String> outputFromAnotherFunction);
 	
+	void createCoOccurenceMatrixWithDisk (String readTextPath, List<String> outputFromAnotherFunction);
+	
+	void saveWordIndexListToDatabase(String readTextPath, List<String> outputFromAnotherFunction);
+	
+	void saveCoOccurrenceMatrixToDatabase(String readTextPath, List<String> outputFromAnotherFunction);
+	
 	void createVectors (Map<PMIValueIndexes, BigDecimal> filledMatrix);
 
 	void createTxtForLink(List<String> linkList, String titleOfFile);

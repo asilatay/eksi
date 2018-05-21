@@ -4,18 +4,24 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.apache.commons.collections.CollectionUtils;
 
 import model.Entry;
 import repository.EntryRepository;
 import repository.EntryRepositoryImpl;
+import viewmodel.PMIValueIndexes;
 import viewmodel.TitleEntry;
 import viewmodel.UserEntry;
 import viewmodel.UserTitle;
 import viewmodel.UserUserTitle;
+import viewmodel.WordIndex;
 
 public class EntryManagerImpl implements EntryManager{
 	
@@ -73,12 +79,56 @@ public class EntryManagerImpl implements EntryManager{
 	@Override
 	public void getTitleCountOfUsers() {
 		List<UserTitle> list = entryRepository.getTitleCountOfUsers();
+		System.out.println("Kullanýcýlarýn kaçar tane title a giriþ yaptýklarý hesaplandý");
 		//Bu viewmodelleri yazdýr
 		createTxtFileForUserTitle(list);
+		
+		Map<Integer, String> idUserNameMap = list.stream().collect(Collectors.toMap(a -> a.getUserId(), a -> a.getUsername()));
+		
+		int totalCount = 0;
+		for (UserTitle ut1 : list) {
+			List<Integer> user2IdList = new ArrayList<Integer>();
+			for (UserTitle ut2 : list) {
+				if (ut1.getUserId() != ut2.getUserId()) {
+					user2IdList.add(ut2.getUserId());
+				}
+				totalCount++;
+				
+				if (totalCount % 100 == 0) {
+					List<UserUserTitle> databaseList = getSimilarTitleCountWithIds(ut1.getUserId(), user2IdList);
+					
+					createTextFileForUserUserTitle(databaseList, idUserNameMap);
+					System.out.println("Toplam yapýlan benzerlik hesabý" + totalCount);
+					
+					user2IdList.clear();
+				}
+				
+			}
+			
+			if (CollectionUtils.isNotEmpty(user2IdList)) {
+				List<UserUserTitle> databaseList = getSimilarTitleCountWithIds(ut1.getUserId(), user2IdList);
+				createTextFileForUserUserTitle(databaseList, idUserNameMap);
+				user2IdList.clear();
+			}
+		}
 	}
 	
-	
-	 private <T> ArrayList<Integer> intersection(List<Integer> list1, List<Integer> list2) {
+	public void createTextFileForUserUserTitle(List<UserUserTitle> resultList, Map<Integer, String> idUserNameMap) {
+		try {
+			FileWriter fw = new FileWriter("userUserTitles.txt",true);
+			for (UserUserTitle frequency : resultList) {
+				fw.write(idUserNameMap.get(frequency.getUser1Id()) +"-" + idUserNameMap.get(frequency.getUser2Id()) 
+						+ "-" + frequency.getCountOfSimilarTitle() + "\r\n");
+			}
+			fw.close();
+			
+		} catch (Exception e) {
+			System.err.println("TXT oluþturulurken hata oluþtu! " + e.getMessage());
+		}
+	}
+
+
+	private <T> ArrayList<Integer> intersection(List<Integer> list1, List<Integer> list2) {
 	        ArrayList<Integer> list = new ArrayList<Integer>();
 
 	        for (Integer t : list1) {
@@ -205,5 +255,45 @@ public class EntryManagerImpl implements EntryManager{
 	@Override
 	public Map<String, String> getWrongCorrectWordMap() {
 		return entryRepository.getWrongCorrectWordMap();
+	}
+	
+	@Override
+	public List<UserUserTitle> getSimilarTitleCountWithIds(int u1Id, List<Integer> u2IdList) {
+		return entryRepository.getSimilarTitleCountWithIds(u1Id, u2IdList);
+	}
+	
+	@Override
+	public void saveWordIndexListToDatabase(List<WordIndex> wordIndexList) {
+		entryRepository.saveWordIndexListToDatabase(wordIndexList);
+	}
+	
+	@Override
+	public PMIValueIndexes getPMIValueIndexes(int index1, int index2) {
+		return entryRepository.getPMIValueIndexes(index1, index2);
+	}
+	
+	@Override
+	public void updateStorageIndex(PMIValueIndexes storageIndex) {
+		entryRepository.updateStorageIndex(storageIndex);
+	}
+	
+	@Override
+	public void saveStorageIndex(PMIValueIndexes ind) {
+		entryRepository.saveStorageIndex(ind);
+	}
+	
+	@Override
+	public int getTotalCountWithProcessIdPMIValueIndex(int process_id) {
+		return entryRepository.getTotalCountWithProcessIdPMIValueIndex(process_id);
+	}
+	
+	@Override
+	public List<PMIValueIndexes> getPMIValueIndexListWithIndex1(int index1) {
+		return entryRepository.getPMIValueIndexListWithIndex1(index1);
+	}
+	
+	@Override
+	public List<PMIValueIndexes> getPMIValueIndexListWithProcessId(int process_id) {
+		return entryRepository.getPMIValueIndexListWithProcessId(process_id);
 	}
 }

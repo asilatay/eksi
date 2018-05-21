@@ -11,8 +11,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
+import java.io.Writer;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
@@ -93,13 +95,13 @@ public class EngineManagerImpl implements EngineManager {
 	
 	private final static String directoryOfSimilarUsersThatWroteSameTitle = "userUserTitles.txt";
 	
-	private final static int globalColumnCount = 400;
+	private final static int globalColumnCount = 1000;
 	
-	private final static int globalRowCount = 1000;
+	private final static int globalRowCount = 3000;
 	
 	private final static int globalMostSimilarWordCount = 15;
 	
-	private final static int globalTotalUserEntryCount = 20;
+	private final static int globalTotalUserEntryCount = 30;
 	
 	private final static String directoryOfTitleCountOfUsers = "userTitle.txt";
 	
@@ -268,9 +270,274 @@ public class EngineManagerImpl implements EngineManager {
 	public List<String> splittedEntryDescription(List<String> retList, String entryDescription) {
 		String [] arr = entryDescription.split(" ");
 		for (int i =0; i<arr.length; i++) {
+			if (arr[i].equals(",") || arr[i].equals(".") || arr[i].equals("!") || arr[i].equals(":") 
+					|| arr[i].equals(";") || arr[i].equals("...") ||arr[i].equals("?") || arr[i].equals("\"")) {
+				continue;
+			}
+			
 			retList.add(arr[i].toLowerCase());
 		}
 		return retList;
+	}
+	
+	@Override
+	public void saveCoOccurrenceMatrixToDatabase(String readTextPath, List<String> outputFromAnotherFunction) {
+		System.out.println("Co-Occurrence matrix oluşturma operasyonu tetiklendi");
+		
+		List<String> readFromTxtEntries = new ArrayList<String>();
+		if (outputFromAnotherFunction == null) {			
+			readFromTxtEntries = importManager.readFromTxt(readTextPath);
+			if (readFromTxtEntries == null || readFromTxtEntries.size() <= 0) {
+				System.err.println("Okunmaya çalışılan dosya boş veya okuma işlemi sırasında hata alındı.");
+				System.err.println("Program kapatılıyor.");
+				System.exit(0);
+			}
+		} else {
+			readFromTxtEntries.addAll(outputFromAnotherFunction);
+			outputFromAnotherFunction.clear();
+		}
+		
+		System.out.println("Bir kelimenin kaç defa sistemde görüldüğüyle ilgili liste oluşturuluyor");
+		
+		List<WordIndex> wordsOccured = getWordIndexList(readFromTxtEntries);
+		createOutputForWordsOccured(wordsOccured);
+		createOutputNodeIdNodeNameForBigClam(wordsOccured);
+		
+		Map<String, Integer> ranking = new HashMap<String, Integer>();
+		Map<Integer, BigDecimal> wordFrequencyMap = new HashMap<Integer, BigDecimal>();
+		for (WordIndex w : wordsOccured) {
+			ranking.put(w.getWord(), w.getIndex());
+			wordFrequencyMap.put(w.getIndex(), w.getFrequency());
+		}
+		
+		wordsOccured.clear();
+		
+		List<String> splittedEntries = new ArrayList<String> ();
+		for (String s : readFromTxtEntries) {				
+			splittedEntries = splittedEntryDescription(splittedEntries, s);
+		}
+		
+		readFromTxtEntries.clear();
+		
+		System.out.println("PMI Value Indexes çözümü başladı!");
+		
+		System.out.println("SplittedEntries Size : " + splittedEntries.size());
+		
+		//Read i value for resuming
+		int newI = 0;
+		try {
+			BufferedReader  in = new BufferedReader(new FileReader("infoI.txt"));
+			if (in != null) {			
+				String line;
+				while ((line = in.readLine()) != null) {
+					newI = Integer.parseInt(line);
+				}
+				in.close();
+			}
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		int newICount = 0;
+		
+		for (int i = 0; i < splittedEntries.size(); i++) {
+			if (newICount == 0) {
+				i = newI;
+				newICount++;
+			}
+			int countGo = i + 1;
+			int numberOfCellForPivotWord = ranking.get(splittedEntries.get(i));
+			for (int j = 0; j < turningNumberForNewCoOccurence; j++) {
+				if (countGo < splittedEntries.size()) {
+					int numberOfCellForAlternativeWord = ranking.get(splittedEntries.get(countGo));
+					PMIValueIndexes ind = new PMIValueIndexes(numberOfCellForPivotWord, numberOfCellForAlternativeWord, BigDecimal.ZERO, BigDecimal.ZERO);
+					PMIValueIndexes symIndex = new PMIValueIndexes(numberOfCellForAlternativeWord, numberOfCellForPivotWord, BigDecimal.ZERO, BigDecimal.ZERO);
+					if (ind.getIndex1() < globalRowCount && ind.getIndex2() < globalColumnCount && ind.getIndex1() != ind.getIndex2()) {
+						PMIValueIndexes storageIndex = entryManager.getPMIValueIndexes(ind.getIndex1(), ind.getIndex2());
+						if (storageIndex != null) {
+							int freq = storageIndex.getFrequencyInTogether();
+							freq++;
+							storageIndex.setFrequencyInTogether(freq);
+							
+							entryManager.updateStorageIndex(storageIndex);
+							
+							if (symIndex.getIndex1() < globalRowCount && symIndex.getIndex2() < globalColumnCount) {
+								PMIValueIndexes symStorageIndex = new PMIValueIndexes();
+								symStorageIndex.setIndex1(symIndex.getIndex1());
+								symStorageIndex.setIndex2(symIndex.getIndex2());
+								symStorageIndex.setFrequencyInTogether(freq);
+								
+								entryManager.updateStorageIndex(symStorageIndex);
+							}
+							
+						} else {
+							ind.setFrequencyInTogether(1);
+							ind.setLogaritmicPmiValue(BigDecimal.ZERO);
+							ind.setLogarithmicAlternatePmiValue(BigDecimal.ZERO);
+							entryManager.saveStorageIndex(ind);
+							
+							if (symIndex.getIndex1() < globalRowCount && symIndex.getIndex2() < globalColumnCount) {								
+								symIndex.setFrequencyInTogether(1);
+								symIndex.setLogarithmicAlternatePmiValue(BigDecimal.ZERO);
+								symIndex.setLogaritmicPmiValue(BigDecimal.ZERO);
+								
+								
+								entryManager.saveStorageIndex(symIndex);
+							}
+						}
+					} else if (symIndex.getIndex1() < globalRowCount && symIndex.getIndex2() < globalColumnCount && symIndex.getIndex1() != symIndex.getIndex2()) {
+						PMIValueIndexes storageIndex = entryManager.getPMIValueIndexes(symIndex.getIndex1(), symIndex.getIndex2());
+						if (storageIndex != null) {
+							int freq = storageIndex.getFrequencyInTogether();
+							freq++;
+							storageIndex.setFrequencyInTogether(freq);
+							
+							entryManager.updateStorageIndex(storageIndex);
+							
+							if (ind.getIndex1() < globalRowCount && ind.getIndex2() < globalColumnCount) {
+								PMIValueIndexes symStorageIndex = new PMIValueIndexes();
+								symStorageIndex.setIndex1(ind.getIndex1());
+								symStorageIndex.setIndex2(ind.getIndex2());
+								symStorageIndex.setFrequencyInTogether(freq);
+								
+								entryManager.updateStorageIndex(symStorageIndex);
+							}
+							
+						} else {
+							symIndex.setFrequencyInTogether(1);
+							symIndex.setLogaritmicPmiValue(BigDecimal.ZERO);
+							symIndex.setLogarithmicAlternatePmiValue(BigDecimal.ZERO);
+							entryManager.saveStorageIndex(symIndex);
+							
+							if (ind.getIndex1() < globalRowCount && ind.getIndex2() < globalColumnCount) {								
+								ind.setFrequencyInTogether(1);
+								ind.setLogarithmicAlternatePmiValue(BigDecimal.ZERO);
+								ind.setLogaritmicPmiValue(BigDecimal.ZERO);
+								
+								
+								entryManager.saveStorageIndex(ind);
+							}
+						}
+					}
+					countGo++;
+				}
+			}
+			
+			if (i % 200 == 0) {
+				System.out.println("Matrix veritabanında oluşturuluyor -> i = " + i + " --- KALAN -> "
+						+ (splittedEntries.size() - i));
+				try {
+					Writer out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("infoI.txt"), "UTF8"));
+
+					out.write(String.valueOf(i));
+					out.flush();
+					out.close();
+
+					System.out.println("I nin yeni değeri kaydedildi!");
+				}
+				catch (IOException e) {
+					System.err.println("TXT oluşturulurken hata oluştu!");
+		       }
+				
+			}
+		}
+		
+		createBigClamInputFromDatabase();
+		
+		splittedEntries.clear();
+		ranking.clear();
+
+		//Matrix oluşturulduğunda zaten verilen aralık kadar hesaplama yapılmışsa burayı atlayarak zaman kazan
+		int multipliedValue = globalRowCount * globalColumnCount;
+		int totalCalculatedCount = entryManager.getTotalCountWithProcessIdPMIValueIndex(1);
+		
+		if (totalCalculatedCount != multipliedValue) {			
+			for (int i = 0; i < globalRowCount; i++) {
+				int tempI = i;
+				List<PMIValueIndexes> index1List = entryManager.getPMIValueIndexListWithIndex1(i);
+				if (CollectionUtils.isNotEmpty(index1List)) {
+					for (int j = 0; j < globalColumnCount; j++) {
+						int tempJ = j;
+						Optional<PMIValueIndexes> optIndex2 = index1List.stream().filter(a -> a.getIndex2() == tempJ)
+								.findFirst();
+						if (!optIndex2.isPresent()) {
+							PMIValueIndexes newIndex = new PMIValueIndexes(tempI, tempJ, BigDecimal.ZERO, BigDecimal.ZERO);
+							newIndex.setFrequencyInTogether(0);
+							newIndex.setLogaritmicPmiValue(BigDecimal.ZERO);
+							newIndex.setLogarithmicAlternatePmiValue(BigDecimal.ZERO);
+							
+							entryManager.saveStorageIndex(newIndex);
+						}
+					}
+				} else {
+					for (int j = 0; j < globalColumnCount; j++) {
+						int tempJ = j;
+						PMIValueIndexes newIndex = new PMIValueIndexes(tempI, tempJ, BigDecimal.ZERO, BigDecimal.ZERO);
+						newIndex.setFrequencyInTogether(0);
+						newIndex.setLogaritmicPmiValue(BigDecimal.ZERO);
+						newIndex.setLogarithmicAlternatePmiValue(BigDecimal.ZERO);
+						
+						entryManager.saveStorageIndex(newIndex);
+					}
+				}
+				
+				if (i % 100 == 0) {
+					System.out.println("Eksik eşleşmeler tamamlanıyor. i = " + i);
+				}
+			}
+		}
+		totalCalculatedCount = entryManager.getTotalCountWithProcessIdPMIValueIndex(1);
+		
+		System.out.println("Matrix oluşturuldu... Size= " + totalCalculatedCount);
+	}
+	
+	@Override
+	public void createCoOccurenceMatrixWithDisk(String readTextPath, List<String> outputFromAnotherFunction) {
+		System.out.println("Co-Occurrence matrix oluşturma operasyonu tetiklendi");
+		
+		List<String> readFromTxtEntries = new ArrayList<String>();
+		if (outputFromAnotherFunction == null) {			
+			readFromTxtEntries = importManager.readFromTxt(readTextPath);
+			if (readFromTxtEntries == null || readFromTxtEntries.size() <= 0) {
+				System.err.println("Okunmaya çalışılan dosya boş veya okuma işlemi sırasında hata alındı.");
+				System.err.println("Program kapatılıyor.");
+				System.exit(0);
+			}
+		} else {
+			readFromTxtEntries.addAll(outputFromAnotherFunction);
+			outputFromAnotherFunction.clear();
+		}
+		
+		System.out.println("Bir kelimenin kaç defa sistemde görüldüğüyle ilgili liste oluşturuluyor");
+		
+		List<WordIndex> wordsOccured = getWordIndexList(readFromTxtEntries);
+		createOutputForWordsOccured(wordsOccured);
+		createOutputNodeIdNodeNameForBigClam(wordsOccured);
+		
+		Map<String, Integer> ranking = new HashMap<String, Integer>();
+		Map<Integer, BigDecimal> wordFrequencyMap = new HashMap<Integer, BigDecimal>();
+		for (WordIndex w : wordsOccured) {
+			ranking.put(w.getWord(), w.getIndex());
+			wordFrequencyMap.put(w.getIndex(), w.getFrequency());
+		}
+		
+		wordsOccured.clear();
+		
+		List<String> splittedEntries = new ArrayList<String> ();
+		for (String s : readFromTxtEntries) {				
+			splittedEntries = splittedEntryDescription(splittedEntries, s);
+		}
+		
+		readFromTxtEntries.clear();
+		
+		System.out.println("PMI Value Indexes çözümü başladı!");
+		
+		for (int i = 0; i < splittedEntries.size(); i++) {
+			
+		}
+		
+		
 	}
 	
 	@Override
@@ -288,7 +555,9 @@ public class EngineManagerImpl implements EngineManager {
 			readFromTxtEntries.addAll(outputFromAnotherFunction);
 			outputFromAnotherFunction.clear();
 		}
+		
 		System.out.println("Bir kelimenin kaç defa sistemde görüldüğüyle ilgili liste oluşturuluyor");
+		
 		List<WordIndex> wordsOccured = getWordIndexList(readFromTxtEntries);
 		createOutputForWordsOccured(wordsOccured);
 		createOutputNodeIdNodeNameForBigClam(wordsOccured);
@@ -299,16 +568,18 @@ public class EngineManagerImpl implements EngineManager {
 			ranking.put(w.getWord(), w.getIndex());
 			wordFrequencyMap.put(w.getIndex(), w.getFrequency());
 		}
+		
 		wordsOccured.clear();
+		
 		List<String> splittedEntries = new ArrayList<String> ();
 		for (String s : readFromTxtEntries) {				
 			splittedEntries = splittedEntryDescription(splittedEntries, s);
 		}
-		//Bu değer ekşi verisi çalıştırılırken splittedEntries.size() olarak değiştirilecek
-		int allWordOfCorpusSize = readFromTxtEntries.size();
+		
 		readFromTxtEntries.clear();
 		Map<PMIValueIndexes, BigDecimal> matrixData = new  HashMap<PMIValueIndexes, BigDecimal>();
 		System.out.println("PMI Value Indexes çözümü başladı!");
+		
 		for (int i = 0; i < splittedEntries.size(); i++) {
 			int countGo = i + 1;
 			int numberOfCellForPivotWord = ranking.get(splittedEntries.get(i));
@@ -380,15 +651,14 @@ public class EngineManagerImpl implements EngineManager {
 		}
 		System.out.println("Matrix oluşturuldu... Size= " + matrixData.size());
 		//Co occurence matrix oluşturma tamamlandı, PMI Değerini hesaplayacağız.
-//		matrixData = calculateAndSetPMIValues(matrixData, wordFrequencyMap, rankingSize);
 		matrixData = calculateAndSetPMIValues(matrixData, wordFrequencyMap, rankingSize);
 		
 		//TODO alternate i açarken map of indexes aç
-//		Map<Integer, List<String>> mapOfIndexes = getMapOfIndexes(matrixData);
+		Map<Integer, List<String>> mapOfIndexes = getMapOfIndexes(matrixData);
 		
 		// Alternate PMI değerini hesaplayacağız.
-//		matrixData = calculateAndSetAlternatePMIValues (matrixData, mapOfIndexes, rankingSize);
-//		mapOfIndexes.clear();
+		matrixData = calculateAndSetAlternatePMIValues (matrixData, mapOfIndexes, rankingSize);
+		mapOfIndexes.clear();
 		
 		//TODO burada totalWordNumberBigData yerine tüm veri çalıştığında ranking size yazar!!
 		createVectorsOneByOneWithVirtualMatrix(matrixData, globalRowCount, globalColumnCount);
@@ -440,6 +710,28 @@ public class EngineManagerImpl implements EngineManager {
 			System.err.println("BigClam input için oluşturulacak dosya açılırken bir hata oluştu");
 		}
 	}
+	
+	
+	/**
+	 * 
+	 * @param matrixData
+	 * Bu metod bigclam algoritmasına verilecek veriyi oluşturan dosyadır. 
+	 * Unweighted network oluşturacak!!
+	 */
+	private void createBigClamInputFromDatabase() {
+		try {
+			List<PMIValueIndexes> indexList = entryManager.getPMIValueIndexListWithProcessId(1);
+			
+			BufferedWriter out = new BufferedWriter(new FileWriter("forBigClam.txt"));
+			for(PMIValueIndexes index  :indexList){
+				out.write(index.getIndex1()+"	"+ index.getIndex2()+"\r\n");
+			}
+			out.close();
+			System.out.println("BigClam algoritmasına verilecek input oluşturuldu!!");
+		} catch (IOException e) {
+			System.err.println("BigClam input için oluşturulacak dosya açılırken bir hata oluştu");
+		}
+	}
 
 	
 	private Map<Integer, List<String>> getMapOfIndexes (Map<PMIValueIndexes, BigDecimal> matrixData) {
@@ -466,12 +758,29 @@ public class EngineManagerImpl implements EngineManager {
 		BigDecimal totalWSize = new BigDecimal(totalWordSize);
 		for (Map.Entry<PMIValueIndexes, BigDecimal> data : matrixData.entrySet()) {
 			calculationOfPMI(wordFrequencyMap, totalWSize, data.getValue(), data.getKey());
+			
+			writeToDocumentPMIValue(data.getKey());
 		}
 		
 		System.out.println("PMI calculation is just finished");
 		
 		return matrixData;
 	}
+
+	private void writeToDocumentPMIValue(PMIValueIndexes key) {
+		try {
+			String filename= "pmiValues.txt";
+		    FileWriter fw = new FileWriter(filename,true); //the true will append the new data
+		    
+		    fw.write(key.getIndex1() + "-" + key.getIndex2() + "-" + key.getLogaritmicPmiValue() +"\r\n");//appends the string to the file
+		    
+		    fw.close();
+		} catch (IOException ioe) {
+			System.err.println("IOException: " + ioe.getMessage());
+		}
+		
+	}
+
 
 	/**
 	 * 
@@ -495,12 +804,16 @@ public class EngineManagerImpl implements EngineManager {
 		// pmiValue değerinin logaritmasını alıp tekrar üstüne set et. (Logaritma 0 çıkacak senaryoya dikkat et)
 		calculativeValue.setPmiValue(pmiValue);
 		try {
-			BigDecimal logarithmicValue = log10(calculativeValue.getPmiValue(), 10);
-			if (logarithmicValue.signum() < 0) {				
-				calculativeValue.setLogaritmicPmiValue(BigDecimal.ZERO);
+			BigDecimal logarithmicValue; 
+			double logValue = Math.log(calculativeValue.getPmiValue().doubleValue());
+			if (logValue == Double.NaN || logValue < 0) {
+				logarithmicValue = BigDecimal.ZERO;
 			} else {
-				calculativeValue.setLogaritmicPmiValue(logarithmicValue);
+				logarithmicValue = new BigDecimal(logValue);
 			}
+			
+//			BigDecimal logarithmicValue = log10(calculativeValue.getPmiValue(), 10);
+			calculativeValue.setLogaritmicPmiValue(logarithmicValue);
 		} catch (ArithmeticException e) {
 			// logaritma 0 geldiğinde exception fırlatılıp yakalandı ve bir değer set edildi. Değeri değiştirebiliriz.
 			// Değer son karardan sonra 0 set edildi. (23 Ocak 2018) Daha sonrasında operasyonel hesaplamalarda değerler +1 shift edilecek
@@ -525,12 +838,29 @@ public class EngineManagerImpl implements EngineManager {
 		
 		for (Map.Entry<PMIValueIndexes, BigDecimal> data : matrixData.entrySet()) {
 			calculationOfAlternatePMI(mapOfIndexes, D, data.getValue(), data.getKey());
+			
+			writeToDocumentAlternatePMIValue(data.getKey());
 		}
 		
 		System.out.println("Alternate PMI calculation is just finished");
 		
 		return matrixData;
 	}
+
+	private void writeToDocumentAlternatePMIValue(PMIValueIndexes key) {
+		try {
+			String filename= "alternatePmiValues.txt";
+		    FileWriter fw = new FileWriter(filename,true); //the true will append the new data
+		    
+		    fw.write(key.getIndex1() + "-" + key.getIndex2() + "-" + key.getLogarithmicAlternatePmiValue() +"\r\n");//appends the string to the file
+		    
+		    fw.close();
+		} catch (IOException ioe) {
+			System.err.println("IOException: " + ioe.getMessage());
+		}
+		
+	}
+
 
 	/**
 	 * 
@@ -574,12 +904,15 @@ public class EngineManagerImpl implements EngineManager {
 		BigDecimal total = top.divide(bottom, 10, RoundingMode.HALF_UP);
 		calculativeValue.setAlternatePmiValue(total);
 		try {
-			BigDecimal logarithmicValue = log10(calculativeValue.getAlternatePmiValue(), 10);
-			if (logarithmicValue.signum() < 0) {				
-				calculativeValue.setLogarithmicAlternatePmiValue(BigDecimal.ZERO);
+			double logValue = Math.log(calculativeValue.getAlternatePmiValue().doubleValue());
+			BigDecimal logarithmicValue;
+			if (logValue == Double.NaN || logValue < 0) {
+				logarithmicValue = BigDecimal.ZERO;
 			} else {
-				calculativeValue.setLogarithmicAlternatePmiValue(logarithmicValue);
+				logarithmicValue = new BigDecimal(logValue);
 			}
+			
+			calculativeValue.setLogarithmicAlternatePmiValue(logarithmicValue);
 		} catch (ArithmeticException ex) {
 			// Değer son karardan sonra 0 set edildi. (23 Ocak 2018) Daha sonrasında operasyonel hesaplamalarda değerler +1 shift edilecek
 			calculativeValue.setLogarithmicAlternatePmiValue(BigDecimal.ZERO);
@@ -707,14 +1040,81 @@ public class EngineManagerImpl implements EngineManager {
 		}
 	}
 	
+	@Override
+	public void saveWordIndexListToDatabase(String readTextPath, List<String> outputFromAnotherFunction) {
+		List<String> readFromTxtEntries = new ArrayList<String>();
+		if (outputFromAnotherFunction == null) {			
+			readFromTxtEntries = importManager.readFromTxt(readTextPath);
+			if (readFromTxtEntries == null || readFromTxtEntries.size() <= 0) {
+				System.err.println("Okunmaya çalışılan dosya boş veya okuma işlemi sırasında hata alındı.");
+				System.err.println("Program kapatılıyor.");
+				System.exit(0);
+			}
+		} else {
+			readFromTxtEntries.addAll(outputFromAnotherFunction);
+			outputFromAnotherFunction.clear();
+		}
+		
+		System.out.println("Bir kelimenin kaç defa sistemde görüldüğüyle ilgili liste oluşturuluyor");
+		
+		writeWordIndexListToDatabase(readFromTxtEntries);
+	}
+	
+	private void writeWordIndexListToDatabase (List<String> readFromTxtEntries) {
+		// kelimelerin değerleri hesaplanıyor.
+		Map<String, Integer> mostOccuredWords = getMostOccurredWordMap(readFromTxtEntries);
+		// Hesaplama bitti sıralama yapılıyor.
+		if (mostOccuredWords.size() > 0) {
+			List<WordIndex> wordIndexList = getAndOrderWordIndexList(mostOccuredWords);
+			
+			entryManager.saveWordIndexListToDatabase(wordIndexList);
+			
+		} else {
+			System.err.println("Hesaplanacak MAP bulunamadı");
+		}
+	}
+
+
+	private List<WordIndex> getAndOrderWordIndexList(Map<String, Integer> mostOccuredWords) {
+		Map<String, Integer> orderedDESC = sortByValue(mostOccuredWords, false);
+		List<WordIndex> wordIndexList = new ArrayList<WordIndex>();
+		int count = 0;
+		for (Map.Entry<String, Integer> entrySet : orderedDESC.entrySet()) {
+			WordIndex word = new WordIndex(count, entrySet.getKey(), new BigDecimal(entrySet.getValue()));
+			
+			wordIndexList.add(word);
+			count++;
+		}
+		return wordIndexList;
+	}
+	
 	
 	private List<WordIndex> getWordIndexList (List<String> readFromTxtEntries) {
 		//kelimelerin değerleri hesaplanıyor.
+		Map<String, Integer> mostOccuredWords = getMostOccurredWordMap(readFromTxtEntries);
+		//Hesaplama bitti sıralama yapılıyor.
+		if (mostOccuredWords.size() > 0) {			
+			List<WordIndex> wordIndexList = getAndOrderWordIndexList(mostOccuredWords);
+			return wordIndexList;
+		} else {
+			System.err.println("Hesaplanacak MAP bulunamadı");
+		}
+		return null;
+	}
+
+
+	private Map<String, Integer> getMostOccurredWordMap(List<String> readFromTxtEntries) {
 		Map<String, Integer> mostOccuredWords = new HashMap<String, Integer>();
 		for (String s : readFromTxtEntries) {
 			List<String> retList = new ArrayList<String>(); 
 			retList = splittedEntryDescription(retList, s);
 			for (int i=0; i<retList.size(); i++) {
+				if (retList.get(i).equals(",") || retList.get(i).equals(".") ||retList.get(i).equals("!") || retList.get(i).equals(":") 
+						|| retList.get(i).equals(";") || retList.get(i).equals("...") || retList.get(i).equals("?") 
+						|| retList.get(i).equals("\"")) {
+					continue;
+				}
+				
 				if (mostOccuredWords != null && mostOccuredWords.size() > 0) {
 					if (mostOccuredWords.containsKey(retList.get(i))) {
 						mostOccuredWords.put(retList.get(i), mostOccuredWords.get(retList.get(i)) + 1);
@@ -726,72 +1126,9 @@ public class EngineManagerImpl implements EngineManager {
 				}
 			}
 		}
-		//Hesaplama bitti sıralama yapılıyor.
-		if (mostOccuredWords.size() > 0) {			
-			Map<String, Integer> orderedDESC = sortByValue(mostOccuredWords, false);
-			//Hesaplanan değerler nesneye atılıyor.
-			List<WordIndex> wordIndexList = new ArrayList<WordIndex>();
-			int count = 0;
-			for(Map.Entry<String,Integer>  entrySet  : orderedDESC.entrySet()){
-				WordIndex word = new WordIndex(count, entrySet.getKey(), new BigDecimal(entrySet.getValue()));
-				wordIndexList.add(word);
-				count++;
-			}
-			return wordIndexList;
-		} else {
-			System.err.println("Hesaplanacak MAP bulunamadı");
-		}
-		return null;
+		return mostOccuredWords;
 	}
 	
-	/**
-	 * Calculates log10
-	 * @param b
-	 * @param dp
-	 * @return
-	 */
-	private BigDecimal log10(BigDecimal b, int dp)
-	{
-	    final int NUM_OF_DIGITS = dp+2; // need to add one to get the right number of dp
-	                                    //  and then add one again to get the next number
-	                                    //  so I can round it correctly.
-
-	    MathContext mc = new MathContext(NUM_OF_DIGITS, RoundingMode.HALF_EVEN);
-
-	    //special conditions:
-	    // log(-x) -> exception
-	    // log(1) == 0 exactly;
-	    // log of a number lessthan one = -log(1/x)
-	    if(b.signum() <= 0)
-	        throw new ArithmeticException("log of a negative number! (or zero)");
-	    else if(b.compareTo(BigDecimal.ONE) == 0)
-	        return BigDecimal.ZERO;
-	    else if(b.compareTo(BigDecimal.ONE) < 0)
-	        return (log10((BigDecimal.ONE).divide(b,mc),dp)).negate();
-
-	    StringBuffer sb = new StringBuffer();
-	    //number of digits on the left of the decimal point
-	    int leftDigits = b.precision() - b.scale();
-
-	    //so, the first digits of the log10 are:
-	    sb.append(leftDigits - 1).append(".");
-
-	    //this is the algorithm outlined in the webpage
-	    int n = 0;
-	    while(n < NUM_OF_DIGITS)
-	    {
-	        b = (b.movePointLeft(leftDigits - 1)).pow(10, mc);
-	        leftDigits = b.precision() - b.scale();
-	        sb.append(leftDigits - 1);
-	        n++;
-	    }
-
-	    BigDecimal ans = new BigDecimal(sb.toString());
-
-	    //Round the number to the correct number of decimal places.
-	    ans = ans.round(new MathContext(ans.precision() - ans.scale() + dp, RoundingMode.HALF_EVEN));
-	    return ans;
-	}
 	
 	@Override
 	public void createVectors (Map<PMIValueIndexes, BigDecimal> filledMatrix) {
@@ -1026,8 +1363,6 @@ public class EngineManagerImpl implements EngineManager {
 		//2 - Excel
 		createJaccardSimilarityExcel(userUserTitleList);
 		//Bir yazarın en çok kullandığı kelimeleri hesapla.
-//		Set<Integer> userIdList = userList.stream().map(User::getId).collect(Collectors.toSet());
-//		findWordsByAuthorFromDatabase(userIdList);
 		Set<String> userNameList = userList.stream().map(User::getNickname).collect(Collectors.toSet());
 		findWordsByAuthorFromTxtFile(userNameList);
 		
@@ -1127,7 +1462,6 @@ public class EngineManagerImpl implements EngineManager {
 			BufferedReader in = new BufferedReader(new FileReader(directoryOfSimilarUsersThatWroteSameTitle));
 			String line;
 			List<UserUserTitle> userUserTitleList = new ArrayList<UserUserTitle>();
-			int count = 0 ;
 			Map<String, User> usernameUserMap = new HashMap<String, User>();
 			while((line = in.readLine()) != null) {
 				UserUserTitle uut = new UserUserTitle();
@@ -1150,10 +1484,7 @@ public class EngineManagerImpl implements EngineManager {
 				uut.setUser2(user2);
 				uut.setCountOfSimilarTitle(Integer.parseInt(splitWithLine[2]));
 				userUserTitleList.add(uut);
-				if (count % 200 == 0) {					
-					TimeUnit.SECONDS.sleep(1);
-				}
-				count++;
+
  			}
 			in.close();
 			return userUserTitleList;
@@ -1507,7 +1838,7 @@ public class EngineManagerImpl implements EngineManager {
 		List<String> entryList = new ArrayList<String>();
 		BufferedReader br = null;
         try {
-            br = new BufferedReader(new FileReader("D:\\YL_DATA\\users\\" +username + ".txt"));
+            br = new BufferedReader(new FileReader("D:\\Yüksek Lisans\\YL_DATA\\Zemberek\\users\\" +username + ".txt"));
             String line;
             while ((line = br.readLine()) != null) {
             	entryList.add(line);
@@ -1565,19 +1896,21 @@ public class EngineManagerImpl implements EngineManager {
 		int count = 0;
 		try {
 			String filename= "userWordList.txt";
-		    FileWriter fw = new FileWriter(filename,true); //the true will append the new data
+		    
+		    FileOutputStream fileStream = new FileOutputStream(new File(filename), true);
+		    OutputStreamWriter writer = new OutputStreamWriter(fileStream, "UTF-8");
 		    
 		    for (WordIndex word : wordIndexList) {
 		    	if (globalTotalUserEntryCount == count) {
 		    		break;
 		    	}
-		    	fw.write(username + "-" + word.getWord() + "-" + word.getIndex() + "-" + word.getFrequency() +"\r\n");//appends the string to the file
+		    	writer.write(username + "-" + word.getWord() + "-" + word.getIndex() + "-" + word.getFrequency() +"\r\n");//appends the string to the file
 		    	
 		    	count ++;
 		    }
-		    fw.write("----------------------------------------------------------------------------------- username = " + username +"\r\n");
+		    writer.write("----------------------------------------------------------------------------------- username = " + username +"\r\n");
 		    
-		    fw.close();
+		    writer.close();
 			
 		} catch (IOException ioe) {
 			System.err.println("IOException: " + ioe.getMessage());

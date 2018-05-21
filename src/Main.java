@@ -34,10 +34,13 @@ public class Main {
 		
 		String dir = "C:\\webharvest\\KAYDET\\";
 		String ham = "C:\\webharvest\\HAM\\";
-		final String fileReadingPath = "C:\\Users\\ASIL\\git\\eksiGit\\entries.txt";
-		final String bilkentXmlPath ="D:\\Yüksek Lisans\\Tez\\Bilkent DATA\\BilCol2005\\copyFromProgramTest.xml";
-		final String bilkentTxtPath ="D:\\Yüksek Lisans\\Tez\\Bilkent DATA\\BilCol2005\\Orijinal Data\\ALLOK.txt";
-		final String englishPath ="D:\\Yüksek Lisans\\Tez\\Data\\txtData";
+//		final String fileReadingPath = "C:\\Users\\ASIL\\git\\eksiGit\\entries.txt";
+		final String fileReadingPath = "D:\\Yuksek Lisans\\YL_DATA\\Zemberek\\titles";
+		
+		final String bilkentXmlPath ="D:\\Yuksek Lisans\\Tez\\Bilkent DATA\\BilCol2005\\copyFromProgramTest.xml";
+		final String bilkentTxtPath ="D:\\Yuksek Lisans\\Tez\\Bilkent DATA\\BilCol2005\\Orijinal Data\\ALLOK.txt";
+		
+		final String englishPath ="D:\\Yuksek Lisans\\Tez\\Data\\txtData";
 		String operationSelect ="-1";
 		System.out.println("GitHub Entegrasyonu OK!");
 		Scanner scanIn = new Scanner(System.in);		
@@ -65,6 +68,9 @@ public class Main {
 			System.out.println("Entry leri Title a göre gruplayýp dýþa aktar -> Press 20");
 			System.out.println("Entryleri User a göre gruplayýp dýþa aktar -> Press 21");
 			System.out.println("Vocab düzelt data gir -> Press 22");
+			System.out.println("Co-Occurence Matrix (YENÝ - FROM DISK) -> Press 23");
+			System.out.println("Word Index Listesini Veritabanýna Yaz   -> Press 24");
+			System.out.println("Matrix i Veritabanýnda Oluþtur   -> Press 25");
 			operationSelect = scanIn.nextLine();
 			if (operationSelect.equals("1")) {
 				crawlerManager.createCrudeLinks(ham);
@@ -179,6 +185,12 @@ public class Main {
 				engineManager.exportEntriesGroupByUser();
 			} else if (operationSelect.equals("22")) {
 				engineManager.exportWrongVocabs();
+			} else if (operationSelect.equals("23")) {
+				engineManager.createCoOccurenceMatrixWithDisk(fileReadingPath, null);
+			} else if (operationSelect.equals("24")) {
+				engineManager.saveWordIndexListToDatabase(fileReadingPath, null);
+			} else if (operationSelect.equals("25")) {
+				engineManager.saveCoOccurrenceMatrixToDatabase(fileReadingPath, null);
 			}
 			
 		} while(!operationSelect.equals("0"));

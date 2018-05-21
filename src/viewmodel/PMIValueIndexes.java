@@ -22,6 +22,16 @@ public class PMIValueIndexes {
 	
 	private CosineSimilarityIndex cosineSimilarityData;
 	
+	private int frequencyInTogether;
+	
+	public int getFrequencyInTogether() {
+		return frequencyInTogether;
+	}
+
+	public void setFrequencyInTogether(int frequencyInTogether) {
+		this.frequencyInTogether = frequencyInTogether;
+	}
+
 	public CosineSimilarityIndex getCosineSimilarityData() {
 		return cosineSimilarityData;
 	}
@@ -94,7 +104,7 @@ public class PMIValueIndexes {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((alternatePmiValue == null) ? 0 : alternatePmiValue.hashCode());
-		result = prime * result + ((cosineSimilarityData == null) ? 0 : cosineSimilarityData.hashCode());
+		result = prime * result + frequencyInTogether;
 		result = prime * result + index1;
 		result = prime * result + index2;
 		result = prime * result
@@ -118,10 +128,7 @@ public class PMIValueIndexes {
 				return false;
 		} else if (!alternatePmiValue.equals(other.alternatePmiValue))
 			return false;
-		if (cosineSimilarityData == null) {
-			if (other.cosineSimilarityData != null)
-				return false;
-		} else if (!cosineSimilarityData.equals(other.cosineSimilarityData))
+		if (frequencyInTogether != other.frequencyInTogether)
 			return false;
 		if (index1 != other.index1)
 			return false;
@@ -150,7 +157,7 @@ public class PMIValueIndexes {
 		return "PMIValueIndexes [index1=" + index1 + ", index2=" + index2 + ", pmiValue=" + pmiValue
 				+ ", logaritmicPmiValue=" + logaritmicPmiValue + ", alternatePmiValue=" + alternatePmiValue
 				+ ", logarithmicAlternatePmiValue=" + logarithmicAlternatePmiValue + ", cosineSimilarityData="
-				+ cosineSimilarityData + "]";
+				+ cosineSimilarityData + ", frequencyInTogether=" + frequencyInTogether + "]";
 	}
-	
+
 }
