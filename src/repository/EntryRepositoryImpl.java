@@ -1,5 +1,6 @@
 package repository;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -758,5 +759,40 @@ public class EntryRepositoryImpl implements EntryRepository{
 			return null;
 		}
 	}
-		
+	
+	
+	@Override
+	public void savePMIValueIndexes(Map<PMIValueIndexes, BigDecimal> matrixData) {
+		// process_id veri deðiþtikçe deðiþecektir
+		try {
+			String tableName = "pmi_value_index_memory";
+			Class.forName(myDriver);
+			Connection conn = DriverManager.getConnection(db, username, pass);
+			Statement st = conn.createStatement();
+
+			for (Map.Entry<PMIValueIndexes, BigDecimal> entry : matrixData.entrySet()) {
+				PMIValueIndexes ind = entry.getKey();
+				ind.setFrequencyInTogether(entry.getValue().intValue());
+				ind.setLogarithmicAlternatePmiValue(BigDecimal.ZERO);
+				ind.setLogaritmicPmiValue(BigDecimal.ZERO);
+
+				String query = "INSERT INTO " + tableName
+						+ " (index1,index2,pmiValue,logaritmicPmiValue,alternatePmiValue,logarithmicAlternatePmiValue,frequencyInTogether,process_id)"
+						+ "VALUES(";
+				query += ind.getIndex1() + ",'" + ind.getIndex2() + "'," + ind.getPmiValue() + ","
+						+ ind.getLogaritmicPmiValue() + "," + ind.getAlternatePmiValue() + ","
+						+ ind.getLogarithmicAlternatePmiValue() + "," + ind.getFrequencyInTogether() + "," + 1 + ");";
+
+				st.executeUpdate(query);
+			}
+
+			st.close();
+			conn.close();
+
+		} catch (Exception e) {
+			System.err.println("Database Connection Error ! PMI_VALUE_INDEX TABLE");
+			System.err.println(e.getMessage());
+		}
+	}
+
 }

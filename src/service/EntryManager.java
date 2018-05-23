@@ -1,5 +1,6 @@
 package service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -57,6 +58,8 @@ public interface EntryManager {
 	void updateStorageIndex(PMIValueIndexes storageIndex);
 
 	void saveStorageIndex(PMIValueIndexes ind);
+	
+	void savePMIValueIndexes(Map<PMIValueIndexes, BigDecimal> matrixData);
 
 	int getTotalCountWithProcessIdPMIValueIndex(int process_id);
 

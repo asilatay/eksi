@@ -97,7 +97,9 @@ public class EngineManagerImpl implements EngineManager {
 	
 	private final static int globalColumnCount = 1000;
 	
-	private final static int globalRowCount = 3000;
+	private final static int globalRowCount = 2000;
+	
+	private final static int globalRowCountSmall = 1000;
 	
 	private final static int globalMostSimilarWordCount = 15;
 	
@@ -493,7 +495,7 @@ public class EngineManagerImpl implements EngineManager {
 	}
 	
 	@Override
-	public void createCoOccurenceMatrixWithDisk(String readTextPath, List<String> outputFromAnotherFunction) {
+	public void createCoOccurenceMatrixWithMemoryAndDisk(String readTextPath, List<String> outputFromAnotherFunction) {
 		System.out.println("Co-Occurrence matrix oluşturma operasyonu tetiklendi");
 		
 		List<String> readFromTxtEntries = new ArrayList<String>();
@@ -531,13 +533,89 @@ public class EngineManagerImpl implements EngineManager {
 		
 		readFromTxtEntries.clear();
 		
+		Map<PMIValueIndexes, BigDecimal> matrixData = new  HashMap<PMIValueIndexes, BigDecimal>();
+		
 		System.out.println("PMI Value Indexes çözümü başladı!");
 		
 		for (int i = 0; i < splittedEntries.size(); i++) {
-			
+			int countGo = i + 1;
+			int numberOfCellForPivotWord = ranking.get(splittedEntries.get(i));
+			for (int j = 0; j < turningNumberForNewCoOccurence; j++) {
+				if (countGo < splittedEntries.size()) {
+					int numberOfCellForAlternativeWord = ranking.get(splittedEntries.get(countGo));
+					PMIValueIndexes ind = new PMIValueIndexes(numberOfCellForPivotWord, numberOfCellForAlternativeWord, BigDecimal.ZERO, BigDecimal.ZERO);
+					PMIValueIndexes symIndex = new PMIValueIndexes(numberOfCellForAlternativeWord, numberOfCellForPivotWord, BigDecimal.ZERO, BigDecimal.ZERO);
+					if (matrixData.containsKey(ind) 
+							&& (ind.getIndex1() >= globalRowCountSmall && ind.getIndex1() < globalRowCount) 
+							&& ind.getIndex2() < globalColumnCount
+							&& ind.getIndex1() != ind.getIndex2()) {
+						matrixData.put(ind, matrixData.get(ind).add(BigDecimal.ONE));
+						if ((symIndex.getIndex1() >= globalRowCountSmall && symIndex.getIndex1() < globalRowCount) && symIndex.getIndex2() < globalColumnCount) {							
+							if (matrixData.get(symIndex) != null) {							
+								matrixData.put(symIndex, matrixData.get(symIndex).add(BigDecimal.ONE));
+							} else {
+								matrixData.put(symIndex, BigDecimal.ONE);
+							}
+						}
+					} else if (matrixData.containsKey(symIndex) 
+							&& (symIndex.getIndex1() >= globalRowCountSmall && symIndex.getIndex1() < globalRowCount) 
+							&& symIndex.getIndex2() < globalColumnCount
+							&& symIndex.getIndex1() != symIndex.getIndex2()) {
+						matrixData.put(symIndex, matrixData.get(symIndex).add(BigDecimal.ONE));
+						if ((ind.getIndex1() >= globalRowCountSmall && ind.getIndex1() < globalRowCount) && ind.getIndex2() < globalColumnCount) {							
+							if (matrixData.get(ind) != null) {							
+								matrixData.put(ind, matrixData.get(ind).add(BigDecimal.ONE));
+							} else {
+								matrixData.put(ind, BigDecimal.ONE);
+							}
+						}
+					} else if ((ind.getIndex1() >= globalRowCountSmall && ind.getIndex1() < globalRowCount) 
+							&& ind.getIndex2() < globalColumnCount
+							&& ind.getIndex1() != ind.getIndex2()){
+						matrixData.put(ind, BigDecimal.ONE);
+						if ((symIndex.getIndex1() >= globalRowCountSmall && symIndex.getIndex1() < globalRowCount) && symIndex.getIndex2() < globalColumnCount) {
+							matrixData.put(symIndex, BigDecimal.ONE);
+						}
+					}
+					countGo++;
+				}
+			}
 		}
 		
+		createBigClamInputFromMatrix(matrixData);
 		
+		splittedEntries.clear();
+		ranking.clear();
+
+		//Matrix oluşturulduğunda zaten verilen aralık kadar hesaplama yapılmışsa burayı atlayarak zaman kazan
+		int multipliedValue = (globalRowCount - globalRowCountSmall) * globalColumnCount;
+		if (matrixData.size() != multipliedValue) {			
+			for (int i = globalRowCountSmall; i < globalRowCount; i++) {
+				int tempI = i;
+				List<PMIValueIndexes> index1List = matrixData.keySet().stream()
+						.filter(a -> a.getIndex1() == tempI).collect(Collectors.toList());
+				if (CollectionUtils.isNotEmpty(index1List)) {
+					for (int j = 0; j < globalColumnCount; j++) {
+						int tempJ = j;
+						Optional<PMIValueIndexes> optIndex2 = index1List.stream().filter(a -> a.getIndex2() == tempJ)
+								.findFirst();
+						if (!optIndex2.isPresent()) {
+							PMIValueIndexes newIndex = new PMIValueIndexes(tempI, tempJ, BigDecimal.ZERO, BigDecimal.ZERO);
+							matrixData.put(newIndex, BigDecimal.ZERO);
+						}
+					}
+				} else {
+					for (int j = 0; j < globalColumnCount; j++) {
+						int tempJ = j;
+						PMIValueIndexes newIndex = new PMIValueIndexes(tempI, tempJ, BigDecimal.ZERO, BigDecimal.ZERO);
+						matrixData.put(newIndex, BigDecimal.ZERO);
+					}
+				}
+			}
+		}
+		System.out.println("Matrix oluşturuldu... Size= " + matrixData.size());
+		
+		entryManager.savePMIValueIndexes(matrixData);
 	}
 	
 	@Override
@@ -675,7 +753,7 @@ public class EngineManagerImpl implements EngineManager {
 				 if (count == globalRowCount) {
 					 break;
 				 }
-				 out.write(word.getIndex() + "	" + word.getWord() + "\r\n");
+				 out.write(word.getIndex() + "	" + String.valueOf(word.getWord()) + "\r\n");
 				 count++;
 			 }
 			 out.close();
@@ -1283,7 +1361,7 @@ public class EngineManagerImpl implements EngineManager {
 		try {
 			 BufferedWriter out = new BufferedWriter(new FileWriter("wordIndexFrequency.txt"));
 			 for(WordIndex  word  : wordIndexList){
-				 out.write(word.getWord() +"	"+ word.getIndex()+"	"+word.getFrequency()+"\r\n");
+				 out.write(String.valueOf(word.getWord()) +"	"+ word.getIndex()+"	"+word.getFrequency()+"\r\n");
 			 }
 			 out.close();
 			 System.out.println("Bir kelimenin hangi index de kaç defa sistemde geçtiğiyle ilgili TXT dosyası oluşturuldu!");

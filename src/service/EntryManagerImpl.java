@@ -3,6 +3,7 @@ package service;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -295,5 +296,10 @@ public class EntryManagerImpl implements EntryManager{
 	@Override
 	public List<PMIValueIndexes> getPMIValueIndexListWithProcessId(int process_id) {
 		return entryRepository.getPMIValueIndexListWithProcessId(process_id);
+	}
+	
+	@Override
+	public void savePMIValueIndexes(Map<PMIValueIndexes, BigDecimal> matrixData) {
+		entryRepository.savePMIValueIndexes(matrixData);
 	}
 }

@@ -68,7 +68,7 @@ public class Main {
 			System.out.println("Entry leri Title a göre gruplayýp dýþa aktar -> Press 20");
 			System.out.println("Entryleri User a göre gruplayýp dýþa aktar -> Press 21");
 			System.out.println("Vocab düzelt data gir -> Press 22");
-			System.out.println("Co-Occurence Matrix (YENÝ - FROM DISK) -> Press 23");
+			System.out.println("Co-Occurence Matrix (YENÝ - Disk & Memory Beraber) -> Press 23");
 			System.out.println("Word Index Listesini Veritabanýna Yaz   -> Press 24");
 			System.out.println("Matrix i Veritabanýnda Oluþtur   -> Press 25");
 			operationSelect = scanIn.nextLine();
@@ -186,7 +186,7 @@ public class Main {
 			} else if (operationSelect.equals("22")) {
 				engineManager.exportWrongVocabs();
 			} else if (operationSelect.equals("23")) {
-				engineManager.createCoOccurenceMatrixWithDisk(fileReadingPath, null);
+				engineManager.createCoOccurenceMatrixWithMemoryAndDisk(fileReadingPath, null);
 			} else if (operationSelect.equals("24")) {
 				engineManager.saveWordIndexListToDatabase(fileReadingPath, null);
 			} else if (operationSelect.equals("25")) {

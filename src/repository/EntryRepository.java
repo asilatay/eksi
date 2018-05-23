@@ -1,5 +1,6 @@
 package repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -57,5 +58,7 @@ public interface EntryRepository {
 	List<PMIValueIndexes> getPMIValueIndexListWithIndex1(int index1);
 
 	List<PMIValueIndexes> getPMIValueIndexListWithProcessId(int process_id);
+
+	void savePMIValueIndexes(Map<PMIValueIndexes, BigDecimal> matrixData);
 	
 }

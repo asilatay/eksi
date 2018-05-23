@@ -18,7 +18,7 @@ public interface EngineManager {
 	
 	void createCoOccurenceMatrix(String readTextPath, List<String> outputFromAnotherFunction);
 	
-	void createCoOccurenceMatrixWithDisk (String readTextPath, List<String> outputFromAnotherFunction);
+	void createCoOccurenceMatrixWithMemoryAndDisk (String readTextPath, List<String> outputFromAnotherFunction);
 	
 	void saveWordIndexListToDatabase(String readTextPath, List<String> outputFromAnotherFunction);
 	
