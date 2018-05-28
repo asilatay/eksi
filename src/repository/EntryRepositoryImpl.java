@@ -631,6 +631,34 @@ public class EntryRepositoryImpl implements EntryRepository{
 	
 	
 	@Override
+	public void updatePmiValues(Map<PMIValueIndexes, BigDecimal> matrixData) {
+		try {
+			String tableName = "pmi_value_index_memory";
+			Class.forName(myDriver);
+			Connection conn = DriverManager.getConnection(db, username, pass);
+			Statement st = conn.createStatement();
+			
+			for (Map.Entry<PMIValueIndexes, BigDecimal> entry : matrixData.entrySet()) {
+				PMIValueIndexes ind = entry.getKey();
+				if (ind.getLogaritmicPmiValue().signum() > 0) {					
+					String query = "UPDATE "+ tableName + " SET pmiValue =" + ind.getPmiValue() + ", logaritmicPmiValue = " + ind.getLogaritmicPmiValue()
+					+ " WHERE id =" + ind.getId();
+					
+					st.executeUpdate(query);
+				}
+			}
+			
+			st.close();
+			conn.close();
+			
+		} catch (Exception e) {
+			System.err.println("Database Connection Error ! PMI_VALUE_INDEX_MEMORY TABLE");
+			System.err.println(e.getMessage());
+		}
+	}
+	
+	
+	@Override
 	public void saveStorageIndex(PMIValueIndexes ind) {
 		//process_id veri deðiþtikçe deðiþecektir
 		try {
@@ -684,9 +712,111 @@ public class EntryRepositoryImpl implements EntryRepository{
 	}
 	
 	@Override
+	public List<PMIValueIndexes> getPMIValueIndexAllValueWithIndex1(int index1) {
+		try {
+			String tableName = "pmi_value_index_memory";
+			Class.forName(myDriver);
+			Connection conn = DriverManager.getConnection(db, username, pass);
+
+			String query = "SELECT * FROM " + tableName + " WHERE index1 =" + index1 + " ORDER BY index2 ASC";
+
+			Statement st = conn.createStatement();
+			ResultSet rs = st.executeQuery(query);
+
+			List<PMIValueIndexes> indexList = new ArrayList<PMIValueIndexes>();
+			while (rs.next()) {
+				PMIValueIndexes ind = new PMIValueIndexes();
+				int ind1 = rs.getInt("index1");
+				int ind2 = rs.getInt("index2");
+				int frequencyInTogether = rs.getInt("frequencyInTogether");
+				BigDecimal pmiValue = rs.getBigDecimal("pmiValue");
+				BigDecimal logPmiValue = rs.getBigDecimal("logaritmicPmiValue");
+				BigDecimal altPmiValue = rs.getBigDecimal("alternatePmiValue");
+				BigDecimal logAltPmiValue = rs.getBigDecimal("logarithmicAlternatePmiValue");
+				int id = rs.getInt("id");
+
+				ind.setIndex1(ind1);
+				ind.setIndex2(ind2);
+				ind.setFrequencyInTogether(frequencyInTogether);
+				ind.setPmiValue(pmiValue);
+				ind.setLogaritmicPmiValue(logPmiValue);
+				ind.setAlternatePmiValue(altPmiValue);
+				ind.setLogarithmicAlternatePmiValue(logAltPmiValue);
+				ind.setId(id);
+
+				indexList.add(ind);
+			}
+			
+			st.close();
+			conn.close();
+			
+			return indexList;
+
+		} catch (Exception e) {
+			System.err.println("Database Connection Error ! PMI_VALUE_INDEX_MEMORY TABLE");
+			System.err.println(e.getMessage());
+			return null;
+		}
+	}
+	
+	
+	@Override
+	public List<PMIValueIndexes> getPMIValueIndexAllValueWithIndex1(List<Integer> index1List) {
+		try {
+			String tableName = "pmi_value_index_memory";
+			Class.forName(myDriver);
+			Connection conn = DriverManager.getConnection(db, username, pass);
+
+			String query = "SELECT * FROM " + tableName + " WHERE index1 IN(";
+					for (Integer i : index1List)  {
+						query += i + ",";
+					}
+			query = query.substring(0, query.length()-1);
+			query += ") ORDER BY index2 ASC";
+
+			Statement st = conn.createStatement();
+			ResultSet rs = st.executeQuery(query);
+
+			List<PMIValueIndexes> indexList = new ArrayList<PMIValueIndexes>();
+			while (rs.next()) {
+				PMIValueIndexes ind = new PMIValueIndexes();
+				int ind1 = rs.getInt("index1");
+				int ind2 = rs.getInt("index2");
+				int frequencyInTogether = rs.getInt("frequencyInTogether");
+				BigDecimal pmiValue = rs.getBigDecimal("pmiValue");
+				BigDecimal logPmiValue = rs.getBigDecimal("logaritmicPmiValue");
+				BigDecimal altPmiValue = rs.getBigDecimal("alternatePmiValue");
+				BigDecimal logAltPmiValue = rs.getBigDecimal("logarithmicAlternatePmiValue");
+				int id = rs.getInt("id");
+
+				ind.setIndex1(ind1);
+				ind.setIndex2(ind2);
+				ind.setFrequencyInTogether(frequencyInTogether);
+				ind.setPmiValue(pmiValue);
+				ind.setLogaritmicPmiValue(logPmiValue);
+				ind.setAlternatePmiValue(altPmiValue);
+				ind.setLogarithmicAlternatePmiValue(logAltPmiValue);
+				ind.setId(id);
+
+				indexList.add(ind);
+			}
+			
+			st.close();
+			conn.close();
+			
+			return indexList;
+
+		} catch (Exception e) {
+			System.err.println("Database Connection Error ! PMI_VALUE_INDEX_MEMORY TABLE");
+			System.err.println(e.getMessage());
+			return null;
+		}
+	}
+	
+	@Override
 	public List<PMIValueIndexes> getPMIValueIndexListWithIndex1(int index1) {
 		try {
-			String tableName = "pmi_value_index";
+			String tableName = "pmi_value_index_memory";
 			Class.forName(myDriver);
 			Connection conn = DriverManager.getConnection(db, username, pass);
 

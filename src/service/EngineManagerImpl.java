@@ -95,11 +95,22 @@ public class EngineManagerImpl implements EngineManager {
 	
 	private final static String directoryOfSimilarUsersThatWroteSameTitle = "userUserTitles.txt";
 	
+	
+	
 	private final static int globalColumnCount = 1000;
 	
-	private final static int globalRowCount = 2000;
+	private final static int globalRowCount = 10000;
 	
-	private final static int globalRowCountSmall = 1000;
+	private final static int globalRowCountSmall = 9000;
+	
+	
+	
+	private final static int bigRowCountPMI = 5000;
+	
+	private final static int smallRowCountPMI = 3000;
+	
+	
+	
 	
 	private final static int globalMostSimilarWordCount = 15;
 	
@@ -745,6 +756,87 @@ public class EngineManagerImpl implements EngineManager {
 		
 	}
 	
+	@Override
+	public void calculatePMIValuesWithMemoryAndDisk(String readTextPath, List<String> outputFromAnotherFunction) {
+		System.out.println("PMI ve Alternate PMI değerlerini hesaplama operasyonu tetiklendi");
+		System.out.println("Dosyalar okunarak memory e alınıyor");
+		List<String> readFromTxtEntries = new ArrayList<String>();
+		if (outputFromAnotherFunction == null) {			
+			readFromTxtEntries = importManager.readFromTxt(readTextPath);
+			if (readFromTxtEntries == null || readFromTxtEntries.size() <= 0) {
+				System.err.println("Okunmaya çalışılan dosya boş veya okuma işlemi sırasında hata alındı.");
+				System.err.println("Program kapatılıyor.");
+				System.exit(0);
+			}
+		} else {
+			readFromTxtEntries.addAll(outputFromAnotherFunction);
+			outputFromAnotherFunction.clear();
+		}
+		
+		List<WordIndex> wordsOccured = getWordIndexList(readFromTxtEntries);
+		
+		Map<String, Integer> ranking = new HashMap<String, Integer>();
+		Map<Integer, BigDecimal> wordFrequencyMap = new HashMap<Integer, BigDecimal>();
+		for (WordIndex w : wordsOccured) {
+			ranking.put(w.getWord(), w.getIndex());
+			wordFrequencyMap.put(w.getIndex(), w.getFrequency());
+		}
+		
+		wordsOccured.clear();
+		int rankingSize = ranking.size();
+		ranking.clear();
+		List<Integer> sequenceList = new ArrayList<Integer>();
+		for (int i = smallRowCountPMI; i < bigRowCountPMI; i++) {
+			if (i % 100 == 0 && CollectionUtils.isNotEmpty(sequenceList)) {
+				sequenceList.add(i);
+				
+				List<PMIValueIndexes> indexList = entryManager.getPMIValueIndexAllValueWithIndex1(sequenceList);
+				Map<PMIValueIndexes, BigDecimal> matrixData = new  HashMap<PMIValueIndexes, BigDecimal>();
+				//matrixData oluşturuldu.
+				for (PMIValueIndexes ind : indexList) {
+					BigDecimal freqWith = new BigDecimal(ind.getFrequencyInTogether());
+					matrixData.put(ind, freqWith);
+				}
+				// Co occurence matrix oluşturma tamamlandı, PMI Değerini hesaplayacağız.
+				matrixData = calculateAndSetPMIValues(matrixData, wordFrequencyMap, rankingSize);
+				
+				System.out.println("PMI Hesaplaması değer için bitti -> " + i);
+				
+				//Hesaplamalar bitti veritabanına update geliyor
+				entryManager.updatePmiValues(matrixData);
+				
+				System.out.println("PMI Hesaplaması veritabanına yazımı değer için bitti -> " + i);
+				
+				sequenceList.clear();
+				
+			} else {
+				sequenceList.add(i);
+			}
+		}
+		
+		if (CollectionUtils.isNotEmpty(sequenceList)) {
+			List<PMIValueIndexes> indexList = entryManager.getPMIValueIndexAllValueWithIndex1(sequenceList);
+			Map<PMIValueIndexes, BigDecimal> matrixData = new  HashMap<PMIValueIndexes, BigDecimal>();
+			//matrixData oluşturuldu.
+			for (PMIValueIndexes ind : indexList) {
+				BigDecimal freqWith = new BigDecimal(ind.getFrequencyInTogether());
+				matrixData.put(ind, freqWith);
+			}
+			// Co occurence matrix oluşturma tamamlandı, PMI Değerini hesaplayacağız.
+			matrixData = calculateAndSetPMIValues(matrixData, wordFrequencyMap, rankingSize);
+			
+			System.out.println("PMI Hesaplaması değer için bitti -> ");
+			
+			//Hesaplamalar bitti veritabanına update geliyor
+			entryManager.updatePmiValues(matrixData);
+			
+			System.out.println("PMI Hesaplaması veritabanına yazımı değer için bitti -> ");
+			
+			sequenceList.clear();
+		}
+		
+	}
+	
 	private void createOutputNodeIdNodeNameForBigClam(List<WordIndex> wordsOccured) {
 		try {
 			 BufferedWriter out = new BufferedWriter(new FileWriter("nodeName.txt"));
@@ -838,6 +930,8 @@ public class EngineManagerImpl implements EngineManager {
 			calculationOfPMI(wordFrequencyMap, totalWSize, data.getValue(), data.getKey());
 			
 			writeToDocumentPMIValue(data.getKey());
+			
+			writeToDocumentPMIOnlyTempValue(data.getKey());
 		}
 		
 		System.out.println("PMI calculation is just finished");
@@ -858,6 +952,19 @@ public class EngineManagerImpl implements EngineManager {
 		}
 		
 	}
+	
+	private void writeToDocumentPMIOnlyTempValue(PMIValueIndexes key) {
+		try {
+			String filename= "pmiValuesTemp.txt";
+		    FileWriter fw = new FileWriter(filename,true); //the true will append the new data
+		    
+		    fw.write(key.getIndex1() + "-" + key.getIndex2() + "-" + key.getPmiValue() +"\r\n");//appends the string to the file
+		    
+		    fw.close();
+		} catch (IOException ioe) {
+			System.err.println("IOException: " + ioe.getMessage());
+		}
+	}
 
 
 	/**
@@ -869,8 +976,9 @@ public class EngineManagerImpl implements EngineManager {
 	 */
 	private void calculationOfPMI(Map<Integer, BigDecimal> wordFrequencyMap, BigDecimal totalWSize,
 			BigDecimal togetherValue, PMIValueIndexes calculativeValue) {
-		//SHIFTING
-		//togetherValue = togetherValue.add(BigDecimal.ONE);
+		
+		//SHIFTING (Birbirleriyle hiç görülmemiş kelimeler için log alma işleminde sonsuz değerden kaçmak için yapılıyor)
+		togetherValue = togetherValue.add(BigDecimal.ONE);
 		
 		BigDecimal probW1AndW2 = togetherValue.divide(totalWSize, 10, RoundingMode.HALF_UP);
 		
@@ -890,7 +998,6 @@ public class EngineManagerImpl implements EngineManager {
 				logarithmicValue = new BigDecimal(logValue);
 			}
 			
-//			BigDecimal logarithmicValue = log10(calculativeValue.getPmiValue(), 10);
 			calculativeValue.setLogaritmicPmiValue(logarithmicValue);
 		} catch (ArithmeticException e) {
 			// logaritma 0 geldiğinde exception fırlatılıp yakalandı ve bir değer set edildi. Değeri değiştirebiliriz.
@@ -911,7 +1018,6 @@ public class EngineManagerImpl implements EngineManager {
 	 */	
 	private Map<PMIValueIndexes, BigDecimal> calculateAndSetAlternatePMIValues (Map <PMIValueIndexes, BigDecimal> matrixData
 			, Map<Integer, List<String>> mapOfIndexes, int D) {
-//		int D = matrixData.size();
 		System.out.println("Alternate PMI calculation is just started");
 		
 		for (Map.Entry<PMIValueIndexes, BigDecimal> data : matrixData.entrySet()) {
@@ -954,7 +1060,7 @@ public class EngineManagerImpl implements EngineManager {
 		int index2C = calculativeValue.getIndex2();
 		List <String> valueList1 = mapOfIndexes.get(index1W);
 		BigDecimal w = BigDecimal.ZERO;
-		if (!valueList1.isEmpty()) {
+		if (CollectionUtils.isNotEmpty(valueList1)) {
 			for (String s : valueList1) {
 				String [] arr = s.split("-");
 				if (arr.length == 2 && Integer.parseInt(arr[0]) != index2C) {
@@ -964,7 +1070,7 @@ public class EngineManagerImpl implements EngineManager {
 		}
 		BigDecimal c = BigDecimal.ZERO;
 		List <String> valueList2 = mapOfIndexes.get(index2C);
-		if (!valueList2.isEmpty()) {
+		if (CollectionUtils.isNotEmpty(valueList2)) {
 			for (String s : valueList2) {
 				String [] arr = s.split("-");
 				if (arr.length == 2 && Integer.parseInt(arr[0]) != index1W) {
@@ -972,8 +1078,8 @@ public class EngineManagerImpl implements EngineManager {
 				}
 			}
 		}
-		//SHIFTING
-		//probW1AndW2 = probW1AndW2.add(BigDecimal.ONE);
+		//SHIFTING (Log alma işleminde birbirleriyle hiç görülmemiş kelimeleri hesaplarken sonsuz değerden kaçmak için yapılıyor)
+		probW1AndW2 = probW1AndW2.add(BigDecimal.ONE);
 		//TOP (w,c) * D
 		BigDecimal top = probW1AndW2.multiply(new BigDecimal(D));
 		//BOTTOM w*c
@@ -1916,7 +2022,7 @@ public class EngineManagerImpl implements EngineManager {
 		List<String> entryList = new ArrayList<String>();
 		BufferedReader br = null;
         try {
-            br = new BufferedReader(new FileReader("D:\\Yüksek Lisans\\YL_DATA\\Zemberek\\users\\" +username + ".txt"));
+            br = new BufferedReader(new FileReader("D:\\Yuksek Lisans\\YL_DATA\\Zemberek\\users\\" +username + ".txt"));
             String line;
             while ((line = br.readLine()) != null) {
             	entryList.add(line);

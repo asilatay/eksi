@@ -50,4 +50,7 @@ public interface EngineManager {
 	
 	void exportWrongVocabs();
 
+	void calculatePMIValuesWithMemoryAndDisk(String readTextPath,
+			List<String> outputFromAnotherFunction);
+
 }

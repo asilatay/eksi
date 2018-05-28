@@ -69,8 +69,8 @@ public class Main {
 			System.out.println("Entryleri User a göre gruplayýp dýþa aktar -> Press 21");
 			System.out.println("Vocab düzelt data gir -> Press 22");
 			System.out.println("Co-Occurence Matrix (YENÝ - Disk & Memory Beraber) -> Press 23");
-			System.out.println("Word Index Listesini Veritabanýna Yaz   -> Press 24");
-			System.out.println("Matrix i Veritabanýnda Oluþtur   -> Press 25");
+			System.out.println("Matrix i Veritabanýnda Oluþtur   -> Press 24");
+			System.out.println("PMI deðerlerini hesapla (Disk & Memory Beraber) -> Press 25");
 			operationSelect = scanIn.nextLine();
 			if (operationSelect.equals("1")) {
 				crawlerManager.createCrudeLinks(ham);
@@ -188,9 +188,9 @@ public class Main {
 			} else if (operationSelect.equals("23")) {
 				engineManager.createCoOccurenceMatrixWithMemoryAndDisk(fileReadingPath, null);
 			} else if (operationSelect.equals("24")) {
-				engineManager.saveWordIndexListToDatabase(fileReadingPath, null);
-			} else if (operationSelect.equals("25")) {
 				engineManager.saveCoOccurrenceMatrixToDatabase(fileReadingPath, null);
+			} else if (operationSelect.endsWith("25")) {
+				engineManager.calculatePMIValuesWithMemoryAndDisk(fileReadingPath, null);
 			}
 			
 		} while(!operationSelect.equals("0"));

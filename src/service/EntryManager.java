@@ -66,4 +66,10 @@ public interface EntryManager {
 	List<PMIValueIndexes> getPMIValueIndexListWithIndex1(int index1);
 
 	List<PMIValueIndexes> getPMIValueIndexListWithProcessId(int process_id);
+	
+	List<PMIValueIndexes> getPMIValueIndexAllValueWithIndex1(int index1);
+
+	void updatePmiValues(Map<PMIValueIndexes, BigDecimal> matrixData);
+	
+	List<PMIValueIndexes> getPMIValueIndexAllValueWithIndex1(List<Integer> index1List);
 }

@@ -302,4 +302,19 @@ public class EntryManagerImpl implements EntryManager{
 	public void savePMIValueIndexes(Map<PMIValueIndexes, BigDecimal> matrixData) {
 		entryRepository.savePMIValueIndexes(matrixData);
 	}
+	
+	@Override
+	public List<PMIValueIndexes> getPMIValueIndexAllValueWithIndex1(int index1) {
+		return entryRepository.getPMIValueIndexAllValueWithIndex1(index1);
+	}
+	
+	@Override
+	public List<PMIValueIndexes> getPMIValueIndexAllValueWithIndex1(List<Integer> index1List) {
+		return entryRepository.getPMIValueIndexAllValueWithIndex1(index1List);
+	}
+	
+	@Override
+	public void updatePmiValues(Map<PMIValueIndexes, BigDecimal> matrixData) {
+		entryRepository.updatePmiValues(matrixData);
+	}
 }

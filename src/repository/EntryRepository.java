@@ -61,4 +61,10 @@ public interface EntryRepository {
 
 	void savePMIValueIndexes(Map<PMIValueIndexes, BigDecimal> matrixData);
 	
+	List<PMIValueIndexes> getPMIValueIndexAllValueWithIndex1(int index1);
+
+	void updatePmiValues(Map<PMIValueIndexes, BigDecimal> matrixData);
+
+	List<PMIValueIndexes> getPMIValueIndexAllValueWithIndex1(List<Integer> index1List);
+	
 }
