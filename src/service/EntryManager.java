@@ -72,4 +72,8 @@ public interface EntryManager {
 	void updatePmiValues(Map<PMIValueIndexes, BigDecimal> matrixData);
 	
 	List<PMIValueIndexes> getPMIValueIndexAllValueWithIndex1(List<Integer> index1List);
+	
+	Map<Integer, Integer> getRowAndFrequencyInTogetherSumMap(int index1);
+
+	void updateAlternatePmiValues(Map<PMIValueIndexes, BigDecimal> matrixData);
 }

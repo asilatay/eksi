@@ -317,4 +317,14 @@ public class EntryManagerImpl implements EntryManager{
 	public void updatePmiValues(Map<PMIValueIndexes, BigDecimal> matrixData) {
 		entryRepository.updatePmiValues(matrixData);
 	}
+	
+	@Override
+	public Map<Integer, Integer> getRowAndFrequencyInTogetherSumMap(int index1) {
+		return entryRepository.getRowAndFrequencyInTogetherSumMap(index1);
+	}
+	
+	@Override
+	public void updateAlternatePmiValues(Map<PMIValueIndexes, BigDecimal> matrixData) {
+		entryRepository.updateAlternatePmiValues(matrixData);
+	}
 }

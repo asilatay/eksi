@@ -52,5 +52,8 @@ public interface EngineManager {
 
 	void calculatePMIValuesWithMemoryAndDisk(String readTextPath,
 			List<String> outputFromAnotherFunction);
+	
+	void calculateAlternatePMIValuesWithMemoryAndDisk(String readTextPath,
+			List<String> outputFromAnotherFunction);
 
 }

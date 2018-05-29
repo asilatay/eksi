@@ -96,7 +96,7 @@ public class EngineManagerImpl implements EngineManager {
 	private final static String directoryOfSimilarUsersThatWroteSameTitle = "userUserTitles.txt";
 	
 	
-	
+	//Matrix oluşturmada kullanılan parametreler
 	private final static int globalColumnCount = 1000;
 	
 	private final static int globalRowCount = 10000;
@@ -104,12 +104,15 @@ public class EngineManagerImpl implements EngineManager {
 	private final static int globalRowCountSmall = 9000;
 	
 	
+	//PMI hesabı için kullanılan parametreler
+	private final static int bigRowCountPMI = 10000;
 	
-	private final static int bigRowCountPMI = 5000;
+	private final static int smallRowCountPMI = 8000;
 	
-	private final static int smallRowCountPMI = 3000;
+	//ALTERNATE PMI hesabı için kullanılan parametreler
+	private final static int bigRowCountAlternatePMI = 1000;
 	
-	
+	private final static int smallRowCountAlternatePMI = 0;
 	
 	
 	private final static int globalMostSimilarWordCount = 15;
@@ -837,6 +840,92 @@ public class EngineManagerImpl implements EngineManager {
 		
 	}
 	
+	@Override
+	public void calculateAlternatePMIValuesWithMemoryAndDisk(String readTextPath, List<String> outputFromAnotherFunction) {
+		System.out.println("Alternate PMI değerlerini hesaplama operasyonu tetiklendi");
+		System.out.println("Dosyalar okunarak memory e alınıyor");
+		List<String> readFromTxtEntries = new ArrayList<String>();
+		if (outputFromAnotherFunction == null) {			
+			readFromTxtEntries = importManager.readFromTxt(readTextPath);
+			if (readFromTxtEntries == null || readFromTxtEntries.size() <= 0) {
+				System.err.println("Okunmaya çalışılan dosya boş veya okuma işlemi sırasında hata alındı.");
+				System.err.println("Program kapatılıyor.");
+				System.exit(0);
+			}
+		} else {
+			readFromTxtEntries.addAll(outputFromAnotherFunction);
+			outputFromAnotherFunction.clear();
+		}
+		
+		List<WordIndex> wordsOccured = getWordIndexList(readFromTxtEntries);
+		
+		Map<String, Integer> ranking = new HashMap<String, Integer>();
+		Map<Integer, BigDecimal> wordFrequencyMap = new HashMap<Integer, BigDecimal>();
+		for (WordIndex w : wordsOccured) {
+			ranking.put(w.getWord(), w.getIndex());
+			wordFrequencyMap.put(w.getIndex(), w.getFrequency());
+		}
+		
+		wordsOccured.clear();
+		int rankingSize = ranking.size();
+		ranking.clear();
+		
+		
+		Map<Integer, Integer> rowFrequencyInTogetherSumMap = entryManager.getRowAndFrequencyInTogetherSumMap(bigRowCountAlternatePMI);
+		
+		List<Integer> sequenceList = new ArrayList<Integer>();
+		for (int i = smallRowCountAlternatePMI; i < bigRowCountAlternatePMI; i++) {
+			if (i % 100 == 0 && CollectionUtils.isNotEmpty(sequenceList)) {
+				sequenceList.add(i);
+				
+				List<PMIValueIndexes> indexList = entryManager.getPMIValueIndexAllValueWithIndex1(sequenceList);
+				Map<PMIValueIndexes, BigDecimal> matrixData = new  HashMap<PMIValueIndexes, BigDecimal>();
+				
+				//matrixData oluşturuldu.
+				for (PMIValueIndexes ind : indexList) {
+					BigDecimal freqWith = new BigDecimal(ind.getFrequencyInTogether());
+					matrixData.put(ind, freqWith);
+				}
+				
+				matrixData = calculateAndSetAlternatePMIValuesWithoutMapOfIndexes(matrixData, rowFrequencyInTogetherSumMap, rankingSize);
+				
+				System.out.println("Alternate PMI Hesaplaması değer için bitti -> " + i);
+				
+				//Hesaplamalar bitti veritabanına update geliyor
+				entryManager.updateAlternatePmiValues(matrixData);
+				
+				System.out.println("Alternate PMI Hesaplaması veritabanına yazımı değer için bitti -> " + i);
+				
+				sequenceList.clear();
+				
+			} else {
+				sequenceList.add(i);
+			}
+		}
+		
+		if (CollectionUtils.isNotEmpty(sequenceList)) {
+			List<PMIValueIndexes> indexList = entryManager.getPMIValueIndexAllValueWithIndex1(sequenceList);
+			Map<PMIValueIndexes, BigDecimal> matrixData = new  HashMap<PMIValueIndexes, BigDecimal>();
+			//matrixData oluşturuldu.
+			for (PMIValueIndexes ind : indexList) {
+				BigDecimal freqWith = new BigDecimal(ind.getFrequencyInTogether());
+				matrixData.put(ind, freqWith);
+			}
+			// Co occurence matrix oluşturma tamamlandı, Alternate PMI Değerini hesaplayacağız.
+			matrixData = calculateAndSetAlternatePMIValuesWithoutMapOfIndexes(matrixData, rowFrequencyInTogetherSumMap, rankingSize);
+			
+			System.out.println("Alternate PMI Hesaplaması değer için bitti -> ");
+			
+			//Hesaplamalar bitti veritabanına update geliyor
+			entryManager.updateAlternatePmiValues(matrixData);
+			
+			System.out.println("Alternate PMI Hesaplaması veritabanına yazımı değer için bitti -> ");
+			
+			sequenceList.clear();
+		}
+		
+	}
+	
 	private void createOutputNodeIdNodeNameForBigClam(List<WordIndex> wordsOccured) {
 		try {
 			 BufferedWriter out = new BufferedWriter(new FileWriter("nodeName.txt"));
@@ -1024,12 +1113,48 @@ public class EngineManagerImpl implements EngineManager {
 			calculationOfAlternatePMI(mapOfIndexes, D, data.getValue(), data.getKey());
 			
 			writeToDocumentAlternatePMIValue(data.getKey());
+			
+			writeToDocumentAlternatePMIOnlyTempValue(data.getKey());
 		}
 		
 		System.out.println("Alternate PMI calculation is just finished");
 		
 		return matrixData;
 	}
+	
+	private Map<PMIValueIndexes, BigDecimal> calculateAndSetAlternatePMIValuesWithoutMapOfIndexes (Map <PMIValueIndexes, BigDecimal> matrixData
+			, Map<Integer, Integer> rowFrequencyInTogetherSumMap, int D) {
+		
+		System.out.println("Alternate PMI calculation is just started");
+		
+		for (Map.Entry<PMIValueIndexes, BigDecimal> data : matrixData.entrySet()) {
+			calculationOfAlternatePMIWithoutMapOfIndexes(rowFrequencyInTogetherSumMap, D, data.getValue(), data.getKey());
+			
+			writeToDocumentAlternatePMIValue(data.getKey());
+			
+			writeToDocumentAlternatePMIOnlyTempValue(data.getKey());
+		}
+		
+		System.out.println("Alternate PMI calculation is just finished");
+		
+		return matrixData;
+	}
+
+
+	private void writeToDocumentAlternatePMIOnlyTempValue(PMIValueIndexes key) {
+		try {
+			String filename= "alternatePmiValuesTemp.txt";
+		    FileWriter fw = new FileWriter(filename,true); //the true will append the new data
+		    
+		    fw.write(key.getIndex1() + "-" + key.getIndex2() + "-" + key.getAlternatePmiValue() +"\r\n");//appends the string to the file
+		    
+		    fw.close();
+		} catch (IOException ioe) {
+			System.err.println("IOException: " + ioe.getMessage());
+		}
+		
+	}
+
 
 	private void writeToDocumentAlternatePMIValue(PMIValueIndexes key) {
 		try {
@@ -1045,6 +1170,44 @@ public class EngineManagerImpl implements EngineManager {
 		
 	}
 
+	private void calculationOfAlternatePMIWithoutMapOfIndexes(
+			Map<Integer, Integer> rowFrequencyInTogetherSumMap, int D, BigDecimal probW1AndW2,
+			PMIValueIndexes calculativeValue) {
+		int index1W = calculativeValue.getIndex1();
+		int index2C = calculativeValue.getIndex2();
+		
+		BigDecimal w = BigDecimal.ZERO;
+		w = new BigDecimal(rowFrequencyInTogetherSumMap.get(index1W));
+		
+		BigDecimal c = BigDecimal.ZERO;
+		c = new BigDecimal(rowFrequencyInTogetherSumMap.get(index2C));
+		
+		// SHIFTING (Log alma işleminde birbirleriyle hiç görülmemiş kelimeleri
+		// hesaplarken sonsuz değerden kaçmak için yapılıyor)
+		probW1AndW2 = probW1AndW2.add(BigDecimal.ONE);
+		// TOP (w,c) * D
+		BigDecimal top = probW1AndW2.multiply(new BigDecimal(D));
+		// BOTTOM w*c
+		BigDecimal bottom = w.multiply(c);
+		// TOTAL
+		BigDecimal total = top.divide(bottom, 10, RoundingMode.HALF_UP);
+		calculativeValue.setAlternatePmiValue(total);
+		try {
+			double logValue = Math.log(calculativeValue.getAlternatePmiValue().doubleValue());
+			BigDecimal logarithmicValue;
+			if (logValue == Double.NaN || logValue < 0) {
+				logarithmicValue = BigDecimal.ZERO;
+			} else {
+				logarithmicValue = new BigDecimal(logValue);
+			}
+
+			calculativeValue.setLogarithmicAlternatePmiValue(logarithmicValue);
+		} catch (ArithmeticException ex) {
+			// Değer son karardan sonra 0 set edildi. (23 Ocak 2018) Daha sonrasında
+			// operasyonel hesaplamalarda değerler +1 shift edilecek
+			calculativeValue.setLogarithmicAlternatePmiValue(BigDecimal.ZERO);
+		}
+	}
 
 	/**
 	 * 

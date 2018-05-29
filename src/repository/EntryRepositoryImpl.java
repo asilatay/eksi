@@ -657,6 +657,33 @@ public class EntryRepositoryImpl implements EntryRepository{
 		}
 	}
 	
+	@Override
+	public void updateAlternatePmiValues(Map<PMIValueIndexes, BigDecimal> matrixData) {
+		try {
+			String tableName = "pmi_value_index_memory";
+			Class.forName(myDriver);
+			Connection conn = DriverManager.getConnection(db, username, pass);
+			Statement st = conn.createStatement();
+			
+			for (Map.Entry<PMIValueIndexes, BigDecimal> entry : matrixData.entrySet()) {
+				PMIValueIndexes ind = entry.getKey();
+				if (ind.getLogarithmicAlternatePmiValue().signum() > 0) {					
+					String query = "UPDATE "+ tableName + " SET alternatePmiValue =" + ind.getAlternatePmiValue() + ", logarithmicAlternatePmiValue = " + ind.getLogarithmicAlternatePmiValue()
+					+ " WHERE id =" + ind.getId();
+					
+					st.executeUpdate(query);
+				}
+			}
+			
+			st.close();
+			conn.close();
+			
+		} catch (Exception e) {
+			System.err.println("Database Connection Error ! PMI_VALUE_INDEX_MEMORY TABLE");
+			System.err.println(e.getMessage());
+		}
+	}
+	
 	
 	@Override
 	public void saveStorageIndex(PMIValueIndexes ind) {
@@ -922,6 +949,41 @@ public class EntryRepositoryImpl implements EntryRepository{
 		} catch (Exception e) {
 			System.err.println("Database Connection Error ! PMI_VALUE_INDEX TABLE");
 			System.err.println(e.getMessage());
+		}
+	}
+	
+	
+	@Override
+	public Map<Integer, Integer> getRowAndFrequencyInTogetherSumMap(int index1) {
+		try {
+			String tableName = "pmi_value_index_memory";
+			Class.forName(myDriver);
+			Connection conn = DriverManager.getConnection(db, username, pass);
+			Statement st = conn.createStatement();
+			
+			String query = "SELECT pvi.index1 AS index1, SUM(pvi.frequencyInTogether) AS summing FROM "+ tableName +" pvi"
+					+ " where pvi.index1 < " + index1 + " GROUP BY index1;";
+			
+			ResultSet rs = st.executeQuery(query);
+			
+			Map<Integer, Integer> rowFrequencyInTogetherSumMap = new HashMap<Integer, Integer>();
+			
+			while (rs.next()) {
+				int int1 = rs.getInt("index1");
+				int summing = rs.getInt("summing");
+				
+				rowFrequencyInTogetherSumMap.put(int1, summing);
+			}
+			
+			st.close();
+			conn.close();
+			
+			return rowFrequencyInTogetherSumMap;
+			
+		} catch (Exception e) {
+			System.err.println("Database Connection Error ! PMI_VALUE_INDEX_MEMORY TABLE");
+			System.err.println(e.getMessage());
+			return null;
 		}
 	}
 
