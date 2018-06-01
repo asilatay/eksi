@@ -91,7 +91,7 @@ public class EngineManagerImpl implements EngineManager {
 	
 	private final static int turningNumber = 15;
 	
-	private final static int turningNumberForNewCoOccurence = 5;
+	private final static int turningNumberForNewCoOccurence = 10;
 	
 	private final static String directoryOfSimilarUsersThatWroteSameTitle = "userUserTitles.txt";
 	
@@ -99,18 +99,18 @@ public class EngineManagerImpl implements EngineManager {
 	//Matrix oluşturmada kullanılan parametreler
 	private final static int globalColumnCount = 1000;
 	
-	private final static int globalRowCount = 10000;
+	private final static int globalRowCount = 2000;
 	
-	private final static int globalRowCountSmall = 9000;
+	private final static int globalRowCountSmall = 0;
 	
 	
 	//PMI hesabı için kullanılan parametreler
-	private final static int bigRowCountPMI = 10000;
+	private final static int bigRowCountPMI = 2000;
 	
-	private final static int smallRowCountPMI = 8000;
+	private final static int smallRowCountPMI = 0;
 	
 	//ALTERNATE PMI hesabı için kullanılan parametreler
-	private final static int bigRowCountAlternatePMI = 1000;
+	private final static int bigRowCountAlternatePMI = 2000;
 	
 	private final static int smallRowCountAlternatePMI = 0;
 	
@@ -553,44 +553,18 @@ public class EngineManagerImpl implements EngineManager {
 		
 		for (int i = 0; i < splittedEntries.size(); i++) {
 			int countGo = i + 1;
+			int countBack = i - 1 ;
 			int numberOfCellForPivotWord = ranking.get(splittedEntries.get(i));
 			for (int j = 0; j < turningNumberForNewCoOccurence; j++) {
+				if (countBack > -1) {
+					int numberOfCellForAlternativeWord = ranking.get(splittedEntries.get(countBack));
+					createMatrixData(matrixData, numberOfCellForPivotWord, numberOfCellForAlternativeWord);
+					countBack--;
+				}
+				
 				if (countGo < splittedEntries.size()) {
 					int numberOfCellForAlternativeWord = ranking.get(splittedEntries.get(countGo));
-					PMIValueIndexes ind = new PMIValueIndexes(numberOfCellForPivotWord, numberOfCellForAlternativeWord, BigDecimal.ZERO, BigDecimal.ZERO);
-					PMIValueIndexes symIndex = new PMIValueIndexes(numberOfCellForAlternativeWord, numberOfCellForPivotWord, BigDecimal.ZERO, BigDecimal.ZERO);
-					if (matrixData.containsKey(ind) 
-							&& (ind.getIndex1() >= globalRowCountSmall && ind.getIndex1() < globalRowCount) 
-							&& ind.getIndex2() < globalColumnCount
-							&& ind.getIndex1() != ind.getIndex2()) {
-						matrixData.put(ind, matrixData.get(ind).add(BigDecimal.ONE));
-						if ((symIndex.getIndex1() >= globalRowCountSmall && symIndex.getIndex1() < globalRowCount) && symIndex.getIndex2() < globalColumnCount) {							
-							if (matrixData.get(symIndex) != null) {							
-								matrixData.put(symIndex, matrixData.get(symIndex).add(BigDecimal.ONE));
-							} else {
-								matrixData.put(symIndex, BigDecimal.ONE);
-							}
-						}
-					} else if (matrixData.containsKey(symIndex) 
-							&& (symIndex.getIndex1() >= globalRowCountSmall && symIndex.getIndex1() < globalRowCount) 
-							&& symIndex.getIndex2() < globalColumnCount
-							&& symIndex.getIndex1() != symIndex.getIndex2()) {
-						matrixData.put(symIndex, matrixData.get(symIndex).add(BigDecimal.ONE));
-						if ((ind.getIndex1() >= globalRowCountSmall && ind.getIndex1() < globalRowCount) && ind.getIndex2() < globalColumnCount) {							
-							if (matrixData.get(ind) != null) {							
-								matrixData.put(ind, matrixData.get(ind).add(BigDecimal.ONE));
-							} else {
-								matrixData.put(ind, BigDecimal.ONE);
-							}
-						}
-					} else if ((ind.getIndex1() >= globalRowCountSmall && ind.getIndex1() < globalRowCount) 
-							&& ind.getIndex2() < globalColumnCount
-							&& ind.getIndex1() != ind.getIndex2()){
-						matrixData.put(ind, BigDecimal.ONE);
-						if ((symIndex.getIndex1() >= globalRowCountSmall && symIndex.getIndex1() < globalRowCount) && symIndex.getIndex2() < globalColumnCount) {
-							matrixData.put(symIndex, BigDecimal.ONE);
-						}
-					}
+					createMatrixData(matrixData, numberOfCellForPivotWord, numberOfCellForAlternativeWord);
 					countGo++;
 				}
 			}
@@ -630,6 +604,45 @@ public class EngineManagerImpl implements EngineManager {
 		System.out.println("Matrix oluşturuldu... Size= " + matrixData.size());
 		
 		entryManager.savePMIValueIndexes(matrixData);
+	}
+
+
+	private void createMatrixData(Map<PMIValueIndexes, BigDecimal> matrixData, int numberOfCellForPivotWord,
+			int numberOfCellForAlternativeWord) {
+		PMIValueIndexes ind = new PMIValueIndexes(numberOfCellForPivotWord, numberOfCellForAlternativeWord, BigDecimal.ZERO, BigDecimal.ZERO);
+		PMIValueIndexes symIndex = new PMIValueIndexes(numberOfCellForAlternativeWord, numberOfCellForPivotWord, BigDecimal.ZERO, BigDecimal.ZERO);
+		if (matrixData.containsKey(ind) 
+				&& (ind.getIndex1() >= globalRowCountSmall && ind.getIndex1() < globalRowCount) 
+				&& ind.getIndex2() < globalColumnCount
+				&& ind.getIndex1() != ind.getIndex2()) {
+			matrixData.put(ind, matrixData.get(ind).add(BigDecimal.ONE));
+			if ((symIndex.getIndex1() >= globalRowCountSmall && symIndex.getIndex1() < globalRowCount) && symIndex.getIndex2() < globalColumnCount) {							
+				if (matrixData.get(symIndex) != null) {							
+					matrixData.put(symIndex, matrixData.get(symIndex).add(BigDecimal.ONE));
+				} else {
+					matrixData.put(symIndex, BigDecimal.ONE);
+				}
+			}
+		} else if (matrixData.containsKey(symIndex) 
+				&& (symIndex.getIndex1() >= globalRowCountSmall && symIndex.getIndex1() < globalRowCount) 
+				&& symIndex.getIndex2() < globalColumnCount
+				&& symIndex.getIndex1() != symIndex.getIndex2()) {
+			matrixData.put(symIndex, matrixData.get(symIndex).add(BigDecimal.ONE));
+			if ((ind.getIndex1() >= globalRowCountSmall && ind.getIndex1() < globalRowCount) && ind.getIndex2() < globalColumnCount) {							
+				if (matrixData.get(ind) != null) {							
+					matrixData.put(ind, matrixData.get(ind).add(BigDecimal.ONE));
+				} else {
+					matrixData.put(ind, BigDecimal.ONE);
+				}
+			}
+		} else if ((ind.getIndex1() >= globalRowCountSmall && ind.getIndex1() < globalRowCount) 
+				&& ind.getIndex2() < globalColumnCount
+				&& ind.getIndex1() != ind.getIndex2()){
+			matrixData.put(ind, BigDecimal.ONE);
+			if ((symIndex.getIndex1() >= globalRowCountSmall && symIndex.getIndex1() < globalRowCount) && symIndex.getIndex2() < globalColumnCount) {
+				matrixData.put(symIndex, BigDecimal.ONE);
+			}
+		}
 	}
 	
 	@Override
@@ -674,36 +687,18 @@ public class EngineManagerImpl implements EngineManager {
 		
 		for (int i = 0; i < splittedEntries.size(); i++) {
 			int countGo = i + 1;
+			int countBack = i - 1;
 			int numberOfCellForPivotWord = ranking.get(splittedEntries.get(i));
 			for (int j = 0; j < turningNumberForNewCoOccurence; j++) {
+				if (countBack > - 1) {
+					int numberOfCellForAlternativeWord = ranking.get(splittedEntries.get(countBack));
+					createMatrixData(matrixData, numberOfCellForPivotWord, numberOfCellForAlternativeWord);
+					countBack--;
+				}
+				
 				if (countGo < splittedEntries.size()) {
 					int numberOfCellForAlternativeWord = ranking.get(splittedEntries.get(countGo));
-					PMIValueIndexes ind = new PMIValueIndexes(numberOfCellForPivotWord, numberOfCellForAlternativeWord, BigDecimal.ZERO, BigDecimal.ZERO);
-					PMIValueIndexes symIndex = new PMIValueIndexes(numberOfCellForAlternativeWord, numberOfCellForPivotWord, BigDecimal.ZERO, BigDecimal.ZERO);
-					if (matrixData.containsKey(ind) && ind.getIndex1() < globalRowCount && ind.getIndex2() < globalColumnCount) {
-						matrixData.put(ind, matrixData.get(ind).add(BigDecimal.ONE));
-						if (symIndex.getIndex1() < globalRowCount && symIndex.getIndex2() < globalColumnCount) {							
-							if (matrixData.get(symIndex) != null) {							
-								matrixData.put(symIndex, matrixData.get(symIndex).add(BigDecimal.ONE));
-							} else {
-								matrixData.put(symIndex, BigDecimal.ONE);
-							}
-						}
-					} else if (matrixData.containsKey(symIndex) && symIndex.getIndex1() < globalRowCount && symIndex.getIndex2() < globalColumnCount) {
-						matrixData.put(symIndex, matrixData.get(symIndex).add(BigDecimal.ONE));
-						if (ind.getIndex1() < globalRowCount && ind.getIndex2() < globalColumnCount) {							
-							if (matrixData.get(ind) != null) {							
-								matrixData.put(ind, matrixData.get(ind).add(BigDecimal.ONE));
-							} else {
-								matrixData.put(ind, BigDecimal.ONE);
-							}
-						}
-					} else if (ind.getIndex1() < globalRowCount && ind.getIndex2() < globalColumnCount){
-						matrixData.put(ind, BigDecimal.ONE);
-						if (symIndex.getIndex1() < globalRowCount && symIndex.getIndex2() < globalColumnCount) {
-							matrixData.put(symIndex, BigDecimal.ONE);
-						}
-					}
+					createMatrixData(matrixData, numberOfCellForPivotWord, numberOfCellForAlternativeWord);
 					countGo++;
 				}
 			}
@@ -1074,8 +1069,9 @@ public class EngineManagerImpl implements EngineManager {
 		BigDecimal frequencyIndex1 = wordFrequencyMap.get(calculativeValue.getIndex1()).divide(totalWSize, 10, RoundingMode.HALF_UP);
 		BigDecimal frequencyIndex2 = wordFrequencyMap.get(calculativeValue.getIndex2()).divide(totalWSize, 10, RoundingMode.HALF_UP);
 		
-		BigDecimal pmiValue = probW1AndW2.divide(frequencyIndex1.multiply(frequencyIndex2),10 ,RoundingMode.HALF_UP)
-				.setScale(10, RoundingMode.HALF_UP);
+		BigDecimal multipliedValue = frequencyIndex1.multiply(frequencyIndex2);
+		
+		BigDecimal pmiValue = probW1AndW2.divide(multipliedValue, 10, RoundingMode.HALF_UP).setScale(5, RoundingMode.HALF_UP);
 		// pmiValue değerinin logaritmasını alıp tekrar üstüne set et. (Logaritma 0 çıkacak senaryoya dikkat et)
 		calculativeValue.setPmiValue(pmiValue);
 		try {
@@ -1176,15 +1172,18 @@ public class EngineManagerImpl implements EngineManager {
 		int index1W = calculativeValue.getIndex1();
 		int index2C = calculativeValue.getIndex2();
 		
-		BigDecimal w = BigDecimal.ZERO;
-		w = new BigDecimal(rowFrequencyInTogetherSumMap.get(index1W));
-		
-		BigDecimal c = BigDecimal.ZERO;
-		c = new BigDecimal(rowFrequencyInTogetherSumMap.get(index2C));
-		
 		// SHIFTING (Log alma işleminde birbirleriyle hiç görülmemiş kelimeleri
 		// hesaplarken sonsuz değerden kaçmak için yapılıyor)
 		probW1AndW2 = probW1AndW2.add(BigDecimal.ONE);
+		
+		BigDecimal w = BigDecimal.ZERO;
+		w = new BigDecimal(rowFrequencyInTogetherSumMap.get(index1W));
+		w = w.subtract(probW1AndW2);
+		
+		BigDecimal c = BigDecimal.ZERO;
+		c = new BigDecimal(rowFrequencyInTogetherSumMap.get(index2C));
+		c = c.subtract(probW1AndW2);
+		
 		// TOP (w,c) * D
 		BigDecimal top = probW1AndW2.multiply(new BigDecimal(D));
 		// BOTTOM w*c
