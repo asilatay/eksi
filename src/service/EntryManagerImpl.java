@@ -327,4 +327,9 @@ public class EntryManagerImpl implements EntryManager{
 	public void updateAlternatePmiValues(Map<PMIValueIndexes, BigDecimal> matrixData) {
 		entryRepository.updateAlternatePmiValues(matrixData);
 	}
+	
+	@Override
+	public Map<Integer, List<PMIValueIndexes>> getDataOrdered() {
+		return entryRepository.getDataOrdered();
+	}
 }

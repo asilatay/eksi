@@ -76,4 +76,6 @@ public interface EntryManager {
 	Map<Integer, Integer> getRowAndFrequencyInTogetherSumMap(int index1);
 
 	void updateAlternatePmiValues(Map<PMIValueIndexes, BigDecimal> matrixData);
+
+	Map<Integer, List<PMIValueIndexes>> getDataOrdered();
 }

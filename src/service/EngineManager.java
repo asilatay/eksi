@@ -56,4 +56,8 @@ public interface EngineManager {
 	void calculateAlternatePMIValuesWithMemoryAndDisk(String readTextPath,
 			List<String> outputFromAnotherFunction);
 
+	void calculateCosineSimilarityMemoryAndDisk();
+
+	void findMostSimilarWords();
+
 }

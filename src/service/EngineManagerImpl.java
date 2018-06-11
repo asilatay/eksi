@@ -99,15 +99,15 @@ public class EngineManagerImpl implements EngineManager {
 	//Matrix oluşturmada kullanılan parametreler
 	private final static int globalColumnCount = 1000;
 	
-	private final static int globalRowCount = 2000;
+	private final static int globalRowCount = 10000;
 	
-	private final static int globalRowCountSmall = 0;
+	private final static int globalRowCountSmall = 9000;
 	
 	
 	//PMI hesabı için kullanılan parametreler
-	private final static int bigRowCountPMI = 2000;
+	private final static int bigRowCountPMI = 10000;
 	
-	private final static int smallRowCountPMI = 0;
+	private final static int smallRowCountPMI = 9000;
 	
 	//ALTERNATE PMI hesabı için kullanılan parametreler
 	private final static int bigRowCountAlternatePMI = 2000;
@@ -115,7 +115,7 @@ public class EngineManagerImpl implements EngineManager {
 	private final static int smallRowCountAlternatePMI = 0;
 	
 	
-	private final static int globalMostSimilarWordCount = 15;
+	private final static int globalMostSimilarWordCount = 20;
 	
 	private final static int globalTotalUserEntryCount = 30;
 	
@@ -1336,6 +1336,226 @@ public class EngineManagerImpl implements EngineManager {
 		}
 	}
 	
+	 @Override
+	 public void calculateCosineSimilarityMemoryAndDisk() {
+		// Read i value for resuming
+		int newI = 0;
+		
+		try {
+			BufferedReader in = new BufferedReader(new FileReader("infoI.txt"));
+			if (in != null) {
+				String line;
+				while ((line = in.readLine()) != null) {
+					newI = Integer.parseInt(line);
+				}
+				in.close();
+			}
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		List<CosineSimilarityIndex> cosList = new ArrayList<CosineSimilarityIndex>();
+		// Anaveriyi veritabanından al
+		Map<Integer, List<PMIValueIndexes>> matrixData = entryManager.getDataOrdered();
+		System.out.println("Veri geldi. Row-Array Map hesabı başlıyor. Tarih : " + new Date());
+
+		Map<Integer, double[]> rowArrayMap = new HashMap<Integer, double[]>();
+		for (int i = 0; i < globalRowCount; i++) {
+			List<PMIValueIndexes> listIndex1EqualsI = matrixData.get(i);
+
+			double[] array1 = new double[globalColumnCount];
+			for (PMIValueIndexes index1 : listIndex1EqualsI) {
+				array1[index1.getIndex2()] = index1.getLogaritmicPmiValue().doubleValue();
+			}
+
+			rowArrayMap.put(i, array1);
+		}
+		
+		matrixData.clear();
+		
+		System.out.println("Row - Array map oluşturuldu. Benzerlik hesabı başlıyor");
+		int newICount = 0;
+		for (int i = 0; i < globalRowCount; i++) {
+			// Nerede kaldıysak oradan devam ediyoruz
+			if (newICount == 0) {
+				i = newI;
+				newICount++;
+			}
+
+			for(int j = 0; j < globalRowCount; j++) {
+				if (i != j) {
+
+					CosineSimilarityIndex cos = new CosineSimilarityIndex();
+					cos.setIndex1(i);
+					cos.setIndex2(j);
+					cos.setIndex1Array(rowArrayMap.get(i));
+					cos.setIndex2Array(rowArrayMap.get(j));
+
+					double cosSimilarity = cosineSimilarity(cos.getIndex1Array(), cos.getIndex2Array());
+					
+					cos.setCosineSimilarity(cosSimilarity);
+
+					cosList.add(cos);
+				}
+			}
+			
+			appendCosineSimilarityWithList(cosList, i);
+			cosList.clear();
+			
+			System.out.println("I is successfully finished : " + i + " Tarih : " + new Date());
+			// Hesaplanan en son değerin ne olduğunu kaydet
+			try {
+				Writer out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("infoI.txt"), "UTF8"));
+
+				out.write(String.valueOf(i));
+				out.flush();
+				out.close();
+
+				System.out.println("I nin yeni değeri kaydedildi!");
+			}
+			catch (IOException e) {
+				System.err.println("TXT oluşturulurken hata oluştu!");
+	       }
+		}
+	}
+	 
+	 @Override
+	 public void findMostSimilarWords() {
+		 Map<Integer, String> indexWordMap = readFromWordIndexFrequency();
+
+		// Directory içinde ne kadar dosya varsa bunların path ini bir listeye doldurur
+		List<Path> filesInDirectory = new ArrayList<Path>();
+		try (Stream<Path> paths = Files.walk(Paths.get("cosineCalculation\\"))) {
+			paths.filter(Files::isRegularFile).forEach(filesInDirectory::add);
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.err.println("Veri okunurken problem oluştu");
+		}
+
+		for (Path p : filesInDirectory) {
+			List<CosineSimilarityIndex> cosIndexList = turnIntoCosineSimilarityIndexList(p);
+			
+			calculateMostSimilartWords(cosIndexList, indexWordMap);
+		}
+	 }
+	
+	private void calculateMostSimilartWords(List<CosineSimilarityIndex> cosIndexList, Map<Integer, String> indexWordMap) {
+		List<CosineSimilarityIndex> sortedList = cosIndexList
+				.stream()
+				.sorted((o1, o2)-> 
+						Double.compare(o2.getCosineSimilarity(), o1.getCosineSimilarity()))
+						.collect(Collectors.toList());
+		
+		List<CosineSimilarityIndex> filteredList = new ArrayList<CosineSimilarityIndex>();
+		int size = sortedList.size();
+		for (int i = 0; i < globalMostSimilarWordCount; i++) {
+			if (i < size) {				
+				filteredList.add(sortedList.get(i));
+			}
+		}
+		
+		//Liste yazdırılıyor
+		try {
+			String filename= "mostSimilarWords.txt";
+		    FileWriter fw = new FileWriter(filename,true); //the true will append the new data
+		    
+		    String globalWord = null;
+		    for (CosineSimilarityIndex ind : filteredList) {
+		    	if (StringUtils.isBlank(globalWord)) {
+		    		globalWord = indexWordMap.get(ind.getIndex1());
+		    	}
+		    	String word1 = indexWordMap.get(ind.getIndex1());
+				String word2 = indexWordMap.get(ind.getIndex2());
+				Double cosineSim = ind.getCosineSimilarity();
+				
+		    	fw.write(word1 + "-" + word2 + "-" + cosineSim +"\r\n");//appends the string to the file
+		    }
+		    
+		    fw.write("----------------------------------------------------------------------------------- WORD = " + globalWord +"\r\n");
+		    
+		    fw.close();
+		} catch (IOException ioe) {
+			System.err.println("IOException: " + ioe.getMessage());
+		}
+		
+	}
+
+
+	private List<CosineSimilarityIndex> turnIntoCosineSimilarityIndexList(Path p) {
+		List<CosineSimilarityIndex> indexList = new ArrayList<CosineSimilarityIndex>();
+		BufferedReader br = null;
+        try {
+            br = new BufferedReader(new FileReader(p.toString()));
+            String line;
+			while ((line = br.readLine()) != null) {
+				String splitWord = line;
+				String[] arr = splitWord.split("-");
+				
+				if (arr[2].contains("E") || arr[2].contains("e") || arr[2].contains("NaN")) {
+					continue;
+				}
+				
+				CosineSimilarityIndex index = new CosineSimilarityIndex();
+				index.setIndex1(Integer.parseInt(arr[0]));
+				index.setIndex2(Integer.parseInt(arr[1]));
+				index.setCosineSimilarity(Double.parseDouble(arr[2]));
+				
+				indexList.add(index);
+			}
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (br != null) {
+                    br.close();
+                }
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+        
+        return indexList;
+	}
+
+
+	private Map<Integer, String> readFromWordIndexFrequency() {
+		Map<Integer, String> indexWordMap = new HashMap<Integer, String>();
+		
+		BufferedReader br = null;
+        try {
+        	int count = 0;
+            br = new BufferedReader(new FileReader("wordIndexFrequency.txt"));
+            String line;
+            while ((line = br.readLine()) != null) {
+            	if (count <= globalRowCount) {
+            		String splitWord = line;
+            		
+            		String [] arr = splitWord.split("	");
+            		
+            		indexWordMap.put(Integer.parseInt(arr[1]), arr[0]);
+            		
+            		count++;
+            		
+            	} else {
+            		break;
+            	}
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (br != null) {
+                    br.close();
+                }
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+        return indexWordMap;
+	}
+
+
 	/**
 	 * Benzerlik hesapları bittikten sonra index leri tek tek dolaşarak o indexdeki kelimenin hangi index deki kelimeyle
 	 * en fazla benzerliğe sahip olduğuyla ilgili çıktı üreten metoddur.
@@ -2004,14 +2224,29 @@ public class EngineManagerImpl implements EngineManager {
 		}
 	}
 	
-	private void appendCosineSimilarityWithList(List<CosineSimilarityIndex> cosList) {
+	private void appendCosineSimilarityWithList(List<CosineSimilarityIndex> cosList, int indexNum) {
 		try {
-			String filename= "cosineSimilarity.txt";
+			String filename= "cosineCalculation/cosineSimilarityWithPMI-"+indexNum +".txt";
 		    FileWriter fw = new FileWriter(filename,true); //the true will append the new data
 		    
 		    for (CosineSimilarityIndex cos : cosList) {
-		    	fw.write(cos.getIndex1() + "-" + cos.getIndex2() + "-" + cos.getIndex1Total() + "-" + cos.getIndex2Total() 
-			    + "-" +cos.getCosineSimilarity() +"\r\n");//appends the string to the file
+		    	fw.write(cos.getIndex1() + "-" + cos.getIndex2() + "-" +cos.getCosineSimilarity() +"\r\n");//appends the string to the file
+		    }
+		    
+		    fw.close();
+			
+		} catch (IOException ioe) {
+			System.err.println("IOException: " + ioe.getMessage());
+		}
+	}
+	
+	private void appendCosineSimilarityWithList(List<CosineSimilarityIndex> cosList) {
+		try {
+			String filename= "cosineSimilarityWithPMI.txt";
+		    FileWriter fw = new FileWriter(filename,true); //the true will append the new data
+		    
+		    for (CosineSimilarityIndex cos : cosList) {
+		    	fw.write(cos.getIndex1() + "-" + cos.getIndex2() + "-" +cos.getCosineSimilarity() +"\r\n");//appends the string to the file
 		    }
 		    
 		    fw.close();

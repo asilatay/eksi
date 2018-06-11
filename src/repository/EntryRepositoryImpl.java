@@ -786,6 +786,62 @@ public class EntryRepositoryImpl implements EntryRepository{
 		}
 	}
 	
+	@Override
+	public Map<Integer, List<PMIValueIndexes>> getDataOrdered() {
+		try {
+			String tableName = "pmi_value_index_memory2";
+			Class.forName(myDriver);
+			Connection conn = DriverManager.getConnection(db, username, pass);
+
+			String query = "SELECT * FROM " + tableName + " ORDER BY index1, index2;";
+				
+			Statement st = conn.createStatement();
+			ResultSet rs = st.executeQuery(query);
+
+			Map<Integer, List<PMIValueIndexes>> rowIndexList = new HashMap<Integer, List<PMIValueIndexes>>();
+			while (rs.next()) {
+				PMIValueIndexes ind = new PMIValueIndexes();
+				int ind1 = rs.getInt("index1");
+				int ind2 = rs.getInt("index2");
+				int frequencyInTogether = rs.getInt("frequencyInTogether");
+				BigDecimal pmiValue = rs.getBigDecimal("pmiValue");
+				BigDecimal logPmiValue = rs.getBigDecimal("logaritmicPmiValue");
+				BigDecimal altPmiValue = rs.getBigDecimal("alternatePmiValue");
+				BigDecimal logAltPmiValue = rs.getBigDecimal("logarithmicAlternatePmiValue");
+				int id = rs.getInt("id");
+
+				ind.setIndex1(ind1);
+				ind.setIndex2(ind2);
+				ind.setFrequencyInTogether(frequencyInTogether);
+				ind.setPmiValue(pmiValue);
+				ind.setLogaritmicPmiValue(logPmiValue);
+				ind.setAlternatePmiValue(altPmiValue);
+				ind.setLogarithmicAlternatePmiValue(logAltPmiValue);
+				ind.setId(id);
+				
+				if (rowIndexList.containsKey(ind1)) {
+					List<PMIValueIndexes> indexList = rowIndexList.get(ind1);
+					indexList.add(ind);
+					rowIndexList.put(ind1, indexList);
+				} else {
+					List<PMIValueIndexes> indexList = new ArrayList<PMIValueIndexes>();
+					indexList.add(ind);
+					rowIndexList.put(ind1, indexList);
+				}
+			}
+			
+			st.close();
+			conn.close();
+			
+			return rowIndexList;
+
+		} catch (Exception e) {
+			System.err.println("Database Connection Error ! pmi_value_index_memory2 TABLE");
+			System.err.println(e.getMessage());
+			return null;
+		}
+	}
+	
 	
 	@Override
 	public List<PMIValueIndexes> getPMIValueIndexAllValueWithIndex1(List<Integer> index1List) {
