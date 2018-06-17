@@ -129,27 +129,6 @@ public class EntryManagerImpl implements EntryManager{
 	}
 
 
-	private <T> ArrayList<Integer> intersection(List<Integer> list1, List<Integer> list2) {
-	        ArrayList<Integer> list = new ArrayList<Integer>();
-
-	        for (Integer t : list1) {
-	            if(list2.contains(t)) {
-	                list.add(t);
-	            }
-	        }
-
-	        return list;
-	    }
-
-	private <T> ArrayList<Integer> union(List<Integer> list1, List<Integer> list2) {
-		Set<Integer> set = new HashSet<Integer>();
-
-		set.addAll(list1);
-		set.addAll(list2);
-
-		return new ArrayList<Integer>(set);
-	}
-
 	@Override
 	public void writeSpecificEntryCountToDocument(int entryCount) {
 		System.out.println("Entry dýþa aktarýmý baþlatýldý!");
@@ -331,5 +310,10 @@ public class EntryManagerImpl implements EntryManager{
 	@Override
 	public Map<Integer, List<PMIValueIndexes>> getDataOrdered() {
 		return entryRepository.getDataOrdered();
+	}
+	
+	@Override
+	public List<PMIValueIndexes> getBigClamInput(int bigClamNumberofOccurrences) {
+		return entryRepository.getBigClamInput(bigClamNumberofOccurrences);
 	}
 }

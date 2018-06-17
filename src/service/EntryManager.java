@@ -78,4 +78,6 @@ public interface EntryManager {
 	void updateAlternatePmiValues(Map<PMIValueIndexes, BigDecimal> matrixData);
 
 	Map<Integer, List<PMIValueIndexes>> getDataOrdered();
+
+	List<PMIValueIndexes> getBigClamInput(int bigclamnumberofoccurrences);
 }

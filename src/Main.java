@@ -34,8 +34,9 @@ public class Main {
 		
 		String dir = "C:\\webharvest\\KAYDET\\";
 		String ham = "C:\\webharvest\\HAM\\";
-//		final String fileReadingPath = "C:\\Users\\ASIL\\git\\eksiGit\\entries.txt";
-		final String fileReadingPath = "D:\\Yuksek Lisans\\YL_DATA\\Zemberek\\titles";
+		
+		
+		final String fileReadingPath = "D:\\Yuksek Lisans\\YL_DATA\\Zemberek\\titles_deneme2\\analiz_edildi";
 		
 		final String bilkentXmlPath ="D:\\Yuksek Lisans\\Tez\\Bilkent DATA\\BilCol2005\\copyFromProgramTest.xml";
 		final String bilkentTxtPath ="D:\\Yuksek Lisans\\Tez\\Bilkent DATA\\BilCol2005\\Orijinal Data\\ALLOK.txt";
@@ -74,6 +75,7 @@ public class Main {
 			System.out.println("Alternate PMI deðerlerini hesapla (Disk & Memory Beraber) -> Press 26");
 			System.out.println("Cosine Similarity Calculation (Disk & Memory Beraber) -> Press 27");
 			System.out.println("Most Similar Words (Disk & Memory Beraber) -> Press 28");
+			System.out.println("BigCLAM algoritmasýna input oluþtur        -> Press 29");
 			operationSelect = scanIn.nextLine();
 			if (operationSelect.equals("1")) {
 				crawlerManager.createCrudeLinks(ham);
@@ -200,6 +202,8 @@ public class Main {
 				engineManager.calculateCosineSimilarityMemoryAndDisk();
 			} else if (operationSelect.equals("28")) {
 				engineManager.findMostSimilarWords();
+			} else if (operationSelect.equals("29")) {
+				engineManager.createBigClamInput();
 			}
 			
 		} while(!operationSelect.equals("0"));

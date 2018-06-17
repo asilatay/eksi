@@ -101,18 +101,21 @@ public class EngineManagerImpl implements EngineManager {
 	
 	private final static int globalRowCount = 10000;
 	
-	private final static int globalRowCountSmall = 9000;
+	private final static int globalRowCountSmall = 8000;
 	
 	
 	//PMI hesabı için kullanılan parametreler
 	private final static int bigRowCountPMI = 10000;
 	
-	private final static int smallRowCountPMI = 9000;
+	private final static int smallRowCountPMI = 4000;
 	
 	//ALTERNATE PMI hesabı için kullanılan parametreler
 	private final static int bigRowCountAlternatePMI = 2000;
 	
 	private final static int smallRowCountAlternatePMI = 0;
+	
+	//BigCLAM algoritması inputunu oluşturacak parametre
+	private final static int bigClamNumberOfOccurrences = 10;
 	
 	
 	private final static int globalMostSimilarWordCount = 20;
@@ -511,6 +514,7 @@ public class EngineManagerImpl implements EngineManager {
 	@Override
 	public void createCoOccurenceMatrixWithMemoryAndDisk(String readTextPath, List<String> outputFromAnotherFunction) {
 		System.out.println("Co-Occurrence matrix oluşturma operasyonu tetiklendi");
+		System.out.println("Small Row Count : " + globalRowCountSmall + " --- Big Row Count : " + globalRowCount);
 		
 		List<String> readFromTxtEntries = new ArrayList<String>();
 		if (outputFromAnotherFunction == null) {			
@@ -757,6 +761,7 @@ public class EngineManagerImpl implements EngineManager {
 	@Override
 	public void calculatePMIValuesWithMemoryAndDisk(String readTextPath, List<String> outputFromAnotherFunction) {
 		System.out.println("PMI ve Alternate PMI değerlerini hesaplama operasyonu tetiklendi");
+		System.out.println("Small Row Count : " + smallRowCountPMI + " --- Big Row Count : " + bigRowCountPMI);
 		System.out.println("Dosyalar okunarak memory e alınıyor");
 		List<String> readFromTxtEntries = new ArrayList<String>();
 		if (outputFromAnotherFunction == null) {			
@@ -1064,14 +1069,22 @@ public class EngineManagerImpl implements EngineManager {
 		//SHIFTING (Birbirleriyle hiç görülmemiş kelimeler için log alma işleminde sonsuz değerden kaçmak için yapılıyor)
 		togetherValue = togetherValue.add(BigDecimal.ONE);
 		
-		BigDecimal probW1AndW2 = togetherValue.divide(totalWSize, 10, RoundingMode.HALF_UP);
+		//kompleks hesap
+//		BigDecimal probW1AndW2 = togetherValue.divide(totalWSize, 10, RoundingMode.HALF_UP);
+//		
+//		BigDecimal frequencyIndex1 = wordFrequencyMap.get(calculativeValue.getIndex1()).divide(totalWSize, 10, RoundingMode.HALF_UP);
+//		BigDecimal frequencyIndex2 = wordFrequencyMap.get(calculativeValue.getIndex2()).divide(totalWSize, 10, RoundingMode.HALF_UP);
+//		
+//		BigDecimal multipliedValue = frequencyIndex1.multiply(frequencyIndex2);
 		
-		BigDecimal frequencyIndex1 = wordFrequencyMap.get(calculativeValue.getIndex1()).divide(totalWSize, 10, RoundingMode.HALF_UP);
-		BigDecimal frequencyIndex2 = wordFrequencyMap.get(calculativeValue.getIndex2()).divide(totalWSize, 10, RoundingMode.HALF_UP);
+//		BigDecimal pmiValue = probW1AndW2.divide(multipliedValue, 10, RoundingMode.HALF_UP).setScale(5, RoundingMode.HALF_UP);
 		
-		BigDecimal multipliedValue = frequencyIndex1.multiply(frequencyIndex2);
+		//sadeleştirilmiş hesap
+		BigDecimal top = togetherValue.multiply(totalWSize).setScale(10, RoundingMode.HALF_UP);
+		BigDecimal down = wordFrequencyMap.get(calculativeValue.getIndex1()).multiply(wordFrequencyMap.get(calculativeValue.getIndex2())).setScale(10, RoundingMode.HALF_UP);
 		
-		BigDecimal pmiValue = probW1AndW2.divide(multipliedValue, 10, RoundingMode.HALF_UP).setScale(5, RoundingMode.HALF_UP);
+		BigDecimal pmiValue = top.divide(down, 10, RoundingMode.HALF_UP).setScale(5, RoundingMode.HALF_UP);
+		
 		// pmiValue değerinin logaritmasını alıp tekrar üstüne set et. (Logaritma 0 çıkacak senaryoya dikkat et)
 		calculativeValue.setPmiValue(pmiValue);
 		try {
@@ -1776,36 +1789,6 @@ public class EngineManagerImpl implements EngineManager {
 //		createCosineSimilarityExcel(indexList);
 	}
 	
-	private Map<Integer, double[]> shiftAllValuesBeforeCosineSimilarityCalculation(double[] arr1, double[] arr2, boolean shiftAllValues)  {
-		if (shiftAllValues)  {
-			// Sistemdeki tüm deðerler +1 shift edilir
-			for (int i = 0; i < arr1.length; i++) {
-				arr1[i] = arr1[i] + 1;
-				arr2[i] = arr2[i] + 1;
-			}
-			return setArraysToMap(arr1, arr2);
-		} else {
-			// Sistemde sadece 0 olan deðerler +1 shift edilir
-			for (int i = 0; i < arr1.length; i++) {
-				if (arr1[i] == 0) {
-					arr1[i] = arr1[i] + 1;
-				}
-				if (arr2[i] == 0) {
-					arr2[i] = arr2[i] + 1; 
-				}
-			}
-			return setArraysToMap(arr1, arr2);
-		}
-	}
-
-
-	private Map<Integer, double[]> setArraysToMap(double[] arr1, double[] arr2) {
-		Map<Integer, double[]> returnedList = new HashMap<Integer, double[]>();
-		returnedList.put(1, arr1);
-		returnedList.put(2, arr2);
-		return returnedList;
-	}
-	
 	
 	/**
 	 * Calculates cosine similarity of two vectors
@@ -2142,72 +2125,6 @@ public class EngineManagerImpl implements EngineManager {
 		}
 	}
 	
-	private void createCosineSimilarityTxt(List<CosineSimilarityIndex> cosSimilarityList) {
-		try {
-			 BufferedWriter out = new BufferedWriter(new FileWriter("cosineSimilarityAll.txt"));
-			 for(CosineSimilarityIndex  cos  : cosSimilarityList){
-				 out.write(cos.getIndex1() + "-" + cos.getIndex2() + "-" + cos.getIndex1Total() + "-" + cos.getIndex2Total() + "-" +cos.getCosineSimilarity() +"\r\n");
-			 }
-			 out.close();
-			 System.out.println("Cosine Similarity TXT oluşturuldu.!");
-		}
-		catch (IOException e) {
-			System.err.println("Cosine Similarity TXT oluşturulurken hata oluştu!");
-       }
-	}
-	
-	private void createCosineSimilarityExcel(List<CosineSimilarityIndex> cosSimilarityList) {
-		System.out.println("Cosine similarity excel oluşturma işlemi başladı");
-		try {
-			FileOutputStream fileOut = new FileOutputStream("cosineSimilarity.xlsx");
-
-			XSSFWorkbook workbook = new XSSFWorkbook();
-			SXSSFWorkbook wb = new SXSSFWorkbook(workbook);
-			SXSSFSheet worksheet = wb.createSheet("POI Worksheet");
-
-			// index from 0,0... cell A1 is cell(0,0)
-			SXSSFRow row1 = worksheet.createRow((int) 0);
-			// Create Header of Excel
-			SXSSFCell cell = row1.createCell((int) 0);
-			cell.setCellValue("Index1");
-			cell = row1.createCell((int) 1);
-			cell.setCellValue("Index2");
-			cell = row1.createCell((int) 2);
-			cell.setCellValue("Index1Total");
-			cell = row1.createCell((int) 3);
-			cell.setCellValue("Index2Total");
-			cell = row1.createCell((int) 4);
-			cell.setCellValue("CosineSimilarity");
-			int rowNum = 1;
-			// Create Body of Table
-			for (CosineSimilarityIndex a : cosSimilarityList) {
-					row1 = worksheet.createRow((int) rowNum);
-					cell = row1.createCell((int) 0);
-					cell.setCellValue(a.getIndex1());
-					cell = row1.createCell((int) 1);
-					cell.setCellValue(a.getIndex2());
-					cell = row1.createCell((int) 2);
-					cell.setCellValue(a.getIndex1Total().doubleValue());
-					cell = row1.createCell((int) 3);
-					cell.setCellValue(a.getIndex2Total().doubleValue());
-					cell = row1.createCell((int) 4);
-					cell.setCellValue(a.getCosineSimilarity());
-					rowNum++;
-			}
-
-			wb.write(fileOut);
-			fileOut.flush();
-			fileOut.close();
-			workbook.close();
-			wb.close();
-			System.out.println("Cosine Similarity excel oluşturma işlemi başarıyla tamamlandı");
-		} catch (FileNotFoundException e) {
-			System.err.println("Cosine Similarity Excel dosyası oluşturulurken bir hata oluştu " + e.getMessage() );
-			
-		} catch (IOException e) {
-			System.err.println("Cosine Similarity Excel dosyası oluşturulurken bir hata oluştu " + e.getMessage() );
-		}
-	}
 	
 	private void appendCosineSimilarityOneByOne(CosineSimilarityIndex cos) {
 		try
@@ -2419,7 +2336,7 @@ public class EngineManagerImpl implements EngineManager {
 		List<String> entryList = new ArrayList<String>();
 		BufferedReader br = null;
         try {
-            br = new BufferedReader(new FileReader("D:\\Yuksek Lisans\\YL_DATA\\Zemberek\\users\\" +username + ".txt"));
+            br = new BufferedReader(new FileReader("D:\\Yuksek Lisans\\YL_DATA\\Zemberek\\users_deneme2\\analiz_edildi\\" +username + ".txt"));
             String line;
             while ((line = br.readLine()) != null) {
             	entryList.add(line);
@@ -2847,6 +2764,26 @@ public class EngineManagerImpl implements EngineManager {
 			System.err.println("TXT dosyası okunurken kritik bir hata oluştu.");
 			e.printStackTrace();
 			return null;
+		}
+	}
+	
+	@Override
+	public void createBigClamInput() {
+		List<PMIValueIndexes> list = entryManager.getBigClamInput(bigClamNumberOfOccurrences);
+		if (CollectionUtils.isNotEmpty(list)) {
+			try {
+				BufferedWriter out = new BufferedWriter(new FileWriter("forBigClam.txt"));
+				for (PMIValueIndexes ind : list) {
+					out.write(ind.getIndex1() + "	" + ind.getIndex2() + "\r\n");
+				}
+				out.close();
+				System.out.println("BigCLAM TXT oluşturuldu.!");
+			} catch (IOException e) {
+				System.err.println("BigCLAM TXT oluşturulurken hata oluştu!");
+			}
+
+		} else {
+			System.out.println("Liste boş, tabloyu kontrol et");
 		}
 	}
 }

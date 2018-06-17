@@ -60,4 +60,6 @@ public interface EngineManager {
 
 	void findMostSimilarWords();
 
+	void createBigClamInput();
+
 }

@@ -633,7 +633,7 @@ public class EntryRepositoryImpl implements EntryRepository{
 	@Override
 	public void updatePmiValues(Map<PMIValueIndexes, BigDecimal> matrixData) {
 		try {
-			String tableName = "pmi_value_index_memory2";
+			String tableName = "pmi_value_index_memory3";
 			Class.forName(myDriver);
 			Connection conn = DriverManager.getConnection(db, username, pass);
 			Statement st = conn.createStatement();
@@ -652,7 +652,7 @@ public class EntryRepositoryImpl implements EntryRepository{
 			conn.close();
 			
 		} catch (Exception e) {
-			System.err.println("Database Connection Error ! pmi_value_index_memory2 TABLE");
+			System.err.println("Database Connection Error ! pmi_value_index_memory3 TABLE");
 			System.err.println(e.getMessage());
 		}
 	}
@@ -660,7 +660,7 @@ public class EntryRepositoryImpl implements EntryRepository{
 	@Override
 	public void updateAlternatePmiValues(Map<PMIValueIndexes, BigDecimal> matrixData) {
 		try {
-			String tableName = "pmi_value_index_memory2";
+			String tableName = "pmi_value_index_memory3";
 			Class.forName(myDriver);
 			Connection conn = DriverManager.getConnection(db, username, pass);
 			Statement st = conn.createStatement();
@@ -679,7 +679,7 @@ public class EntryRepositoryImpl implements EntryRepository{
 			conn.close();
 			
 		} catch (Exception e) {
-			System.err.println("Database Connection Error ! pmi_value_index_memory2 TABLE");
+			System.err.println("Database Connection Error ! pmi_value_index_memory3 TABLE");
 			System.err.println(e.getMessage());
 		}
 	}
@@ -741,7 +741,7 @@ public class EntryRepositoryImpl implements EntryRepository{
 	@Override
 	public List<PMIValueIndexes> getPMIValueIndexAllValueWithIndex1(int index1) {
 		try {
-			String tableName = "pmi_value_index_memory2";
+			String tableName = "pmi_value_index_memory3";
 			Class.forName(myDriver);
 			Connection conn = DriverManager.getConnection(db, username, pass);
 
@@ -780,7 +780,7 @@ public class EntryRepositoryImpl implements EntryRepository{
 			return indexList;
 
 		} catch (Exception e) {
-			System.err.println("Database Connection Error ! pmi_value_index_memory2 TABLE");
+			System.err.println("Database Connection Error ! pmi_value_index_memory3 TABLE");
 			System.err.println(e.getMessage());
 			return null;
 		}
@@ -789,7 +789,7 @@ public class EntryRepositoryImpl implements EntryRepository{
 	@Override
 	public Map<Integer, List<PMIValueIndexes>> getDataOrdered() {
 		try {
-			String tableName = "pmi_value_index_memory2";
+			String tableName = "pmi_value_index_memory3";
 			Class.forName(myDriver);
 			Connection conn = DriverManager.getConnection(db, username, pass);
 
@@ -836,7 +836,7 @@ public class EntryRepositoryImpl implements EntryRepository{
 			return rowIndexList;
 
 		} catch (Exception e) {
-			System.err.println("Database Connection Error ! pmi_value_index_memory2 TABLE");
+			System.err.println("Database Connection Error ! pmi_value_index_memory3 TABLE");
 			System.err.println(e.getMessage());
 			return null;
 		}
@@ -846,7 +846,7 @@ public class EntryRepositoryImpl implements EntryRepository{
 	@Override
 	public List<PMIValueIndexes> getPMIValueIndexAllValueWithIndex1(List<Integer> index1List) {
 		try {
-			String tableName = "pmi_value_index_memory2";
+			String tableName = "pmi_value_index_memory3";
 			Class.forName(myDriver);
 			Connection conn = DriverManager.getConnection(db, username, pass);
 
@@ -890,7 +890,7 @@ public class EntryRepositoryImpl implements EntryRepository{
 			return indexList;
 
 		} catch (Exception e) {
-			System.err.println("Database Connection Error ! pmi_value_index_memory2 TABLE");
+			System.err.println("Database Connection Error ! pmi_value_index_memory3 TABLE");
 			System.err.println(e.getMessage());
 			return null;
 		}
@@ -899,7 +899,7 @@ public class EntryRepositoryImpl implements EntryRepository{
 	@Override
 	public List<PMIValueIndexes> getPMIValueIndexListWithIndex1(int index1) {
 		try {
-			String tableName = "pmi_value_index_memory2";
+			String tableName = "pmi_value_index_memory3";
 			Class.forName(myDriver);
 			Connection conn = DriverManager.getConnection(db, username, pass);
 
@@ -978,7 +978,7 @@ public class EntryRepositoryImpl implements EntryRepository{
 	public void savePMIValueIndexes(Map<PMIValueIndexes, BigDecimal> matrixData) {
 		// process_id veri deðiþtikçe deðiþecektir
 		try {
-			String tableName = "pmi_value_index_memory2";
+			String tableName = "pmi_value_index_memory3";
 			Class.forName(myDriver);
 			Connection conn = DriverManager.getConnection(db, username, pass);
 			Statement st = conn.createStatement();
@@ -1012,7 +1012,7 @@ public class EntryRepositoryImpl implements EntryRepository{
 	@Override
 	public Map<Integer, Integer> getRowAndFrequencyInTogetherSumMap(int index1) {
 		try {
-			String tableName = "pmi_value_index_memory2";
+			String tableName = "pmi_value_index_memory3";
 			Class.forName(myDriver);
 			Connection conn = DriverManager.getConnection(db, username, pass);
 			Statement st = conn.createStatement();
@@ -1037,8 +1037,47 @@ public class EntryRepositoryImpl implements EntryRepository{
 			return rowFrequencyInTogetherSumMap;
 			
 		} catch (Exception e) {
-			System.err.println("Database Connection Error ! pmi_value_index_memory2 TABLE");
+			System.err.println("Database Connection Error ! pmi_value_index_memory3 TABLE");
 			System.err.println(e.getMessage());
+			return null;
+		}
+	}
+	
+	@Override
+	public List<PMIValueIndexes> getBigClamInput(int bigClamNumberofOccurrences) {
+		try {
+			String tableName = "pmi_value_index_memory3";
+			Class.forName(myDriver);
+			Connection conn = DriverManager.getConnection(db, username, pass);
+
+			String query = "SELECT index1 AS index1, index2 AS index2, frequencyInTogether AS frequencyInTogether "
+					+ "FROM " + tableName + " WHERE  frequencyInTogether > " + bigClamNumberofOccurrences;
+
+			Statement st = conn.createStatement();
+			ResultSet rs = st.executeQuery(query);
+			
+			List<PMIValueIndexes> indexList = new ArrayList<PMIValueIndexes>();
+			while (rs.next()) {
+				PMIValueIndexes ind = new PMIValueIndexes();
+				int int1 = rs.getInt("index1");
+				int int2 = rs.getInt("index2");
+				int frequencyInTogether = rs.getInt("frequencyInTogether");
+
+				ind.setIndex1(int1);
+				ind.setIndex2(int2);
+				ind.setFrequencyInTogether(frequencyInTogether);
+
+				indexList.add(ind);
+			}
+
+			st.close();
+			conn.close();
+			return indexList;
+
+		} catch (Exception e) {
+			System.err.println("Database Connection Error ! pmi_value_index_memory3 TABLE");
+			System.err.println(e.getMessage());
+			
 			return null;
 		}
 	}
