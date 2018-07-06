@@ -62,4 +62,10 @@ public interface EngineManager {
 
 	void createBigClamInput();
 
+	void getAllInputIntoTxt();
+
+	void findSumOfRowsForAlternatePMI(String fileReadingPath, List<String> outputFromAnotherFunction);
+
+	void createBigClamInputForCollaborationNetwork(String collaborationNetworkPath);
+
 }

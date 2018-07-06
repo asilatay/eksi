@@ -97,11 +97,11 @@ public class EngineManagerImpl implements EngineManager {
 	
 	
 	//Matrix oluşturmada kullanılan parametreler
-	private final static int globalColumnCount = 1000;
+	private final static int globalColumnCount = 1000000;
 	
-	private final static int globalRowCount = 10000;
+	private final static int globalRowCount = 1000;
 	
-	private final static int globalRowCountSmall = 8000;
+	private final static int globalRowCountSmall = 0;
 	
 	
 	//PMI hesabı için kullanılan parametreler
@@ -115,7 +115,7 @@ public class EngineManagerImpl implements EngineManager {
 	private final static int smallRowCountAlternatePMI = 0;
 	
 	//BigCLAM algoritması inputunu oluşturacak parametre
-	private final static int bigClamNumberOfOccurrences = 10;
+	private final static int bigClamNumberOfOccurrences = 21;
 	
 	
 	private final static int globalMostSimilarWordCount = 20;
@@ -2785,5 +2785,186 @@ public class EngineManagerImpl implements EngineManager {
 		} else {
 			System.out.println("Liste boş, tabloyu kontrol et");
 		}
+	}
+	
+	@Override
+	public void createBigClamInputForCollaborationNetwork(String collaborationNetworkPath) {
+		List<UserUserTitle> userUserTitleList = getBigClamInputForCollaborationNetwork(collaborationNetworkPath);
+		
+		Map<String, Integer> userNameSembolicIdMap = new HashMap<String, Integer>();
+		int idCount = 1;
+		for (UserUserTitle us : userUserTitleList) {
+			if (! userNameSembolicIdMap.containsKey(us.getUserName1())) {
+				userNameSembolicIdMap.put(us.getUserName1(), idCount);
+				idCount++;
+			}
+			
+			if (! userNameSembolicIdMap.containsKey(us.getUserName2())) {
+				userNameSembolicIdMap.put(us.getUserName2(), idCount);
+				idCount++;
+			}
+		}
+		
+		try {
+			BufferedWriter out = new BufferedWriter(new FileWriter("collaborationNetwork_userNameId.txt"));
+			for (Map.Entry<String, Integer> entry : userNameSembolicIdMap.entrySet()) {
+				out.write(entry.getKey() + "	" + entry.getValue() + "\r\n");
+			}
+			
+			out.close();
+			System.out.println("username Id Map TXT oluşturuldu.!");
+		} catch (IOException e) {
+			System.err.println("username Id Map TXT oluşturulurken hata oluştu!");
+		}
+		
+		
+		try {
+			BufferedWriter out = new BufferedWriter(new FileWriter("forBigClam_collaborationNetwork.txt"));
+			for (UserUserTitle us : userUserTitleList) {
+				//Hesaplanan quantile değerine göre karar verildi.
+				if (us.getJaccardSimilarity().compareTo(new BigDecimal(0.01)) > 0 && us.getJaccardSimilarity().compareTo(new BigDecimal(0.13)) < 0) {					
+					int id1 = userNameSembolicIdMap.get(us.getUserName1());
+					int id2 = userNameSembolicIdMap.get(us.getUserName2());
+					
+					out.write(id1 + "	" + id2 + "\r\n");
+				}
+			}
+			out.close();
+			System.out.println("Collaboration Network için BigCLAM TXT oluşturuldu.!");
+		} catch (IOException e) {
+			System.err.println("Collaboration Network için BigCLAM TXT oluşturulurken hata oluştu!");
+		}
+		
+		
+	}
+	
+	private List<UserUserTitle> getBigClamInputForCollaborationNetwork(String collaborationNetworkPath) {
+		List<UserUserTitle> userUserTitleList = new ArrayList<UserUserTitle>();
+		try {
+			BufferedReader in = new BufferedReader(new FileReader(collaborationNetworkPath));
+			String line;
+			while ((line = in.readLine()) != null) {
+				String arr[] = line.split("-");
+				UserUserTitle us = new UserUserTitle();
+				us.setUserName1(arr[0]);
+				us.setUserName2(arr[1]);
+				us.setJaccardSimilarity(new BigDecimal(arr[2]));
+				
+				userUserTitleList.add(us);
+			}
+			in.close();
+			
+			return userUserTitleList;
+		} catch (Exception e) {
+			System.err.println("TXT dosyası okunurken kritik bir hata oluştu.");
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+
+	@Override
+	public void getAllInputIntoTxt() {
+		List<PMIValueIndexes> list = entryManager.getAllInputToTxt();
+		if (CollectionUtils.isNotEmpty(list)) {
+			try {
+				BufferedWriter out = new BufferedWriter(new FileWriter("allData.txt"));
+				for (PMIValueIndexes ind : list) {
+					out.write(ind.getIndex1() + ";" + ind.getIndex2() + ";" + ind.getFrequencyInTogether() + "\r\n");
+				}
+				out.close();
+				System.out.println("FrequencyInTogether TXT oluşturuldu.!");
+			} catch (IOException e) {
+				System.err.println("FrequencyInTogether TXT oluşturulurken hata oluştu!");
+			}
+
+		} else {
+			System.out.println("Liste boş, tabloyu kontrol et");
+		}
+	}
+	
+	@Override
+	public void findSumOfRowsForAlternatePMI(String fileReadingPath, List<String> outputFromAnotherFunction) {
+		System.out.println("Alternate PMI Summation oluşturma operasyonu tetiklendi");
+		System.out.println("Small Row Count : " + globalRowCountSmall + " --- Big Row Count : " + globalRowCount);
+		
+		List<String> readFromTxtEntries = new ArrayList<String>();
+		if (outputFromAnotherFunction == null) {			
+			readFromTxtEntries = importManager.readFromTxt(fileReadingPath);
+			if (readFromTxtEntries == null || readFromTxtEntries.size() <= 0) {
+				System.err.println("Okunmaya çalışılan dosya boş veya okuma işlemi sırasında hata alındı.");
+				System.err.println("Program kapatılıyor.");
+				System.exit(0);
+			}
+		} else {
+			readFromTxtEntries.addAll(outputFromAnotherFunction);
+			outputFromAnotherFunction.clear();
+		}
+		
+		System.out.println("Bir kelimenin kaç defa sistemde görüldüğüyle ilgili liste oluşturuluyor");
+		
+		List<WordIndex> wordsOccured = getWordIndexList(readFromTxtEntries);
+		
+		Map<String, Integer> ranking = new HashMap<String, Integer>();
+		Map<Integer, BigDecimal> wordFrequencyMap = new HashMap<Integer, BigDecimal>();
+		for (WordIndex w : wordsOccured) {
+			ranking.put(w.getWord(), w.getIndex());
+			wordFrequencyMap.put(w.getIndex(), w.getFrequency());
+		}
+		
+		wordsOccured.clear();
+		
+		List<String> splittedEntries = new ArrayList<String> ();
+		for (String s : readFromTxtEntries) {				
+			splittedEntries = splittedEntryDescription(splittedEntries, s);
+		}
+		
+		readFromTxtEntries.clear();
+		
+		Map<PMIValueIndexes, BigDecimal> matrixData = new  HashMap<PMIValueIndexes, BigDecimal>();
+		
+		System.out.println("PMI Value Indexes çözümü başladı!");
+		
+		for (int i = 0; i < splittedEntries.size(); i++) {
+			int countGo = i + 1;
+			int countBack = i - 1 ;
+			int numberOfCellForPivotWord = ranking.get(splittedEntries.get(i));
+			for (int j = 0; j < turningNumberForNewCoOccurence; j++) {
+				if (countBack > -1) {
+					int numberOfCellForAlternativeWord = ranking.get(splittedEntries.get(countBack));
+					createMatrixData(matrixData, numberOfCellForPivotWord, numberOfCellForAlternativeWord);
+					countBack--;
+				}
+				
+				if (countGo < splittedEntries.size()) {
+					int numberOfCellForAlternativeWord = ranking.get(splittedEntries.get(countGo));
+					createMatrixData(matrixData, numberOfCellForPivotWord, numberOfCellForAlternativeWord);
+					countGo++;
+				}
+			}
+		}
+		
+		System.out.println("Matrix oluşturuldu, toplamlar yazılıyor");
+		
+		Map<Integer, BigDecimal> rowFrequencySumMap = new HashMap<Integer, BigDecimal> ();
+		for (Map.Entry<PMIValueIndexes, BigDecimal> entry : matrixData.entrySet()) {
+			if (rowFrequencySumMap.containsKey(entry.getKey().getIndex1())) {
+				rowFrequencySumMap.put(entry.getKey().getIndex1(), rowFrequencySumMap.get(entry.getKey().getIndex1()).add(entry.getValue()));
+			} else {
+				rowFrequencySumMap.put(entry.getKey().getIndex1(), entry.getValue());
+			}
+		}
+		
+		try {
+			BufferedWriter out = new BufferedWriter(new FileWriter("summationForAlternatePMI.txt"));
+			for (Map.Entry<Integer, BigDecimal> ind : rowFrequencySumMap.entrySet()) {
+				out.write(ind.getKey() + "-" + ind.getValue() + "\r\n");
+			}
+			out.close();
+			System.out.println("AlternatePMISummation TXT oluşturuldu.!");
+		} catch (IOException e) {
+			System.err.println("AlternatePMISUmmation TXT oluşturulurken hata oluştu!");
+		}
+		
 	}
 }

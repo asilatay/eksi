@@ -316,4 +316,9 @@ public class EntryManagerImpl implements EntryManager{
 	public List<PMIValueIndexes> getBigClamInput(int bigClamNumberofOccurrences) {
 		return entryRepository.getBigClamInput(bigClamNumberofOccurrences);
 	}
+	
+	@Override
+	public List<PMIValueIndexes> getAllInputToTxt() {
+		return entryRepository.getAllInputToTxt();
+	}
 }

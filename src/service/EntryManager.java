@@ -80,4 +80,6 @@ public interface EntryManager {
 	Map<Integer, List<PMIValueIndexes>> getDataOrdered();
 
 	List<PMIValueIndexes> getBigClamInput(int bigclamnumberofoccurrences);
+	
+	List<PMIValueIndexes> getAllInputToTxt();
 }

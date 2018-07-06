@@ -8,9 +8,13 @@ public class UserUserTitle {
 	
 	private User user1;
 	
+	private String userName1;
+	
 	private int user1Id;
 	
 	private User user2;
+	
+	private String userName2;
 	
 	private int user2Id;
 	
@@ -66,6 +70,21 @@ public class UserUserTitle {
 		this.countOfSimilarTitle = countOfSimilarTitle;
 	}
 
+	public String getUserName1() {
+		return userName1;
+	}
+
+	public void setUserName1(String userName1) {
+		this.userName1 = userName1;
+	}
+
+	public String getUserName2() {
+		return userName2;
+	}
+
+	public void setUserName2(String userName2) {
+		this.userName2 = userName2;
+	}
 	
 	
 }

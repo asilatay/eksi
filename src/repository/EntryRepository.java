@@ -74,5 +74,7 @@ public interface EntryRepository {
 	Map<Integer, List<PMIValueIndexes>> getDataOrdered();
 
 	List<PMIValueIndexes> getBigClamInput(int bigClamNumberofOccurrences);
+
+	List<PMIValueIndexes> getAllInputToTxt();
 	
 }
