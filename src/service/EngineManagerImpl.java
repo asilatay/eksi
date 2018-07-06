@@ -2808,7 +2808,7 @@ public class EngineManagerImpl implements EngineManager {
 		try {
 			BufferedWriter out = new BufferedWriter(new FileWriter("collaborationNetwork_userNameId.txt"));
 			for (Map.Entry<String, Integer> entry : userNameSembolicIdMap.entrySet()) {
-				out.write(entry.getKey() + "	" + entry.getValue() + "\r\n");
+				out.write(entry.getValue() + "	" + entry.getKey() + "\r\n");
 			}
 			
 			out.close();
