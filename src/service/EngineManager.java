@@ -68,4 +68,6 @@ public interface EngineManager {
 
 	void createBigClamInputForCollaborationNetwork(String collaborationNetworkPath);
 
+	void searchNetworkLinks(String linkFilePath);
+
 }

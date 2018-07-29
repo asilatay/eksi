@@ -68,11 +68,13 @@ import model.Entry;
 import model.KeyIndexOld;
 import model.User;
 import viewmodel.CosineSimilarityIndex;
+import viewmodel.MostSimilarWord;
 import viewmodel.PMIValueIndexes;
 import viewmodel.TitleEntry;
 import viewmodel.UserEntry;
 import viewmodel.UserTitle;
 import viewmodel.UserUserTitle;
+import viewmodel.UserWord;
 import viewmodel.WordIndex;
 
 public class EngineManagerImpl implements EngineManager {
@@ -2965,6 +2967,179 @@ public class EngineManagerImpl implements EngineManager {
 		} catch (IOException e) {
 			System.err.println("AlternatePMISUmmation TXT oluşturulurken hata oluştu!");
 		}
+	}
+	
+	@Override
+	public void searchNetworkLinks(String linkFilePath) {
+		//Dosyaları okuma 
+		// 1- mostSimilarWord dosyasını oku.
+		Map<String, List<MostSimilarWord>> mostSimilarWordMap = readMostSimilarWordForNetworkLink(linkFilePath);
 		
+		// 2- jaccardSimilarity dosyasını oku
+		Map<String, List<UserUserTitle>> jaccardSimilarityMap = readJaccardSimilarityForNetworkLink(linkFilePath);
+		
+		// 3- userWordList dosyasını oku
+		Map<String, List<UserWord>> userWordMap = readUserWordListForNetworkLink(linkFilePath);
+		
+		for (Map.Entry<String, List<UserUserTitle>> entrySet : jaccardSimilarityMap.entrySet()) {
+			String originUser = entrySet.getKey();
+			List<UserUserTitle> jaccardSimilarityValues = entrySet.getValue();
+			
+			for (UserUserTitle jsv : jaccardSimilarityValues) {
+				String otherUser = jsv.getUserName2();
+				
+				List<UserWord> originUserWords = userWordMap.get(originUser);
+				List<UserWord> otherUserWords = userWordMap.get(otherUser);
+				
+				// İlk işlem
+				for (UserWord originWord : originUserWords) {
+					List<MostSimilarWord> originSimilarWordList = mostSimilarWordMap.get(originWord);
+					for (UserWord otherWord : otherUserWords) {
+						Optional<MostSimilarWord> opt = originSimilarWordList.stream().filter(a -> a.getOtherWord().equals(otherWord)).findAny();
+						if (opt.isPresent()) {							
+							//sonucu bir yerlere yazdıracağız
+							MostSimilarWord msw = opt.get();
+							writeSimilarityResult(msw);
+						}
+					}
+				}
+				// Bir de tersten bakalım
+				for (UserWord otherWord : otherUserWords) {
+					List<MostSimilarWord> otherSimilarWordList = mostSimilarWordMap.get(otherWord);
+					for (UserWord originWord : originUserWords) {
+						Optional<MostSimilarWord> opt = otherSimilarWordList.stream().filter(a -> a.getOtherWord().equals(originWord)).findAny();
+						if (opt.isPresent()) {
+							//sonucu bir yerlere yazdıracağız
+							MostSimilarWord msw = opt.get();
+							writeSimilarityResult(msw);
+						}
+					}
+				}
+			}
+		}
+		
+	}
+	
+	private void writeSimilarityResult(MostSimilarWord msw) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	private Map<String, List<UserWord>> readUserWordListForNetworkLink(java.lang.String linkFilePath) {
+		try {
+			List<UserWord> userWordList = new ArrayList<UserWord>();
+			BufferedReader in = new BufferedReader(new FileReader(linkFilePath +"\\userWordList.txt"));
+			String line;
+			while ((line = in.readLine()) != null) {
+				if (! line.contains("-----------------------------------------------------------------------------------")) {					
+					UserWord uw = new UserWord();
+					
+					String arr[] = line.split("-");
+					
+					uw.setUserName(arr[0]);
+					uw.setWord(arr[1]);
+					uw.setPriority(Integer.parseInt(arr[2]));
+					uw.setCount(Integer.parseInt(arr[3]));
+					
+					userWordList.add(uw);
+				}
+			}
+			
+			in.close();
+			
+			Map<String, List<UserWord>> returnMap = new HashMap<>();
+			
+			returnMap = userWordList.stream().collect(Collectors.groupingBy(UserWord :: getUserName));
+			
+			return returnMap;
+			
+		}  catch (Exception e) {
+			System.err.println("TXT dosyası okunurken kritik bir hata oluştu.");
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+
+	private Map<String, List<UserUserTitle>> readJaccardSimilarityForNetworkLink(String linkFilePath) {
+		try {
+			List<UserUserTitle> userUserTitleList = new ArrayList<UserUserTitle>();
+			BufferedReader in = new BufferedReader(new FileReader(linkFilePath +"\\jaccardSimilarity.txt"));
+			String line;
+			while ((line = in.readLine()) != null) {
+				UserUserTitle uut = new UserUserTitle();
+				String arr[] = line.split("-");
+				
+				uut.setUserName1(arr[0]);
+				uut.setUserName2(arr[1]);
+				if (arr[2].contains("E")) {							
+					uut.setJaccardSimilarity(BigDecimal.ZERO);
+				} else {					
+					uut.setJaccardSimilarity(new BigDecimal(arr[2]));
+				}
+				userUserTitleList.add(uut);
+			}
+			in.close();
+			
+			Map<String, List<UserUserTitle>> returnMap = new HashMap<>();
+			
+			returnMap = userUserTitleList.stream().sorted(Comparator.comparing(UserUserTitle :: getJaccardSimilarity).reversed()).collect(Collectors.groupingBy(UserUserTitle :: getUserName1));
+			
+			return returnMap;
+			
+		}  catch (Exception e) {
+			System.err.println("TXT dosyası okunurken kritik bir hata oluştu.");
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+
+	private Map<String, List<MostSimilarWord>> readMostSimilarWordForNetworkLink(String linkFilePath) {
+		try {
+			List<String> mostSimilarWords = new ArrayList<String>();
+			List<MostSimilarWord> mostSimilarWordList = new ArrayList<MostSimilarWord>();
+			BufferedReader in = new BufferedReader(new FileReader(linkFilePath +"\\mostSimilarWords.txt"));
+			String line;
+			while ((line = in.readLine()) != null) {
+				if (line.contains("-----------------------------------------------------------------------------------")) {
+					for (String s : mostSimilarWords) {
+						MostSimilarWord msw = new MostSimilarWord();
+						
+						String arr[] = s.split("-");
+						if (arr.length > 3) {
+							continue;
+						}
+						
+						msw.setOriginWord(arr[0]);
+						msw.setOtherWord(arr[1]);
+						if (arr[2].contains("E")) {							
+							msw.setSimilarityRate(BigDecimal.ZERO);
+						} else {
+							msw.setSimilarityRate(new BigDecimal(arr[2]));
+						}
+						
+						mostSimilarWordList.add(msw);
+						
+					}
+					mostSimilarWords.clear();
+				} else {					
+					mostSimilarWords.add(line);
+				}
+			}
+			in.close();
+			
+			Map<String, List<MostSimilarWord>> returnMap = new HashMap<>();
+			
+			returnMap = mostSimilarWordList.stream().collect(Collectors.groupingBy(MostSimilarWord::getOriginWord));
+			
+			return returnMap;
+			
+		} catch (Exception e) {
+			System.err.println("TXT dosyası okunurken kritik bir hata oluştu.");
+			e.printStackTrace();
+			return null;
+		}
 	}
 }

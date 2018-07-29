@@ -20,6 +20,7 @@ import service.UserManagerImpl;
 public class Main {
 //	static final String url ="https://eksisozluk.com/sitemap.xml";
 	static final String url ="https://eksisozluk.com/";
+
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		EngineManager engineManager = new EngineManagerImpl();
@@ -38,6 +39,8 @@ public class Main {
 		
 //		final String fileReadingPath = "D:\\Yuksek Lisans\\YL_DATA\\Zemberek\\titles_deneme2\\analiz_edildi";
 		final String fileReadingPath = "D:\\Yuksek Lisans\\YL_DATA\\Zemberek\\titles";
+		
+		final String linkFilePath = "C:\\Users\\ASIL\\Desktop\\searchNetworkConnections";
 		
 		final String collaborationNetworkPath = "D:\\Yuksek Lisans\\YL_DATA\\Collaboration\\1000_users\\jaccardSimilarity.txt";
 		
@@ -82,6 +85,7 @@ public class Main {
 			System.out.println("Beraber görülme sayýlarýný R için dýþarý aktar -> Press 30");
 			System.out.println("Alternate PMI için satýr toplamý bul           -> Press 31");
 			System.out.println("Collaboration Network için BigCLAM çýktýsý üret -> Press 32");
+			System.out.println("Network arasýnda baðlantýlarý tespit et -> Press 33");
 			operationSelect = scanIn.nextLine();
 			if (operationSelect.equals("1")) {
 				crawlerManager.createCrudeLinks(ham);
@@ -177,17 +181,10 @@ public class Main {
 			} else if (operationSelect.equals("18")) {
 				engineManager.runEnglishContent(englishPath);
 			} else if (operationSelect.equals("19")) {
-//				Set<Integer> set = new HashSet<Integer>();
-//				set.add(1);
-//				set.add(2);
-//				
-//				engineManager.findWordsByAuthorFromDatabase(set);
-				
 				Set<String> set = new HashSet<String>();
 				set.add("the wade");
 				set.add("sia");
 				engineManager.findWordsByAuthorFromTxtFile(set);
-				
 				
 			} else if (operationSelect.equals("20")) {
 				engineManager.exportEntriesGroupByTitle();
@@ -216,6 +213,8 @@ public class Main {
 				engineManager.findSumOfRowsForAlternatePMI(fileReadingPath, null);
 			} else if (operationSelect.equals("32")) {
 				engineManager.createBigClamInputForCollaborationNetwork(collaborationNetworkPath);
+			} else if (operationSelect.equals("33")) {
+				engineManager.searchNetworkLinks(linkFilePath);
 			}
 			
 		} while(!operationSelect.equals("0"));
