@@ -3010,18 +3010,17 @@ public class EngineManagerImpl implements EngineManager {
 						}
 					}
 				}
-				
 				writeSimilarityResult(writeableList, jsv);
-				
-				count++;
 			}
+			
+			count++;
 		}
 		
 	}
 	
 	private void writeSimilarityResult(List<MostSimilarWord> writeableList, UserUserTitle jsv) {
 		try {
-			String filename= "networkLinks\\" + jsv.getUserName1() + ".txt";
+			String filename= "D:\\Yuksek Lisans\\YL_DATA\\networkLinks\\" + jsv.getUserName1() + ".txt";
 		    
 		    FileOutputStream fileStream = new FileOutputStream(new File(filename), true);
 		    OutputStreamWriter writer = new OutputStreamWriter(fileStream, "UTF-8");
