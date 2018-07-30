@@ -2981,9 +2981,14 @@ public class EngineManagerImpl implements EngineManager {
 		// 3- userWordList dosyasını oku
 		Map<String, List<UserWord>> userWordMap = readUserWordListForNetworkLink(linkFilePath);
 		
+		int count = 0;
 		for (Map.Entry<String, List<UserUserTitle>> entrySet : jaccardSimilarityMap.entrySet()) {
+			System.out.println("Analiz edilen kullanıcı sayısı : " + count);
+			
 			String originUser = entrySet.getKey();
 			List<UserUserTitle> jaccardSimilarityValues = entrySet.getValue();
+			
+			List<MostSimilarWord> writeableList = new ArrayList<MostSimilarWord>();
 			
 			for (UserUserTitle jsv : jaccardSimilarityValues) {
 				String otherUser = jsv.getUserName2();
@@ -2993,35 +2998,43 @@ public class EngineManagerImpl implements EngineManager {
 				
 				// İlk işlem
 				for (UserWord originWord : originUserWords) {
-					List<MostSimilarWord> originSimilarWordList = mostSimilarWordMap.get(originWord);
-					for (UserWord otherWord : otherUserWords) {
-						Optional<MostSimilarWord> opt = originSimilarWordList.stream().filter(a -> a.getOtherWord().equals(otherWord)).findAny();
-						if (opt.isPresent()) {							
-							//sonucu bir yerlere yazdıracağız
-							MostSimilarWord msw = opt.get();
-							writeSimilarityResult(msw);
+					List<MostSimilarWord> originSimilarWordList = mostSimilarWordMap.get(originWord.getWord());
+					if (CollectionUtils.isNotEmpty(originSimilarWordList)) {						
+						for (UserWord otherWord : otherUserWords) {
+							Optional<MostSimilarWord> opt = originSimilarWordList.stream().filter(a -> a.getOtherWord().equals(otherWord.getWord())).findAny();
+							if (opt.isPresent()) {							
+								//sonucu bir yerlere yazdıracağız
+								MostSimilarWord msw = opt.get();
+								writeableList.add(msw);
+							}
 						}
 					}
 				}
-				// Bir de tersten bakalım
-				for (UserWord otherWord : otherUserWords) {
-					List<MostSimilarWord> otherSimilarWordList = mostSimilarWordMap.get(otherWord);
-					for (UserWord originWord : originUserWords) {
-						Optional<MostSimilarWord> opt = otherSimilarWordList.stream().filter(a -> a.getOtherWord().equals(originWord)).findAny();
-						if (opt.isPresent()) {
-							//sonucu bir yerlere yazdıracağız
-							MostSimilarWord msw = opt.get();
-							writeSimilarityResult(msw);
-						}
-					}
-				}
+				
+				writeSimilarityResult(writeableList, jsv);
+				
+				count++;
 			}
 		}
 		
 	}
 	
-	private void writeSimilarityResult(MostSimilarWord msw) {
-		// TODO Auto-generated method stub
+	private void writeSimilarityResult(List<MostSimilarWord> writeableList, UserUserTitle jsv) {
+		try {
+			String filename= "networkLinks\\" + jsv.getUserName1() + ".txt";
+		    
+		    FileOutputStream fileStream = new FileOutputStream(new File(filename), true);
+		    OutputStreamWriter writer = new OutputStreamWriter(fileStream, "UTF-8");
+
+		    for (MostSimilarWord msw : writeableList) {		    	
+		    	writer.write(msw.getOriginWord() + "-" + msw.getOtherWord() + "-" + msw.getSimilarityRate() + "------ Kullanıcı Bilgisi ------"+ jsv.getUserName1() + "-" + jsv.getUserName2() + "-" + jsv.getJaccardSimilarity() +"\r\n");
+		    }
+
+			writer.close();
+
+		} catch (IOException ioe) {
+			System.err.println("IOException: " + ioe.getMessage());
+		}
 		
 	}
 
@@ -3036,9 +3049,12 @@ public class EngineManagerImpl implements EngineManager {
 					UserWord uw = new UserWord();
 					
 					String arr[] = line.split("-");
-					
 					uw.setUserName(arr[0]);
+					
+					arr[1] = arr[1].toLowerCase();
+					arr[1] = encodingConverter(arr[1]);
 					uw.setWord(arr[1]);
+					
 					uw.setPriority(Integer.parseInt(arr[2]));
 					uw.setCount(Integer.parseInt(arr[3]));
 					
@@ -3078,6 +3094,11 @@ public class EngineManagerImpl implements EngineManager {
 				} else {					
 					uut.setJaccardSimilarity(new BigDecimal(arr[2]));
 				}
+				
+				if (uut.getJaccardSimilarity().compareTo(new BigDecimal("0.031")) < 0) {
+					continue;
+				}
+				
 				userUserTitleList.add(uut);
 			}
 			in.close();
@@ -3112,8 +3133,14 @@ public class EngineManagerImpl implements EngineManager {
 							continue;
 						}
 						
+						arr[0] = arr[0].toLowerCase();
+						arr[0] = encodingConverter(arr[0]);
 						msw.setOriginWord(arr[0]);
+						
+						arr[1] = arr[1].toLowerCase();
+						arr[1] = encodingConverter(arr[1]);
 						msw.setOtherWord(arr[1]);
+						
 						if (arr[2].contains("E")) {							
 							msw.setSimilarityRate(BigDecimal.ZERO);
 						} else {
@@ -3141,5 +3168,34 @@ public class EngineManagerImpl implements EngineManager {
 			e.printStackTrace();
 			return null;
 		}
+	}
+	
+	private String encodingConverter(String word) {
+		if (word.contains("ä±")) {
+			word = word.replace("ä±", "ı");
+		}
+		if (word.contains("ã¼")) {
+			word = word.replace("ã¼", "ü");
+		}
+		if (word.contains("åÿ")) {
+			word = word.replace("åÿ", "ş");
+		}
+		if (word.contains("ã§")) {
+			word = word.replace("ã§", "ç");
+		}
+		if (word.contains("ã¶")) {
+			word = word.replace("ã¶", "ö");
+		}
+		if (word.contains("äÿ")) {
+			word = word.replace("äÿ", "ğ");
+		}
+		if (word.contains("ä°")) {
+			word = word.replace("ä°", "i");
+		}
+		if (word.contains("ã–")) {
+			word = word.replace("ã–", "ö");
+		}
+		
+		return word;
 	}
 }
