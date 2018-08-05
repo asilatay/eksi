@@ -42,6 +42,8 @@ public class Main {
 		
 		final String linkFilePath = "C:\\Users\\ASIL\\Desktop\\searchNetworkConnections";
 		
+		final String linkDataPath = "C:\\Users\\ASIL\\Desktop\\searchNetworkConnections\\communitySearch";
+		
 		final String collaborationNetworkPath = "D:\\Yuksek Lisans\\YL_DATA\\Collaboration\\1000_users\\jaccardSimilarity.txt";
 		
 		final String bilkentXmlPath ="D:\\Yuksek Lisans\\Tez\\Bilkent DATA\\BilCol2005\\copyFromProgramTest.xml";
@@ -86,6 +88,7 @@ public class Main {
 			System.out.println("Alternate PMI için satýr toplamý bul           -> Press 31");
 			System.out.println("Collaboration Network için BigCLAM çýktýsý üret -> Press 32");
 			System.out.println("Network arasýnda baðlantýlarý tespit et -> Press 33");
+			System.out.println("Community baðlantýlarý tespit et -> Press 34");
 			operationSelect = scanIn.nextLine();
 			if (operationSelect.equals("1")) {
 				crawlerManager.createCrudeLinks(ham);
@@ -215,6 +218,8 @@ public class Main {
 				engineManager.createBigClamInputForCollaborationNetwork(collaborationNetworkPath);
 			} else if (operationSelect.equals("33")) {
 				engineManager.searchNetworkLinks(linkFilePath);
+			} else if (operationSelect.equals("34")) {
+				engineManager.searchNetworkCommunitiesLinks(linkDataPath);
 			}
 			
 		} while(!operationSelect.equals("0"));

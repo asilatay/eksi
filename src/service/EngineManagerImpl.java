@@ -67,14 +67,17 @@ import commons.DateUtil;
 import model.Entry;
 import model.KeyIndexOld;
 import model.User;
+import viewmodel.CommonCommunityResult;
 import viewmodel.CosineSimilarityIndex;
 import viewmodel.MostSimilarWord;
 import viewmodel.PMIValueIndexes;
 import viewmodel.TitleEntry;
+import viewmodel.UserCommunity;
 import viewmodel.UserEntry;
 import viewmodel.UserTitle;
 import viewmodel.UserUserTitle;
 import viewmodel.UserWord;
+import viewmodel.WordCommunity;
 import viewmodel.WordIndex;
 
 public class EngineManagerImpl implements EngineManager {
@@ -3196,5 +3199,241 @@ public class EngineManagerImpl implements EngineManager {
 		}
 		
 		return word;
+	}
+	
+	@Override
+	public void searchNetworkCommunitiesLinks(String linkDataPath) {
+		List<UserCommunity> userCommunityList = createUserCommunityList(linkDataPath);
+		
+		List<WordCommunity> wordCommunityList = createWordCommunityList(linkDataPath);
+		
+		Map<String, List<WordCommunity>> wordCommunityMap = wordCommunityList.stream().collect(Collectors.groupingBy(WordCommunity :: getWord));
+
+		Map<String, List<UserWord>> userWordMap = readUserWordListForNetworkLink(linkDataPath);
+		
+		Map<String, List<MostSimilarWord>> mostSimilarWordMap = readMostSimilarWordForNetworkLink(linkDataPath);
+		
+		int count = 0;
+		for (UserCommunity uc1 : userCommunityList) {
+			List<String> comList1 = uc1.getCommunityList();
+			List<CommonCommunityResult> resultSet = new ArrayList<CommonCommunityResult>();
+			
+			for (UserCommunity uc2 : userCommunityList) {
+				CommonCommunityResult result = new CommonCommunityResult();
+				//Eğer iki kullanıcı adı eşitse bu değeri geçelim
+				if (uc2.getUserName().equals(uc1.getUserName())) {
+					continue;
+				}
+				
+				result.setUserName1(uc1.getUserName());
+				result.setUserName2(uc2.getUserName());
+				
+				// Eğer bu iki kullanıcının collaboration network de ortak kümesi varsa onları bulalım
+				List<String> comList2 = uc2.getCommunityList();
+				for (String s1 : comList1) {
+					Optional<String> findCommonCommunity = comList2.stream().filter(s -> s.equals(s1)).findAny();
+					if(findCommonCommunity.isPresent()) {
+						// Burada birşey yapacağız. ResultSet vs
+						result.getCommonCommunitiesCN().add(findCommonCommunity.get());
+					}
+				}
+				
+				// Eğer ortak küme bulunduysa ortak kelime arayacağız. Yoksa bir sonraki
+				// kullanıcıdan devam
+				if (CollectionUtils.isNotEmpty(result.getCommonCommunitiesCN())) {
+					List<UserWord> originUserWords = userWordMap.get(result.getUserName1());
+					List<UserWord> otherUserWords = userWordMap.get(result.getUserName2());
+
+					// İlk işlem
+					for (UserWord originWord : originUserWords) {
+						List<MostSimilarWord> originSimilarWordList = mostSimilarWordMap.get(originWord.getWord());
+						if (CollectionUtils.isNotEmpty(originSimilarWordList)) {
+							for (UserWord otherWord : otherUserWords) {
+								Optional<MostSimilarWord> opt = originSimilarWordList.stream()
+										.filter(a -> a.getOtherWord().equals(otherWord.getWord())).findAny();
+								if (opt.isPresent()) {
+									// Bu noktada benzer kelimeler yakaladık. Bu benzer kelimelerden community ortaklığı yapanlar var mı diye bakıyoruz
+									MostSimilarWord msw = opt.get();
+									List<WordCommunity> list = wordCommunityMap.get(msw.getOriginWord());
+									if (CollectionUtils.isNotEmpty(list)) {
+										List<String> originCommunities = list.get(0).getCommunityList();
+										for (String community : originCommunities) {
+											List<WordCommunity> list2 = wordCommunityMap.get(msw.getOtherWord());
+											if (CollectionUtils.isNotEmpty(list2)) {
+												Optional<String> commonCommunityWAN = list2.get(0).getCommunityList()
+														.stream().filter(s -> s.equals(community)).findAny();
+												
+												if (commonCommunityWAN.isPresent()) {
+													result.getCommonCommunitesWAN().add(msw.getOriginWord() + "-" + msw.getOtherWord() + "-" + commonCommunityWAN.get());
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+				if (CollectionUtils.isNotEmpty(result.getCommonCommunitiesCN()) && CollectionUtils.isNotEmpty(result.getCommonCommunitesWAN())) {					
+					resultSet.add(result);
+				}
+			}
+			
+			//İşlemlerin hepsi bittiğinde bu kullanıcı için bir çıktı üretelim.
+			if (CollectionUtils.isNotEmpty(resultSet)) {				
+				createOutputForNetworkSimilarities(resultSet);
+			}
+			count++;
+			System.out.println("Analiz edilen kullanıcı sayısı : " + count);
+		}
+	}
+
+
+	private void createOutputForNetworkSimilarities(List<CommonCommunityResult> resultSet) {
+		try {
+			String filename= "D:\\Yuksek Lisans\\YL_DATA\\networkLinks\\communitySearch\\" + resultSet.get(0).getUserName1() + ".txt";
+		    
+		    FileOutputStream fileStream = new FileOutputStream(new File(filename), true);
+		    OutputStreamWriter writer = new OutputStreamWriter(fileStream, "UTF-8");
+
+		    for (CommonCommunityResult result : resultSet) {
+		    	String resultBuilder = new String();
+		    	
+		    	resultBuilder +=  result.getUserName1() + "-" + result.getUserName2() + "-";
+		    	
+		    	
+		    	writer.write("Kullanıcı Ortak CM[");
+		    	for (String s : result.getCommonCommunitiesCN()) {
+		    		resultBuilder += s + ",";
+		    	}
+		    	
+		    	resultBuilder = resultBuilder.substring(0, resultBuilder.length() - 1);
+		    	resultBuilder += "] ----------- Kelime Ortak CM[";
+		    	
+		    	Map<String, String> mapResultWordResult = new HashMap<String, String>();
+		    	for (String s : result.getCommonCommunitesWAN()) {
+		    		String [] arr = s.split("-");
+		    		String key = arr[0] + "-" + arr[1];
+		    		if (mapResultWordResult.containsKey(key)) {
+		    			String r = "," + arr[2];
+		    			mapResultWordResult.put(key, mapResultWordResult.get(key) + r);
+		    		} else {
+		    			mapResultWordResult.put(key, key + "-" + arr[2]);
+		    		}
+		    		
+		    	}
+		    	
+		    	for (Map.Entry<String, String> entrySet : mapResultWordResult.entrySet()) {
+		    		resultBuilder += "!!!!";
+		    		resultBuilder += entrySet.getValue();
+		    		resultBuilder += "!!!!";
+		    	}
+		    
+		    	resultBuilder += "]";
+		    	
+		    	writer.write(resultBuilder + "\r\n");
+		    }
+
+			writer.close();
+
+		} catch (IOException ioe) {
+			System.err.println("IOException: " + ioe.getMessage());
+		}
+		
+	}
+
+
+	private List<WordCommunity> createWordCommunityList(String linkDataPath) {
+		try {
+			List<WordCommunity> resultSet = new ArrayList<WordCommunity>();
+			
+			BufferedReader in = new BufferedReader(new FileReader(linkDataPath +"\\wan_communities.txt"));
+			String line;
+			boolean first = true;
+			Map<Integer, String> headerMap = new HashMap<Integer, String>();
+			while ((line = in.readLine()) != null) {
+				String arr[] = line.split(",");
+				if (first) {
+					for (int i = 0; i < arr.length; i++) {
+						headerMap.put(i, arr[i]);
+					}
+					first = false;
+					continue;
+				}
+				
+				WordCommunity wc = new WordCommunity();
+				for (int i = 0; i < arr.length; i++) {
+					if (headerMap.get(i) != null) {						
+						if (headerMap.get(i).equals("Label")) {
+							arr[i] = arr[i].toLowerCase();
+							arr[i] = encodingConverter(arr[i]);
+							wc.setWord(arr[i]);
+							continue;
+						}
+						
+						if (arr[i].equals("true")) {
+							List<String> communityList = wc.getCommunityList();
+							communityList.add(headerMap.get(i));
+							wc.setCommunityList(communityList);
+						}
+					}
+				}
+				
+				resultSet.add(wc);
+			}
+			in.close();
+			
+			return resultSet;
+			
+		} catch (Exception e) {
+			System.err.println("TXT dosyası okunurken kritik bir hata oluştu.");
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+
+	private List<UserCommunity> createUserCommunityList(String linkDataPath) {
+		try {
+			List<UserCommunity> resultSet = new ArrayList<UserCommunity>();
+			BufferedReader in = new BufferedReader(new FileReader(linkDataPath +"\\cn_communities.txt"));
+			String line;
+			boolean first = true;
+			Map<Integer, String> headerMap = new HashMap<Integer, String>();
+			while ((line = in.readLine()) != null) {
+				String arr[] = line.split(",");
+				if (first) {
+					for (int i = 0; i < arr.length; i++) {
+						headerMap.put(i, arr[i]);
+					}
+					first = false;
+					continue;
+				}
+				
+				UserCommunity uc  = new UserCommunity();
+				for (int i = 0; i < arr.length; i++) {
+					if (headerMap.get(i).equals("Label")) {
+						uc.setUserName(arr[i]);
+						continue;
+					}
+					
+					if (arr[i].equals("true")) {
+						List<String> communityList = uc.getCommunityList();
+						communityList.add(headerMap.get(i));
+						uc.setCommunityList(communityList);
+					}
+				}
+				
+				resultSet.add(uc);
+			}
+			in.close();
+			
+			return resultSet;
+			
+		} catch (Exception e) {
+			System.err.println("TXT dosyası okunurken kritik bir hata oluştu.");
+			e.printStackTrace();
+			return null;
+		}
 	}
 }

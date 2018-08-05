@@ -70,4 +70,6 @@ public interface EngineManager {
 
 	void searchNetworkLinks(String linkFilePath);
 
+	void searchNetworkCommunitiesLinks(String linkDataPath);
+
 }
