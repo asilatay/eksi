@@ -3213,15 +3213,24 @@ public class EngineManagerImpl implements EngineManager {
 		
 		Map<String, List<MostSimilarWord>> mostSimilarWordMap = readMostSimilarWordForNetworkLink(linkDataPath);
 		
+		Map<String, List<UserUserTitle>> jaccardSimilarityMap = readJaccardSimilarityForNetworkLink(linkDataPath);
+		
 		int count = 0;
 		for (UserCommunity uc1 : userCommunityList) {
 			List<String> comList1 = uc1.getCommunityList();
 			List<CommonCommunityResult> resultSet = new ArrayList<CommonCommunityResult>();
 			
+			List<UserUserTitle> uutList = jaccardSimilarityMap.get(uc1.getUserName());
+			
 			for (UserCommunity uc2 : userCommunityList) {
 				CommonCommunityResult result = new CommonCommunityResult();
 				//Eğer iki kullanıcı adı eşitse bu değeri geçelim
 				if (uc2.getUserName().equals(uc1.getUserName())) {
+					continue;
+				}
+				
+				Optional<UserUserTitle> optJaccard = uutList.stream().filter(a -> a.getUserName2().equals(uc2.getUserName())).findAny();
+				if (! optJaccard.isPresent()) {
 					continue;
 				}
 				
