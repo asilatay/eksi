@@ -72,4 +72,6 @@ public interface EngineManager {
 
 	void searchNetworkCommunitiesLinks(String linkDataPath);
 
+	void findModularityOverlappingCommunityResults(String modularityOverlappingFilesPath);
+
 }

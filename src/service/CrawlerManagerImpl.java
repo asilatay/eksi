@@ -22,8 +22,6 @@ import model.User;
 
 public class CrawlerManagerImpl implements CrawlerManager {
 	
-	ExportManager exportManager = new ExportManagerImpl();
-	
 	TitleManager titleManager = new TitleManagerImpl();
 	
 	UserManager userManager = new UserManagerImpl();

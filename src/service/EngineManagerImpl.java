@@ -63,12 +63,17 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
+
 import commons.DateUtil;
 import model.Entry;
 import model.KeyIndexOld;
 import model.User;
 import viewmodel.CommonCommunityResult;
 import viewmodel.CosineSimilarityIndex;
+import viewmodel.ModularityCommunity;
+import viewmodel.ModularityOverlappingCommunityData;
 import viewmodel.MostSimilarWord;
 import viewmodel.PMIValueIndexes;
 import viewmodel.TitleEntry;
@@ -87,8 +92,6 @@ public class EngineManagerImpl implements EngineManager {
 	UserManager userManager = new UserManagerImpl();
 	
 	EntryManager entryManager = new EntryManagerImpl();
-	
-	ExportManager exportManager = new ExportManagerImpl();
 	
 	DateUtil dateUtil = new DateUtil();
 	
@@ -3197,6 +3200,30 @@ public class EngineManagerImpl implements EngineManager {
 		if (word.contains("ã–")) {
 			word = word.replace("ã–", "ö");
 		}
+		if (word.contains("Ä±")) {
+			word = word.replace("Ä±", "ı");
+		}
+		if (word.contains("Ã¼")) {
+			word = word.replace("Ã¼", "ü");
+		}
+		if (word.contains("ÅŸ")) {
+			word = word.replace("ÅŸ", "ş");
+		}
+		if (word.contains("Ã§")) {
+			word = word.replace("Ã§", "ç");
+		}
+		if (word.contains("Ã¶")) {
+			word = word.replace("Ã¶", "ö");
+		}
+		if (word.contains("ÄŸ")) {
+			word = word.replace("ÄŸ", "ğ");
+		}
+		if (word.contains("Ä°")) {
+			word = word.replace("Ä°", "i");
+		}
+		if (word.contains("Ã–")) {
+			word = word.replace("Ã–", "ö");
+		}
 		
 		return word;
 	}
@@ -3444,5 +3471,191 @@ public class EngineManagerImpl implements EngineManager {
 			e.printStackTrace();
 			return null;
 		}
+	}
+	
+	@Override
+	public void findModularityOverlappingCommunityResults(String modularityOverlappingFilesPath) {
+		// Modularity işleminden sonra üretilen sonuç okunuyor.
+		Map<Integer, ModularityOverlappingCommunityData> idDataMap = new HashMap<Integer, ModularityOverlappingCommunityData>();
+		try {
+	        // Create an object of file reader
+	        // class with CSV file as a parameter.
+	        FileReader filereader = new FileReader(modularityOverlappingFilesPath + "\\12.csv");
+	 
+	        // create csvReader object and skip first Line
+	        CSVReader csvReader = new CSVReaderBuilder(filereader)
+	                                  .withSkipLines(1)
+	                                  .build();
+	        
+	        List<String[]> allData = csvReader.readAll();
+	 
+	        // print Data
+	        for (String[] row : allData) {
+	        	ModularityOverlappingCommunityData data = new ModularityOverlappingCommunityData();
+	        	int count = 0;
+	            for (String cell : row) {
+	            	if (count == 0) {
+	            		data.setId(Integer.parseInt(cell));
+	            	} else if (count == 1) {
+	            		String encodedWord = encodingConverter(cell);
+	            		data.setWord(encodedWord);
+	            	} else if (count == 2) {
+	            		data.setModularityCommunityName(cell);
+	            	}
+	            	count++;
+	            	
+	                System.out.print(cell + "\t");
+	            }
+	            idDataMap.put(data.getId(), data);
+	            System.out.println();
+	        }
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    }
+		
+		// Modularity okuması bitti şimdi overlapping community sonuçları okunuyor.
+		try {
+			// Create an object of file reader
+	        // class with CSV file as a parameter.
+	        FileReader filereader = new FileReader(modularityOverlappingFilesPath + "\\overlapping_community.csv");
+	 
+	        // create csvReader object and skip first Line
+	       
+	        CSVReader reader = new CSVReaderBuilder(filereader).build();
+	        
+			String[] header = reader.readNext();
+			Map<Integer, String> headerMap = new HashMap<Integer, String>();
+			// Başlıkları map e koy
+			for (int i = 0; i < header.length; i++) {
+				headerMap.put(i, header[i]);
+			}
+
+			List<String[]> allData = reader.readAll();
+
+			for (String[] row : allData) {
+
+				int rowCount = 0;
+
+				String idCell = StringUtils.EMPTY;
+
+				for (String cell : row) {
+					if (rowCount == 0) {
+						idCell = cell;
+						rowCount++;
+						continue;
+					}
+					if (cell.equals("true")) {
+						ModularityOverlappingCommunityData data = idDataMap.get(Integer.parseInt(idCell));
+
+						List<String> communityList = data.getOverlappingCommunitiesList();
+						communityList.add(headerMap.get(rowCount));
+
+						data.setOverlappingCommunitiesList(communityList);
+
+						idDataMap.put(data.getId(), data);
+					}
+
+					rowCount++;
+				}
+
+			}
+			
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+			e.printStackTrace();
+		}
+		
+		Map<String, List<ModularityOverlappingCommunityData>> modularityDataMap = new HashMap<>();
+		// Tüm veriyi okuma işlemi tamamlandı şimdi modularity - overlapping community matrix oluşturuluyor.
+		//Modularity ye göre gruplama işlemi yapıldı.
+		for (Map.Entry<Integer, ModularityOverlappingCommunityData> entrySet : idDataMap.entrySet()) {
+			if (modularityDataMap.containsKey(entrySet.getValue().getModularityCommunityName())) {
+				List<ModularityOverlappingCommunityData> dataList = modularityDataMap.get(entrySet.getValue().getModularityCommunityName());
+				dataList.add(entrySet.getValue());
+				
+				modularityDataMap.put(entrySet.getValue().getModularityCommunityName(), dataList);
+			} else {
+				List<ModularityOverlappingCommunityData> dataList = new ArrayList<>();
+				dataList.add(entrySet.getValue());
+				
+				modularityDataMap.put(entrySet.getValue().getModularityCommunityName(), dataList);
+			}
+		}
+		
+		printModularityCount(modularityDataMap);
+		
+		Map<String, List<ModularityCommunity>> modularityCommunityMap = createStaticModularityCommunityMap();
+		//Count Hesaplaması yapılıyor
+		for (Map.Entry<String, List<ModularityOverlappingCommunityData>> entrySet : modularityDataMap.entrySet()) {
+			List<ModularityCommunity> modularityCommunityList = modularityCommunityMap.get(entrySet.getKey());
+			for (ModularityOverlappingCommunityData data : entrySet.getValue()) {
+				List<String> overlappingCommunityList = data.getOverlappingCommunitiesList();
+				for (String s : overlappingCommunityList) {
+					for (ModularityCommunity mc : modularityCommunityList) {
+						if (mc.getOverlappingCommunityName().equals(s)) {
+							mc.setCount(mc.getCount() + 1);
+							break;
+						}
+					}
+				}
+			}
+			modularityCommunityMap.put(entrySet.getKey(), modularityCommunityList);
+		}
+		// yazdırma işlemi
+		for (Map.Entry<String, List<ModularityCommunity>> entrySet : modularityCommunityMap.entrySet()) {
+			try {
+				String filename= "D:\\Yuksek Lisans\\YL_DATA\\Word Association\\Veritabanı_10000_1000_Deneme2\\bigclam sonuçları\\esas sonuçlar\\Gephi\\12_community_modularity\\result.txt";
+			    
+			    FileOutputStream fileStream = new FileOutputStream(new File(filename), true);
+			    OutputStreamWriter writer = new OutputStreamWriter(fileStream, "UTF-8");
+
+			    for (ModularityCommunity mc : entrySet.getValue()) {		    	
+			    	writer.write(mc.getModularityCommunityName() + "-" + mc.getOverlappingCommunityName() + "-" + mc.getCount() +"\r\n");
+			    }
+
+				writer.close();
+			} catch (IOException ioe) {
+				System.err.println("IOException: " + ioe.getMessage());
+			}
+		}
+	}
+
+
+	private void printModularityCount(Map<String, List<ModularityOverlappingCommunityData>> modularityDataMap) {
+		try {
+			String filename= "D:\\Yuksek Lisans\\YL_DATA\\Word Association\\Veritabanı_10000_1000_Deneme2\\bigclam sonuçları\\esas sonuçlar\\Gephi\\12_community_modularity\\onlyModularityResult.txt";
+		    
+		    FileOutputStream fileStream = new FileOutputStream(new File(filename), true);
+		    OutputStreamWriter writer = new OutputStreamWriter(fileStream, "UTF-8");
+
+		    for (Map.Entry<String, List<ModularityOverlappingCommunityData>> entrySet : modularityDataMap.entrySet()) {		    	
+		    	writer.write(entrySet.getKey() + "-" + entrySet.getValue().size() +"\r\n");
+		    }
+
+			writer.close();
+		} catch (IOException ioe) {
+			System.err.println("IOException: " + ioe.getMessage());
+		}
+		
+	}
+
+
+	private Map<String, List<ModularityCommunity>> createStaticModularityCommunityMap() {
+		Map<String, List<ModularityCommunity>> modularityCommunityMap = new HashMap<>();
+		for (int i = 0; i < 12; i++) {
+			List<ModularityCommunity> resultList = new ArrayList<ModularityCommunity>();
+			for (int j = 0; j < 22; j++) {
+				ModularityCommunity mc = new ModularityCommunity();
+				mc.setModularityCommunityName(Integer.toString(i));
+				mc.setOverlappingCommunityName("c"+j);
+				mc.setCount(0);
+				
+				resultList.add(mc);
+			}
+			
+			modularityCommunityMap.put(Integer.toString(i), resultList);
+		}
+		
+		return modularityCommunityMap;
 	}
 }

@@ -6,6 +6,7 @@ import java.util.Set;
 
 import model.Title;
 import model.User;
+import repository.IPathConstants;
 import service.CrawlerManager;
 import service.CrawlerManagerImpl;
 import service.EngineManager;
@@ -33,25 +34,9 @@ public class Main {
 		
 		EntryManager entryManager = new EntryManagerImpl();
 		
-		String dir = "C:\\webharvest\\KAYDET\\";
-		String ham = "C:\\webharvest\\HAM\\";
+		IPathConstants pathConstants = new IPathConstants();
 		
-		
-//		final String fileReadingPath = "D:\\Yuksek Lisans\\YL_DATA\\Zemberek\\titles_deneme2\\analiz_edildi";
-		final String fileReadingPath = "D:\\Yuksek Lisans\\YL_DATA\\Zemberek\\titles";
-		
-		final String linkFilePath = "C:\\Users\\ASIL\\Desktop\\searchNetworkConnections";
-		
-		final String linkDataPath = "C:\\Users\\ASIL\\Desktop\\searchNetworkConnections\\communitySearch";
-		
-		final String collaborationNetworkPath = "D:\\Yuksek Lisans\\YL_DATA\\Collaboration\\1000_users\\jaccardSimilarity.txt";
-		
-		final String bilkentXmlPath ="D:\\Yuksek Lisans\\Tez\\Bilkent DATA\\BilCol2005\\copyFromProgramTest.xml";
-		final String bilkentTxtPath ="D:\\Yuksek Lisans\\Tez\\Bilkent DATA\\BilCol2005\\Orijinal Data\\ALLOK.txt";
-		
-		final String englishPath ="D:\\Yuksek Lisans\\Tez\\Data\\txtData";
 		String operationSelect ="-1";
-		System.out.println("GitHub Entegrasyonu OK!");
 		Scanner scanIn = new Scanner(System.in);		
 		do {
 			System.out.println("Çýk                               -> Press 0");
@@ -89,9 +74,10 @@ public class Main {
 			System.out.println("Collaboration Network için BigCLAM çýktýsý üret -> Press 32");
 			System.out.println("Network arasýnda baðlantýlarý tespit et -> Press 33");
 			System.out.println("Community baðlantýlarý tespit et -> Press 34");
+			System.out.println("Modularity - Overlapping Community Detection Sonuçlarý -> Press 35");
 			operationSelect = scanIn.nextLine();
 			if (operationSelect.equals("1")) {
-				crawlerManager.createCrudeLinks(ham);
+				crawlerManager.createCrudeLinks(pathConstants.ham);
 				
 			} else if (operationSelect.equals("2")) {
 				Title title = new Title();
@@ -156,7 +142,7 @@ public class Main {
 			} else if (operationSelect.equals("6")) {
 				crawlerManager.getLinksFromMainPage(url);
 			} else if (operationSelect.equals("7")) {
-				crawlerManager.getDocumentWithjSoup(url, dir);
+				crawlerManager.getDocumentWithjSoup(url, pathConstants.dir);
 			} else if (operationSelect.equals("8")) {
 				crawlerManager.findDuplicateTitlesAndMerge();
 			} else if (operationSelect.equals("9")) {
@@ -170,7 +156,7 @@ public class Main {
 				int parameterForEntryCount = scanIn.nextInt();
 				entryManager.writeSpecificEntryCountToDocument(parameterForEntryCount);
 			} else if (operationSelect.equals("12")) {
-				engineManager.createCoOccurenceMatrix(fileReadingPath, null);
+				engineManager.createCoOccurenceMatrix(pathConstants.fileReadingPath, null);
 			} else if (operationSelect.equals("13")) {
 				entryManager.getSimilarUsersThatWriteTheSameTitle();
 			} else if (operationSelect.equals("14")) {
@@ -178,11 +164,11 @@ public class Main {
 			} else if (operationSelect.equals("15")) {
 				engineManager.calculateJaccardSimilarityAndSave();
 			} else if (operationSelect.equals("16")) {
-				engineManager.runBilkentData(bilkentXmlPath);
+				engineManager.runBilkentData(pathConstants.bilkentXmlPath);
 			} else if (operationSelect.equals("17")) {
-				engineManager.runBilkentDataWithTxt(bilkentTxtPath);
+				engineManager.runBilkentDataWithTxt(pathConstants.bilkentTxtPath);
 			} else if (operationSelect.equals("18")) {
-				engineManager.runEnglishContent(englishPath);
+				engineManager.runEnglishContent(pathConstants.englishPath);
 			} else if (operationSelect.equals("19")) {
 				Set<String> set = new HashSet<String>();
 				set.add("the wade");
@@ -197,13 +183,13 @@ public class Main {
 			} else if (operationSelect.equals("22")) {
 				engineManager.exportWrongVocabs();
 			} else if (operationSelect.equals("23")) {
-				engineManager.createCoOccurenceMatrixWithMemoryAndDisk(fileReadingPath, null);
+				engineManager.createCoOccurenceMatrixWithMemoryAndDisk(pathConstants.fileReadingPath, null);
 			} else if (operationSelect.equals("24")) {
-				engineManager.saveCoOccurrenceMatrixToDatabase(fileReadingPath, null);
+				engineManager.saveCoOccurrenceMatrixToDatabase(pathConstants.fileReadingPath, null);
 			} else if (operationSelect.endsWith("25")) {
-				engineManager.calculatePMIValuesWithMemoryAndDisk(fileReadingPath, null);
+				engineManager.calculatePMIValuesWithMemoryAndDisk(pathConstants.fileReadingPath, null);
 			} else if (operationSelect.equals("26")) {
-				engineManager.calculateAlternatePMIValuesWithMemoryAndDisk(fileReadingPath, null);
+				engineManager.calculateAlternatePMIValuesWithMemoryAndDisk(pathConstants.fileReadingPath, null);
 			} else if (operationSelect.equals("27")) {
 				engineManager.calculateCosineSimilarityMemoryAndDisk();
 			} else if (operationSelect.equals("28")) {
@@ -213,13 +199,15 @@ public class Main {
 			} else if (operationSelect.equals("30")) {
 				engineManager.getAllInputIntoTxt();
 			} else if (operationSelect.equals("31")) {
-				engineManager.findSumOfRowsForAlternatePMI(fileReadingPath, null);
+				engineManager.findSumOfRowsForAlternatePMI(pathConstants.fileReadingPath, null);
 			} else if (operationSelect.equals("32")) {
-				engineManager.createBigClamInputForCollaborationNetwork(collaborationNetworkPath);
+				engineManager.createBigClamInputForCollaborationNetwork(pathConstants.collaborationNetworkPath);
 			} else if (operationSelect.equals("33")) {
-				engineManager.searchNetworkLinks(linkFilePath);
+				engineManager.searchNetworkLinks(pathConstants.linkFilePath);
 			} else if (operationSelect.equals("34")) {
-				engineManager.searchNetworkCommunitiesLinks(linkDataPath);
+				engineManager.searchNetworkCommunitiesLinks(pathConstants.linkDataPath);
+			} else if (operationSelect.equals("35")) {
+				engineManager.findModularityOverlappingCommunityResults(pathConstants.modularityOverlappingFilesPath);
 			}
 			
 		} while(!operationSelect.equals("0"));
