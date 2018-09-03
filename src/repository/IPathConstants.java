@@ -11,6 +11,8 @@ public class IPathConstants {
 	
 	public final String modularityOverlappingFilesPath = "D:\\Yuksek Lisans\\YL_DATA\\Word Association\\Veritabaný_10000_1000_Deneme2\\bigclam sonuçlarý\\esas sonuçlar\\Gephi\\12_community_modularity";
 	
+	public final String modularityFilePath = "D:\\Yuksek Lisans\\YL_DATA\\Word Association\\Veritabaný_10000_1000_Deneme2\\bigclam sonuçlarý\\esas sonuçlar\\Gephi\\44_community_modularity";
+	
 	public final String linkFilePath = "C:\\Users\\ASIL\\Desktop\\searchNetworkConnections";
 	
 	public final String linkDataPath = "C:\\Users\\ASIL\\Desktop\\searchNetworkConnections\\communitySearch";

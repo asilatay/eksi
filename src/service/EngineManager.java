@@ -74,4 +74,8 @@ public interface EngineManager {
 
 	void findModularityOverlappingCommunityResults(String modularityOverlappingFilesPath);
 
+	void exportWordAssociationNetworkCommunityByCommunity(String modularityOverlappingFilesPath);
+
+	void exportWordAssociationNetworkModularity(String modularityFilePath);
+
 }

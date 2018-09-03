@@ -323,15 +323,6 @@ public class EntryRepositoryImpl implements EntryRepository{
 							query = query.substring(0, query.length()-1);
 							
 							query += "))";
-									// OR (e1.fk_user_id IN (";
-							
-//							for (Integer ids : u2IdList) {
-//								query += ids + ",";
-//							}
-//							
-//							query = query.substring(0, query.length()-1);
-//							
-//							query += ") and e2.fk_user_id ="+ u1Id + ")) 
 							
 							query += " and e1.id != e2.id";
 							
@@ -488,14 +479,6 @@ public class EntryRepositoryImpl implements EntryRepository{
 			String tableName = "wrong_vocabs";
 			Class.forName(myDriver);
 			Connection conn = DriverManager.getConnection(db, username, pass);
-//			String q1 = "SELECT MAX(ID) +1 AS id FROM " +tableName;
-//			Statement st1 = conn.createStatement();	          
-//	        ResultSet rs = st1.executeQuery(q1);
-//	        int id = 0;
-//	        while (rs.next()){
-//	        	id = rs.getInt("id");
-//	        }
-//	        st1.close();
 	        
 			String query = "INSERT INTO "+tableName +" (origin,correctly)VALUES('";
 			query += origin +"','" + correctValue + "');";

@@ -3640,7 +3640,7 @@ public class EngineManagerImpl implements EngineManager {
 	}
 
 
-	private Map<String, List<ModularityCommunity>> createStaticModularityCommunityMap() {
+	private static Map<String, List<ModularityCommunity>> createStaticModularityCommunityMap() {
 		Map<String, List<ModularityCommunity>> modularityCommunityMap = new HashMap<>();
 		for (int i = 0; i < 12; i++) {
 			List<ModularityCommunity> resultList = new ArrayList<ModularityCommunity>();
@@ -3657,5 +3657,274 @@ public class EngineManagerImpl implements EngineManager {
 		}
 		
 		return modularityCommunityMap;
+	}
+	
+	private static Map<String, List<ModularityOverlappingCommunityData>> createStaticOverlappingCommunityMap() {
+		Map<String, List<ModularityOverlappingCommunityData>> overlappingCommunityMap = new HashMap<>();
+		for (int i = 0; i < 22; i++) {
+			String communityName = "c"+i;
+			List<ModularityOverlappingCommunityData> dataList = new ArrayList<>();
+			
+			overlappingCommunityMap.put(communityName, dataList);
+		}
+		
+		return overlappingCommunityMap;
+	}
+	
+	@Override
+	public void exportWordAssociationNetworkCommunityByCommunity(String modularityOverlappingFilesPath) {
+		Map<Integer, ModularityOverlappingCommunityData> idDataMap = new HashMap<Integer, ModularityOverlappingCommunityData>();
+		//Overlapping community sonuçları okunuyor.
+		try {
+			// Create an object of file reader
+			// class with CSV file as a parameter.
+			FileReader filereader = new FileReader(modularityOverlappingFilesPath + "\\overlapping_community.csv");
+
+			// create csvReader object and skip first Line
+			CSVReader reader = new CSVReaderBuilder(filereader).build();
+
+			String[] header = reader.readNext();
+			Map<Integer, String> headerMap = new HashMap<Integer, String>();
+			// Başlıkları map e koy
+			for (int i = 0; i < header.length; i++) {
+				headerMap.put(i, header[i]);
+			}
+
+			List<String[]> allData = reader.readAll();
+
+			for (String[] row : allData) {
+
+				int rowCount = 0;
+
+				String idCell = StringUtils.EMPTY;
+
+				for (String cell : row) {
+					if (rowCount == 0) {
+						idCell = cell;
+						ModularityOverlappingCommunityData data = new ModularityOverlappingCommunityData();
+						data.setId(Integer.parseInt(idCell));
+						idDataMap.put(data.getId(), data);
+						
+						rowCount++;
+						continue;
+					}
+					if (rowCount == 1) {
+						ModularityOverlappingCommunityData data = idDataMap.get(Integer.parseInt(idCell));
+						data.setWord(cell);
+						
+						rowCount++;
+						continue;
+					}
+					if (cell.equals("true")) {
+						ModularityOverlappingCommunityData data = idDataMap.get(Integer.parseInt(idCell));
+
+						List<String> communityList = data.getOverlappingCommunitiesList();
+						communityList.add(headerMap.get(rowCount));
+
+						data.setOverlappingCommunitiesList(communityList);
+
+						idDataMap.put(data.getId(), data);
+					}
+
+					rowCount++;
+				}
+
+			}
+
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+			e.printStackTrace();
+		}
+		
+		Map<String, List<ModularityOverlappingCommunityData>> communityNameDataMap = new HashMap<String, List<ModularityOverlappingCommunityData>>();
+		communityNameDataMap = createStaticOverlappingCommunityMap();
+		
+		// Veri küme isimlerine göre ayrılıyor
+		for (Map.Entry<Integer, ModularityOverlappingCommunityData> entrySet : idDataMap.entrySet()) {
+			List<String> communityList = entrySet.getValue().getOverlappingCommunitiesList();
+			for (String communityName : communityList) {
+				List<ModularityOverlappingCommunityData> dataList = communityNameDataMap.get(communityName);
+				dataList.add(entrySet.getValue());
+				communityNameDataMap.put(communityName, dataList);
+			}
+		}
+		
+		// Küme işlemlerine göre ayırma operasyonu bitti, şimdi her küme için bir çıktı üretilecek.
+		for (Map.Entry<String, List<ModularityOverlappingCommunityData>> entrySet : communityNameDataMap.entrySet()) {
+			printoutOverlappingCommunity(entrySet.getKey(), entrySet.getValue());
+			printoutOverlappingCommunityInfo(entrySet.getKey(), entrySet.getValue());
+		}
+	}
+
+	/**
+	 * NMI hesaplamasına input olacak dosyaların üretildiği metoddur.
+	 * @param fileName : Oluşacak olan dosyanın ismi
+	 * @param elements : Dosyanın içinde bulunacak elemanlar
+	 */
+	private void printoutOverlappingCommunity(String fileName, List<ModularityOverlappingCommunityData> elements) {
+		try {
+			String filename = "D:\\Yuksek Lisans\\YL_DATA\\NMI\\Tez Verisi_12\\Overlapping Community\\" + fileName +".txt";
+
+			FileOutputStream fileStream = new FileOutputStream(new File(filename), true);
+			OutputStreamWriter writer = new OutputStreamWriter(fileStream, "UTF-8");
+
+			for (ModularityOverlappingCommunityData element : elements) {
+				writer.write(element.getId() + "\r\n");
+			}
+
+			writer.close();
+		} catch (IOException ioe) {
+			System.err.println("IOException: " + ioe.getMessage());
+		}
+	}
+	
+	/**
+	 * NMI hesaplamasında kullanıcının kontrolleri için üretilen çıktıların oluşturulduğu metoddur.
+	 * @param fileName : oluşacak olan dosyanın ismi
+	 * @param elements : dosyanın içinde bulunacak elemanlar
+	 */
+	private void printoutOverlappingCommunityInfo(String fileName, List<ModularityOverlappingCommunityData> elements) {
+		try {
+			String filename = "D:\\Yuksek Lisans\\YL_DATA\\NMI\\Tez Verisi_12\\Overlapping Community\\" + fileName + "Info.txt";
+
+			FileOutputStream fileStream = new FileOutputStream(new File(filename), true);
+			OutputStreamWriter writer = new OutputStreamWriter(fileStream, "UTF-8");
+
+			for (ModularityOverlappingCommunityData element : elements) {
+				writer.write(element.getId() + "-" + element.getWord() + "\r\n");
+			}
+
+			writer.close();
+		} catch (IOException ioe) {
+			System.err.println("IOException: " + ioe.getMessage());
+		}
+	}
+	
+	@Override
+	public void exportWordAssociationNetworkModularity(String modularityFilePath) {
+		List<ModularityOverlappingCommunityData> idDataList = new ArrayList<ModularityOverlappingCommunityData>();
+		//Modularity community sonuçları okunuyor.
+		try {
+			// Create an object of file reader
+			// class with CSV file as a parameter.
+			FileReader filereader = new FileReader(modularityFilePath + "\\44.csv");
+
+			// create csvReader object and skip first Line
+			CSVReader reader = new CSVReaderBuilder(filereader).build();
+
+			String[] header = reader.readNext();
+			Map<Integer, String> headerMap = new HashMap<Integer, String>();
+			// Başlıkları map e koy
+			for (int i = 0; i < header.length; i++) {
+				headerMap.put(i, header[i]);
+			}
+
+			List<String[]> allData = reader.readAll();
+
+			for (String[] row : allData) {
+
+				int rowCount = 0;
+				ModularityOverlappingCommunityData data = new ModularityOverlappingCommunityData();
+				
+				for (String cell : row) {
+					if (rowCount == 0) {
+						data.setId(Integer.parseInt(cell));
+						
+						rowCount++;
+						continue;
+					}
+					if (rowCount == 1) {
+						data.setWord(cell);
+						
+						rowCount++;
+						continue;
+					}
+					if (rowCount == 2) {
+						data.setModularityCommunityName(cell);
+						
+						rowCount++;
+						continue;
+					}
+
+					rowCount++;
+				}
+				
+				idDataList.add(data);
+
+			}
+
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+			e.printStackTrace();
+		}
+		
+		Map<String, List<ModularityOverlappingCommunityData>> groupedByModularityName = idDataList.stream().collect(Collectors.groupingBy(ModularityOverlappingCommunityData :: getModularityCommunityName));
+		for (Map.Entry<String, List<ModularityOverlappingCommunityData>> entrySet : groupedByModularityName.entrySet()) {
+			printoutModularityCommunity(entrySet.getKey(), entrySet.getValue());
+			printoutModularityCommunityInfo(entrySet.getKey(), entrySet.getValue());
+			printoutModularitySizes(entrySet.getKey(), entrySet.getValue().size());
+		}
+		
+	}
+	
+	
+	private void printoutModularitySizes(String key, int size) {
+		try {
+			String filename = "D:\\Yuksek Lisans\\YL_DATA\\NMI\\Tez Verisi_44\\modulariySizes.txt";
+
+			FileOutputStream fileStream = new FileOutputStream(new File(filename), true);
+			OutputStreamWriter writer = new OutputStreamWriter(fileStream, "UTF-8");
+
+			writer.write(key + "-" + size + "\r\n");
+
+			writer.close();
+		} catch (IOException ioe) {
+			System.err.println("IOException: " + ioe.getMessage());
+		}
+	}
+
+	/**
+	 * NMI hesaplamasına input olacak dosyaların üretildiği metoddur (Modularity).
+	 * @param fileName : Oluşacak olan dosyanın ismi
+	 * @param elements : Dosyanın içinde bulunacak elemanlar
+	 */
+	private void printoutModularityCommunity(String fileName, List<ModularityOverlappingCommunityData> elements) {
+		try {
+			String filename = "D:\\Yuksek Lisans\\YL_DATA\\NMI\\Tez Verisi_44\\Modularity\\" + fileName +".txt";
+
+			FileOutputStream fileStream = new FileOutputStream(new File(filename), true);
+			OutputStreamWriter writer = new OutputStreamWriter(fileStream, "UTF-8");
+
+			for (ModularityOverlappingCommunityData element : elements) {
+				writer.write(element.getId() + "\r\n");
+			}
+
+			writer.close();
+		} catch (IOException ioe) {
+			System.err.println("IOException: " + ioe.getMessage());
+		}
+	}
+	
+	/**
+	 * NMI hesaplamasında kullanıcının kontrolleri için üretilen çıktıların oluşturulduğu metoddur. (Modularity)
+	 * @param fileName : oluşacak olan dosyanın ismi
+	 * @param elements : dosyanın içinde bulunacak elemanlar
+	 */
+	private void printoutModularityCommunityInfo(String fileName, List<ModularityOverlappingCommunityData> elements) {
+		try {
+			String filename = "D:\\Yuksek Lisans\\YL_DATA\\NMI\\Tez Verisi_12\\Overlapping Community\\" + fileName + "Info.txt";
+
+			FileOutputStream fileStream = new FileOutputStream(new File(filename), true);
+			OutputStreamWriter writer = new OutputStreamWriter(fileStream, "UTF-8");
+
+			for (ModularityOverlappingCommunityData element : elements) {
+				String encodedWord = encodingConverter(element.getWord());
+				writer.write(element.getId() + "-" + encodedWord + "\r\n");
+			}
+
+			writer.close();
+		} catch (IOException ioe) {
+			System.err.println("IOException: " + ioe.getMessage());
+		}
 	}
 }
