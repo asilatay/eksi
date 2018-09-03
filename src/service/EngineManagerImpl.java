@@ -3912,7 +3912,7 @@ public class EngineManagerImpl implements EngineManager {
 	 */
 	private void printoutModularityCommunityInfo(String fileName, List<ModularityOverlappingCommunityData> elements) {
 		try {
-			String filename = "D:\\Yuksek Lisans\\YL_DATA\\NMI\\Tez Verisi_12\\Overlapping Community\\" + fileName + "Info.txt";
+			String filename = "D:\\Yuksek Lisans\\YL_DATA\\NMI\\Tez Verisi_44\\Modularity\\" + fileName + "Info.txt";
 
 			FileOutputStream fileStream = new FileOutputStream(new File(filename), true);
 			OutputStreamWriter writer = new OutputStreamWriter(fileStream, "UTF-8");
