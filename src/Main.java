@@ -77,6 +77,8 @@ public class Main {
 			System.out.println("Modularity - Overlapping Community Detection Sonuçlarý -> Press 35");
 			System.out.println("Overlapping Community dýþarý aktarým -> Press 36");
 			System.out.println("Modularity dýþarý aktarým -> Press 37");
+			System.out.println("Community sadeleþtirmesi yap -> Press 38");
+			System.out.println("Spesifik community - kelime hesabý -> Press 39");
 			operationSelect = scanIn.nextLine();
 			if (operationSelect.equals("1")) {
 				crawlerManager.createCrudeLinks(pathConstants.ham);
@@ -214,6 +216,10 @@ public class Main {
 				engineManager.exportWordAssociationNetworkCommunityByCommunity(pathConstants.modularityOverlappingFilesPath);
 			} else if (operationSelect.equals("37")) {
 				engineManager.exportWordAssociationNetworkModularity(pathConstants.modularityFilePath);
+			} else if (operationSelect.equals("38")) {
+				engineManager.removeUnassignedWordsFromCommunities(pathConstants.modularityFilePath);
+			} else if (operationSelect.equals("39")) {
+				engineManager.calculateSpecificCommunityWords(pathConstants.globalDataPath);
 			}
 			
 			

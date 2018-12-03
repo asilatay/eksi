@@ -48,6 +48,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.poi.xssf.streaming.SXSSFCell;
 import org.apache.poi.xssf.streaming.SXSSFRow;
@@ -80,6 +81,7 @@ import viewmodel.TitleEntry;
 import viewmodel.UserCommunity;
 import viewmodel.UserEntry;
 import viewmodel.UserTitle;
+import viewmodel.UserTopWord;
 import viewmodel.UserUserTitle;
 import viewmodel.UserWord;
 import viewmodel.WordCommunity;
@@ -3926,5 +3928,360 @@ public class EngineManagerImpl implements EngineManager {
 		} catch (IOException ioe) {
 			System.err.println("IOException: " + ioe.getMessage());
 		}
+	}
+	
+	@Override
+	public void removeUnassignedWordsFromCommunities(String modularityOverlappingFilesPath) {
+		Map<Integer, ModularityOverlappingCommunityData> idDataMap = new HashMap<Integer, ModularityOverlappingCommunityData>();
+		//Overlapping community sonuçları okunuyor.
+		try {
+			// Create an object of file reader
+			// class with CSV file as a parameter.
+			FileReader filereader = new FileReader(modularityOverlappingFilesPath + "\\overlapping_community.csv");
+
+			// create csvReader object and skip first Line
+			CSVReader reader = new CSVReaderBuilder(filereader).build();
+			
+			String [] header = new String[24];
+			String[] headerTemp = reader.readNext();
+			for (String head : headerTemp) {
+				header = head.split(";");
+			}
+			
+			Map<Integer, String> headerMap = new HashMap<Integer, String>();
+			// Başlıkları map e koy
+			for (int i = 0; i < header.length; i++) {
+				headerMap.put(i, header[i]);
+			}
+
+			List<String[]> allData = reader.readAll();
+
+			for (String[] rowTemp : allData) {
+
+				String [] row = new String[24];
+				for (String r : rowTemp) {
+					row = r.split(";");
+				}
+				
+				int rowCount = 0;
+
+				String idCell = StringUtils.EMPTY;
+
+				for (String cell : row) {
+					if (rowCount == 0) {
+						idCell = cell;
+						ModularityOverlappingCommunityData data = new ModularityOverlappingCommunityData();
+						data.setId(Integer.parseInt(idCell));
+						idDataMap.put(data.getId(), data);
+						
+						rowCount++;
+						continue;
+					}
+					if (rowCount == 1) {
+						ModularityOverlappingCommunityData data = idDataMap.get(Integer.parseInt(idCell));
+						data.setWord(cell);
+						
+						rowCount++;
+						continue;
+					}
+					if (cell.equals("true")) {
+						ModularityOverlappingCommunityData data = idDataMap.get(Integer.parseInt(idCell));
+
+						List<String> communityList = data.getOverlappingCommunitiesList();
+						communityList.add(headerMap.get(rowCount));
+
+						data.setOverlappingCommunitiesList(communityList);
+
+						idDataMap.put(data.getId(), data);
+					}
+
+					rowCount++;
+				}
+
+			}
+
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+			e.printStackTrace();
+		}
+		
+		// Hiç bir kümeye ait olmayan veriler bulundu.
+		Map<Integer, ModularityOverlappingCommunityData> unassignedIdDataMap = new HashMap<Integer, ModularityOverlappingCommunityData>();
+		for (Map.Entry<Integer, ModularityOverlappingCommunityData> entrySet : idDataMap.entrySet()) {
+			if (CollectionUtils.isEmpty(entrySet.getValue().getOverlappingCommunitiesList())) {
+				unassignedIdDataMap.put(entrySet.getKey(), entrySet.getValue());
+			}
+		}
+		
+		// Word set txt sini üret.
+		prinoutWordSetResultForUnassignedData(idDataMap, unassignedIdDataMap);
+		
+		
+		// Modularity verisi okunuyor.
+		List<ModularityOverlappingCommunityData> idDataList = new ArrayList<ModularityOverlappingCommunityData>();
+		//Modularity community sonuçları okunuyor.
+		try {
+			// Create an object of file reader
+			// class with CSV file as a parameter.
+			FileReader filereader = new FileReader(modularityOverlappingFilesPath + "\\44.csv");
+
+			// create csvReader object and skip first Line
+			CSVReader reader = new CSVReaderBuilder(filereader).build();
+
+//			String [] header = new String[3];
+			String[] header = reader.readNext();
+//			for (String head : headerTemp) {
+//				header = head.split(";");
+//			}
+			
+			Map<Integer, String> headerMap = new HashMap<Integer, String>();
+			// Başlıkları map e koy
+			for (int i = 0; i < header.length; i++) {
+				headerMap.put(i, header[i]);
+			}
+
+			List<String[]> allData = reader.readAll();
+
+			for (String[] row : allData) {
+
+//				String [] row = new String[3];
+//				for (String r : rowTemp) {
+//					row = r.split(";");
+//				}
+				
+				if (row.length != 3) {
+					System.out.println("UYARI : Veriyi Kontrol et." + row);
+					continue;
+				}
+				
+				int rowCount = 0;
+				ModularityOverlappingCommunityData data = new ModularityOverlappingCommunityData();
+				
+				for (String cell : row) {
+					if (rowCount == 0) {
+						data.setId(Integer.parseInt(cell));
+						
+						rowCount++;
+						continue;
+					}
+					if (rowCount == 1) {
+						data.setWord(cell);
+						
+						rowCount++;
+						continue;
+					}
+					if (rowCount == 2) {
+						data.setModularityCommunityName(cell);
+						
+						rowCount++;
+						continue;
+					}
+
+					rowCount++;
+				}
+				
+				idDataList.add(data);
+
+			}
+
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+			e.printStackTrace();
+		}
+		
+		Map<String, List<ModularityOverlappingCommunityData>> groupedByModularityName = idDataList.stream()
+				.collect(Collectors.groupingBy(ModularityOverlappingCommunityData :: getModularityCommunityName));
+		
+		
+		// Modularity kümesi için ayıklama işlemini yapıp çıktıyı üret.
+		for (Map.Entry<String, List<ModularityOverlappingCommunityData>> entrySet : groupedByModularityName.entrySet()) {			
+			printoutModularityResultForUnassignedData(entrySet.getKey(), entrySet.getValue(), unassignedIdDataMap);
+		}
+	}
+
+
+	/**
+	 * Bu metıd overlapping community için hiç bir kümeye dahil edilemiş veriyi ayıklayarak
+	 * modularity kümelerini gösteren veriyi üretir.
+	 * @param groupedByModularityName
+	 * @param unassignedIdDataMap
+	 */
+	private void printoutModularityResultForUnassignedData(String fileName, List<ModularityOverlappingCommunityData> modularityList,
+			Map<Integer, ModularityOverlappingCommunityData> unassignedIdDataMap) {
+		
+		try {
+			String filename = "D:\\Yuksek Lisans\\YL_DATA\\NMI\\Tez_Verisi_44_Remove_Unassigned\\Modularity\\" + fileName +".txt";
+
+			FileOutputStream fileStream = new FileOutputStream(new File(filename), true);
+			OutputStreamWriter writer = new OutputStreamWriter(fileStream, "UTF-8");
+
+			for (ModularityOverlappingCommunityData element : modularityList) {
+				if (unassignedIdDataMap.containsKey(element.getId())) {
+					continue;
+				}
+				
+				writer.write(element.getId() + "\r\n");
+			}
+
+			writer.close();
+		} catch (IOException ioe) {
+			System.err.println("IOException: " + ioe.getMessage());
+		}
+		
+	}
+
+
+	/**
+	 * Bu metod overlapping community için hiç bir kümeye dahil edilememiş veriyi ayıklayarak 
+	 * tüm kelimeleri gösteren veriyi üretir.
+	 * @param idDataMap
+	 * @param unassignedIdDataMap
+	 */
+	private void prinoutWordSetResultForUnassignedData(Map<Integer, ModularityOverlappingCommunityData> idDataMap,
+			Map<Integer, ModularityOverlappingCommunityData> unassignedIdDataMap) {
+		try {
+			String filename = "D:\\Yuksek Lisans\\YL_DATA\\NMI\\Tez_Verisi_44_Remove_Unassigned\\word_set.txt";
+
+			FileOutputStream fileStream = new FileOutputStream(new File(filename), true);
+			OutputStreamWriter writer = new OutputStreamWriter(fileStream, "UTF-8");
+			
+			for (Map.Entry<Integer, ModularityOverlappingCommunityData> entrySet : idDataMap.entrySet()) {
+				if (unassignedIdDataMap.containsKey(entrySet.getKey())) {
+					continue;
+				}
+				
+				writer.write(entrySet.getKey() + "\r\n");
+			}
+
+			writer.close();
+		} catch (IOException ioe) {
+			System.err.println("IOException: " + ioe.getMessage());
+		}
+		
+	}
+	
+	@Override
+	public void calculateSpecificCommunityWords(String globalDataPath) {
+		// read community_user_list
+		List<String> userNameList = getUserNamesFromFile(globalDataPath);
+		// read user_word_list
+		Map<String, UserTopWord> userTopWordMap = getUserTopWordList(globalDataPath);
+		// create static word list
+		List<String> staticWordList = getStaticWordList();
+		
+		Map<String, String> outputMap = new HashMap<String, String>();
+		for (String userName : userNameList) {
+			String result = "";
+			if (outputMap.containsKey(userName)) {
+				result = outputMap.get(userName);
+			}
+			
+			List<String> topWordList = userTopWordMap.get(userName).getWordList();
+			for (String word : topWordList) {
+				Optional<String> optStr = staticWordList.stream().filter(a -> a.equals(word)).findFirst();
+				if (optStr.isPresent()) {
+					result += "-" + optStr.get();
+				}
+			}
+			
+			outputMap.put(userName, result);
+		}
+		
+		writeOutputFileStaticCommuntiyUserWord(outputMap, globalDataPath);
+	}
+
+
+	private void writeOutputFileStaticCommuntiyUserWord(Map<String, String> outputMap,String globalDataPath) {
+		try {
+			String filename = globalDataPath + "\\analyzed_community_c4.txt";
+
+			FileOutputStream fileStream = new FileOutputStream(new File(filename), true);
+			OutputStreamWriter writer = new OutputStreamWriter(fileStream, "UTF-8");
+			
+			for (Map.Entry<String, String> entrySet : outputMap.entrySet()) {
+				
+				writer.write(entrySet.getKey() + ";" + entrySet.getValue() +"\r\n");
+			}
+
+			writer.close();
+		} catch (IOException ioe) {
+			System.err.println("IOException: " + ioe.getMessage());
+		}
+	}
+
+	private List<String> getStaticWordList() {
+		List<String> wordList = new ArrayList<String>();
+		
+		wordList.add("futbol");
+		wordList.add("takım");
+		wordList.add("futbolcu");
+		wordList.add("galatasaray");
+		wordList.add("beşiktaş");
+		wordList.add("bayern");
+		wordList.add("dortmund");
+		wordList.add("gol");
+		wordList.add("spoiler");
+		wordList.add("film");
+		wordList.add("dizi");
+		wordList.add("sezon");
+		wordList.add("maç");
+		
+		return wordList;
+	}
+
+
+	private Map<String, UserTopWord> getUserTopWordList(String globalDataPath) {
+		Map<String, UserTopWord> resultSet = new HashMap<String, UserTopWord>();
+		try {
+			BufferedReader in = new BufferedReader(new FileReader(globalDataPath +"\\userWordList.txt"));
+			String line;
+			while ((line = in.readLine()) != null) {
+				String[] arr = line.split("-");
+				if (arr[0].equalsIgnoreCase("label")) {
+					continue;
+				}
+				
+				UserTopWord topWordObject = new UserTopWord();
+				if (MapUtils.isNotEmpty(resultSet)) {
+					if (resultSet.containsKey(arr[0])) {
+						topWordObject = resultSet.get(arr[0]);
+					} else {
+						topWordObject.setUserName(arr[0]);
+					}
+				} else {
+					topWordObject.setUserName(arr[0]);
+				}
+				
+				topWordObject.getWordList().add(arr[1]);
+				
+				resultSet.put(topWordObject.getUserName(), topWordObject);
+			}
+			
+			in.close();
+		} catch (Exception e) {
+			System.err.println("Problem occured reading file" + e);
+		}
+		
+		return resultSet;
+	}
+
+
+	private List<String> getUserNamesFromFile(String globalDataPath) {
+		List<String> userList = new ArrayList<String>();
+		
+		try {
+			BufferedReader in = new BufferedReader(new FileReader(globalDataPath +"\\c4_kullanici.txt"));
+			String line;
+			while ((line = in.readLine()) != null) {
+				if (StringUtils.isNotBlank(line)) {
+					userList.add(line);
+				}
+			}
+			in.close();
+		} catch (Exception e) {
+			System.err.println("Problem occured reading file" + e);
+		}
+		
+		return userList;
 	}
 }

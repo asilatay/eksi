@@ -4,7 +4,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
 	<classpathentry kind="lib" path="lib/jsoup-1.10.2.jar"/>
 	<classpathentry kind="lib" path="lib/mysql-connector-java-5.1.40-bin.jar"/>
-	<classpathentry kind="lib" path="lib/opencsv-3.8.jar"/>
 	<classpathentry kind="lib" path="lib/poi-3.14-20160307.jar"/>
 	<classpathentry kind="lib" path="lib/poi-examples-3.14-20160307.jar"/>
 	<classpathentry kind="lib" path="lib/poi-excelant-3.14-20160307.jar"/>
@@ -15,5 +14,13 @@
 	<classpathentry kind="lib" path="lib/xmlbeans-2.6.0.jar"/>
 	<classpathentry kind="lib" path="lib/apache-commons.jar"/>
 	<classpathentry kind="lib" path="lib/org.apache.commons.lang_2.4.jar"/>
+	<classpathentry kind="lib" path="C:/Users/ASIL/git/eksi/lib/apache-commons.jar"/>
+	<classpathentry kind="lib" path="C:/Users/ASIL/git/eksi/lib/commons-lang3-3.1-sources.jar"/>
+	<classpathentry kind="lib" path="C:/Users/ASIL/git/eksi/lib/commons-lang3-3.8.jar"/>
+	<classpathentry kind="lib" path="C:/Users/ASIL/git/eksi/lib/commons-lang3-3.8-javadoc.jar"/>
+	<classpathentry kind="lib" path="C:/Users/ASIL/git/eksi/lib/commons-lang3-3.8-sources.jar"/>
+	<classpathentry kind="lib" path="C:/Users/ASIL/git/eksi/lib/commons-lang3-3.8-tests.jar"/>
+	<classpathentry kind="lib" path="C:/Users/ASIL/git/eksi/lib/commons-lang3-3.8-test-sources.jar"/>
+	<classpathentry kind="lib" path="C:/Users/ASIL/git/eksi/lib/opencsv-3.8.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

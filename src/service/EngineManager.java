@@ -78,4 +78,8 @@ public interface EngineManager {
 
 	void exportWordAssociationNetworkModularity(String modularityFilePath);
 
+	void removeUnassignedWordsFromCommunities(String modularityOverlappingFilesPath);
+
+	void calculateSpecificCommunityWords(String globalDataPath);
+
 }

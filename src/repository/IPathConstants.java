@@ -23,5 +23,7 @@ public class IPathConstants {
 	public final String bilkentTxtPath ="D:\\Yuksek Lisans\\Tez\\Bilkent DATA\\BilCol2005\\Orijinal Data\\ALLOK.txt";
 	
 	public final String englishPath ="D:\\Yuksek Lisans\\Tez\\Data\\txtData";
+	
+	public final String globalDataPath = "D:\\Yuksek Lisans\\YL_DATA";
 
 }
