@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import model.User;
 import viewmodel.PMIValueIndexes;
 import viewmodel.WordIndex;
 
@@ -81,5 +80,7 @@ public interface EngineManager {
 	void removeUnassignedWordsFromCommunities(String modularityOverlappingFilesPath);
 
 	void calculateSpecificCommunityWords(String globalDataPath);
+
+	void getSpecificCommunityWordCount(String globalDataPath);
 
 }

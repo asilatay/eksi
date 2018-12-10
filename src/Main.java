@@ -79,6 +79,7 @@ public class Main {
 			System.out.println("Modularity dýþarý aktarým -> Press 37");
 			System.out.println("Community sadeleþtirmesi yap -> Press 38");
 			System.out.println("Spesifik community - kelime hesabý -> Press 39");
+			System.out.println("Spesifik Community - Kelime Sayýsý Hesabý -> Press 40");
 			operationSelect = scanIn.nextLine();
 			if (operationSelect.equals("1")) {
 				crawlerManager.createCrudeLinks(pathConstants.ham);
@@ -220,6 +221,8 @@ public class Main {
 				engineManager.removeUnassignedWordsFromCommunities(pathConstants.modularityFilePath);
 			} else if (operationSelect.equals("39")) {
 				engineManager.calculateSpecificCommunityWords(pathConstants.globalDataPath);
+			} else if (operationSelect.equals("40")) {
+				engineManager.getSpecificCommunityWordCount(pathConstants.globalDataPath);
 			}
 			
 			

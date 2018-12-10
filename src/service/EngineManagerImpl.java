@@ -4284,4 +4284,62 @@ public class EngineManagerImpl implements EngineManager {
 		
 		return userList;
 	}
+	
+	@Override
+	public void getSpecificCommunityWordCount(String globalDataPath) {
+		// read community_user_list
+		List<String> userNameList = getUserNamesFromFile(globalDataPath);
+		// read user_word_list
+		Map<String, UserTopWord> userTopWordMap = getUserTopWordList(globalDataPath);
+		
+		Map<String, Integer> wordCountMap = new HashMap<String, Integer>();
+		for (String userName : userNameList) {
+			UserTopWord userTopWord = userTopWordMap.get(userName);
+			if (userTopWord == null) {
+				System.err.println("Hata var kontrol et.");
+				return;
+			}
+			
+			List<String> wordList = userTopWord.getWordList();
+			for (String word : wordList) {
+				if (wordCountMap.containsKey(word)) {
+					Integer totalCount = wordCountMap.get(word);
+					totalCount++;
+					
+					wordCountMap.put(word, totalCount);
+				} else {
+					wordCountMap.put(word, 1);
+				}
+			}
+		}
+		
+		
+		Map<String, Integer> sortedMap =
+				wordCountMap.entrySet().stream()
+		       .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+		       .collect(Collectors.toMap(
+		          Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+		
+		writeOutputFileWordCount(sortedMap, globalDataPath);
+	}
+
+
+	private void writeOutputFileWordCount(Map<String, Integer> wordCountMap, String globalDataPath) {
+		try {
+			String filename = globalDataPath + "\\word_count_on_c4.txt";
+
+			FileOutputStream fileStream = new FileOutputStream(new File(filename), true);
+			OutputStreamWriter writer = new OutputStreamWriter(fileStream, "UTF-8");
+			
+			for (Map.Entry<String, Integer> entrySet : wordCountMap.entrySet()) {
+				
+				writer.write(entrySet.getKey() + ";" + entrySet.getValue() +"\r\n");
+			}
+			
+			writer.close();
+		} catch (IOException ioe) {
+			System.err.println("IOException: " + ioe.getMessage());
+		}
+	}
+	
 }
